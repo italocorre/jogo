@@ -1,0 +1,28 @@
+# Unity
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/Assets/Scenes/
+/Assets/Scenes.meta
+*.csproj
+*.sln
+*.slnx
+*.user
+*.pidb
+*.suo
+*.tmp
+*.unityproj
+.vs/
+.vscode/
+.idea/
+*.apk
+*.aab
+*_BurstDebugInformation_DoNotShip
+crashlytics-build.properties
+# checagem local de compilação
+/.checkbuild/
