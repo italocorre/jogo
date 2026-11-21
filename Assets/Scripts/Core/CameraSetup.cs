@@ -13,7 +13,7 @@ namespace MarAberto
             cam.depthTextureMode |= DepthTextureMode.Depth;
             cam.allowHDR = true;
             cam.allowMSAA = true;
-            cam.cullingMask = ~(1 << Layers.Icons);
+            cam.cullingMask = ~((1 << Layers.Icons) | (1 << Layers.UI));
             var dists = new float[32];
             dists[Layers.Grass] = 75f;
             dists[Layers.Items] = 120f;

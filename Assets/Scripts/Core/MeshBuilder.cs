@@ -78,55 +78,95 @@ namespace MarAberto
             AddQuad(p001, p000, p100, p101, col); // -y
         }
 
-        /// <summary>Cilindro (ou cone, se rTop &lt; rBottom) entre dois pontos.</summary>
+        /// <summary>Cilindro (ou cone, se rTop &lt; rBottom) entre dois pontos, com lados suaves.</summary>
         public void AddCylinder(Vector3 from, Vector3 to, float rBottom, float rTop, int sides, Color col, bool caps = true)
+            => AddCylinder(from, to, rBottom, rTop, sides, col, col, caps);
+
+        public void AddCylinder(Vector3 from, Vector3 to, float rBottom, float rTop, int sides, Color colBottom, Color colTop, bool caps = true)
         {
             Vector3 axis = to - from;
-            Quaternion rot = Quaternion.FromToRotation(Vector3.up, axis.normalized);
+            float len = axis.magnitude;
+            if (len < 1e-5f) return;
+            Quaternion rot = Quaternion.FromToRotation(Vector3.up, axis / len);
+            float slope = (rBottom - rTop) / len;
             for (int i = 0; i < sides; i++)
             {
                 float a0 = i / (float)sides * Mathf.PI * 2f;
                 float a1 = (i + 1) / (float)sides * Mathf.PI * 2f;
                 Vector3 d0 = rot * new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0));
                 Vector3 d1 = rot * new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1));
+                Vector3 up = axis / len;
+                Vector3 n0 = (d0 + up * slope).normalized, n1 = (d1 + up * slope).normalized;
                 Vector3 b0 = from + d0 * rBottom, b1 = from + d1 * rBottom;
                 Vector3 t0 = to + d0 * rTop, t1 = to + d1 * rTop;
-                AddQuad(b0, t0, t1, b1, col);
+                AddSmoothTri(b0, t0, t1, n0, n0, n1, colBottom, colTop, colTop);
+                AddSmoothTri(b0, t1, b1, n0, n1, n1, colBottom, colTop, colBottom);
                 if (caps)
                 {
-                    AddTri(to, t1, t0, col);
-                    AddTri(from, b0, b1, col);
+                    if (rTop > 0.002f) AddTri(to, t1, t0, colTop);
+                    if (rBottom > 0.002f) AddTri(from, b0, b1, colBottom);
                 }
             }
         }
 
-        /// <summary>Rocha: icosfera deformada por ruído.</summary>
-        public void AddRock(Vector3 center, float radius, int seed, System.Func<Vector3, Color> colorFn, float roughness = 0.28f, Vector3? squash = null)
+        /// <summary>
+        /// Rocha / bolha orgânica: esfera deformada por ruído, com sombreamento SUAVE
+        /// (nada de facetas) e cor por vértice.
+        /// </summary>
+        public void AddRock(Vector3 center, float radius, int seed, System.Func<Vector3, Color> colorFn, float roughness = 0.28f, Vector3? squash = null, int detail = 2)
         {
             Vector3 sq = squash ?? new Vector3(1f, 0.75f, 1f);
-            var ico = Icosphere(1);
+            var ico = Icosphere(detail);
             var rng = new System.Random(seed);
             float ox = (float)rng.NextDouble() * 100f, oy = (float)rng.NextDouble() * 100f;
+            // Posição deformada e normal suave por vértice único.
+            var pos = new Dictionary<Vector3Int, Vector3>();
+            var nrm = new Dictionary<Vector3Int, Vector3>();
+            Vector3Int Key(Vector3 v) => new Vector3Int(Mathf.RoundToInt(v.x * 10000), Mathf.RoundToInt(v.y * 10000), Mathf.RoundToInt(v.z * 10000));
             Vector3 Deform(Vector3 v)
             {
-                float n = Noise.Perlin3(v.x * 1.7f + ox, v.y * 1.7f + oy, v.z * 1.7f);
+                float n = Noise.Perlin3(v.x * 1.5f + ox, v.y * 1.5f + oy, v.z * 1.5f) * 0.7f
+                        + Noise.Perlin3(v.x * 3.4f + oy, v.y * 3.4f, v.z * 3.4f + ox) * 0.3f;
                 float r = radius * (1f + (n - 0.5f) * 2f * roughness);
                 return center + Vector3.Scale(v * r, sq);
             }
+            for (int i = 0; i < ico.Count; i++)
+            {
+                var k = Key(ico[i]);
+                if (!pos.ContainsKey(k)) { pos[k] = Deform(ico[i]); nrm[k] = Vector3.zero; }
+            }
             for (int i = 0; i < ico.Count; i += 3)
             {
-                Vector3 a = Deform(ico[i]), b = Deform(ico[i + 1]), c = Deform(ico[i + 2]);
-                Vector3 mid = (ico[i] + ico[i + 1] + ico[i + 2]) / 3f;
-                AddTri(a, b, c, colorFn(mid.normalized));
+                Vector3Int ka = Key(ico[i]), kb = Key(ico[i + 1]), kc = Key(ico[i + 2]);
+                Vector3 fn = Vector3.Cross(pos[kb] - pos[ka], pos[kc] - pos[ka]);
+                nrm[ka] += fn; nrm[kb] += fn; nrm[kc] += fn;
+            }
+            for (int i = 0; i < ico.Count; i += 3)
+            {
+                Vector3Int ka = Key(ico[i]), kb = Key(ico[i + 1]), kc = Key(ico[i + 2]);
+                AddSmoothTri(pos[ka], pos[kb], pos[kc], nrm[ka].normalized, nrm[kb].normalized, nrm[kc].normalized,
+                    colorFn(ico[i]), colorFn(ico[i + 1]), colorFn(ico[i + 2]));
             }
         }
 
-        static List<Vector3> cachedIco;
+        /// <summary>Esfera lisa (sem ruído).</summary>
+        public void AddSphere(Vector3 center, Vector3 radii, Color col, int detail = 2)
+            => AddRock(center, 1f, 0, _ => col, 0f, radii, detail);
+
+        /// <summary>Cápsula lisa entre dois pontos (braços, corpo, etc.).</summary>
+        public void AddCapsule(Vector3 from, Vector3 to, float radius, Color col, int sides = 12)
+        {
+            AddCylinder(from, to, radius, radius, sides, col, false);
+            AddSphere(from, Vector3.one * radius, col, 2);
+            AddSphere(to, Vector3.one * radius, col, 2);
+        }
+
+        static readonly Dictionary<int, List<Vector3>> icoCache = new Dictionary<int, List<Vector3>>();
 
         /// <summary>Lista de triângulos (3 vértices cada) de uma icosfera unitária.</summary>
         public static List<Vector3> Icosphere(int subdiv)
         {
-            if (subdiv == 1 && cachedIco != null) return cachedIco;
+            if (icoCache.TryGetValue(subdiv, out var cached)) return cached;
             float t = (1f + Mathf.Sqrt(5f)) / 2f;
             var v = new[]
             {
@@ -160,7 +200,7 @@ namespace MarAberto
                 }
                 list = next;
             }
-            if (subdiv == 1) cachedIco = list;
+            icoCache[subdiv] = list;
             return list;
         }
 

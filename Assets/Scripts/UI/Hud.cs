@@ -1,557 +1,813 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace MarAberto
 {
-    /// <summary>Interface: mira, vida, oxigênio, barra de atalhos, mochila, loja, moedas, avisos e pausa.</summary>
+    /// <summary>Interface do jogo (tema pirata): HUD, mochila, loja do mercador e pausa.</summary>
     public class Hud : MonoBehaviour
     {
+        public static readonly Color Good = UIKit.Hex("#2F6B2A");
+        public static readonly Color Bad = UIKit.Hex("#9A2A1E");
+        public static readonly Color Info = UIKit.Hex("#3A2414");
+        public static readonly Color Gold = UIKit.Hex("#8A5A12");
+
         enum Panel { None, Backpack, Shop, Pause }
 
-        struct ToastMsg { public string Text; public float Until; public Color Color; public ItemType Icon; }
-
-        readonly List<ToastMsg> toasts = new List<ToastMsg>();
-        Panel panel = Panel.None;
-        Merchant shopMerchant;
-        string shopLine;
         Game game;
+        Panel panel = Panel.None;
+        public bool AnyPanelOpen => panel != Panel.None;
+        public int PanelChangedFrame { get; private set; } = -10;
 
-        Texture2D round, roundSmall, circle, white;
-        GUIStyle txt, txtSmall, txtTiny, txtBig, txtTitle, txtCenter, btn, btnSmall, slotCount;
-        float uiScale = 1f;
+        Canvas canvas;
+        RectTransform root;
 
-        int dragSlot = -1;
-        int hoverSlot = -1;
-        float selectedChangedAt;
+        // HUD
+        RectTransform healthFill, oxyFill, oxyRow;
+        Text healthText, coinsText, clockText, itemName, promptText, targetName, speedText, anchorText, markerText;
+        RectTransform hotbarRt;
+        RectTransform compassNeedle, promptBox, targetBox, targetFill, driveBox, marker, helpBox;
+        Image underwaterTint, damageTint, crosshair;
+        readonly List<SlotView> hotbar = new List<SlotView>();
+        float selectedChangedAt = -10;
         int lastSelected = -1;
         float helpUntil;
 
-        static readonly Color Panel1 = new Color(0.07f, 0.13f, 0.17f, 0.82f);
-        static readonly Color Panel2 = new Color(0.14f, 0.22f, 0.27f, 0.85f);
-        static readonly Color Accent = new Color(1f, 0.80f, 0.35f, 1f);
-        static readonly Color Good = new Color(0.55f, 0.92f, 0.55f, 1f);
+        // Avisos
+        class ToastView { public RectTransform Rt; public Text Text; public RawImage Icon; public CanvasGroup Group; public float Until; public ItemType Type; public int Count; }
+        readonly List<ToastView> toasts = new List<ToastView>();
+        RectTransform toastRoot;
 
-        public bool AnyPanelOpen => panel != Panel.None;
-        /// <summary>Quadro em que um painel abriu/fechou (para a tecla E não fazer duas coisas).</summary>
-        public int PanelChangedFrame { get; private set; } = -10;
+        // Janelas
+        RectTransform dim, backpackWin, shopWin, pauseWin, bpGrid, sellList, buyList;
+        Text bpInfoName, bpInfoDesc, bpInfoPrice, bpTitleCount, shopQuote, shopCoins;
+        RawImage bpInfoIcon;
+        readonly List<SlotView> bpSlots = new List<SlotView>();
+        Merchant shopMerchant;
+        int shopVersion = -1, invVersion;
+        Slider sensSlider, volSlider, musicSlider;
+        RectTransform pauseCompass;
+
+        // Arrastar
+        public int DragFrom = -1;
+        RawImage dragGhost;
+        public int HoverSlot = -1;
+
+        // ---------- Inicialização ----------
 
         public void Init(Game g)
         {
             game = g;
-            game.Inventory.OnAdded += (t, n) =>
-            {
-                var def = Items.Get(t);
-                Toast("+" + n + " " + def.Name, Color.Lerp(def.Color, Color.white, 0.55f), t);
-            };
-            helpUntil = Time.time + 30f;
-            LockCursor(true);
+            UIKit.Load();
+            BuildCanvas();
+            BuildHud();
+            BuildBackpack();
+            BuildShop();
+            BuildPause();
+            game.Inventory.OnAdded += (t, n) => Toast("+" + n + " " + Items.Get(t).Name, Info, t, n);
+            game.Inventory.OnChanged += () => invVersion++;
+            helpUntil = Time.time + 35f;
+            SetPanel(Panel.None, false);
         }
 
-        public void Toast(string text) => Toast(text, Color.white);
-
-        public void Toast(string text, Color c, ItemType icon = ItemType.Nada)
+        void BuildCanvas()
         {
-            // Junta "+1 Cobre" repetidos.
-            if (icon != ItemType.Nada && toasts.Count > 0)
+            var go = new GameObject("Interface", typeof(RectTransform));
+            go.layer = 5;
+            go.transform.SetParent(transform, false);
+            canvas = go.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 10;
+            var scaler = go.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.6f;
+            go.AddComponent<GraphicRaycaster>();
+            root = (RectTransform)go.transform;
+
+            if (Application.isPlaying && FindObjectsByType<EventSystem>(FindObjectsSortMode.None).Length == 0)
             {
-                var last = toasts[toasts.Count - 1];
-                if (last.Icon == icon && last.Until - Time.time > 1.5f)
-                {
-                    int a = ParseCount(last.Text), b = ParseCount(text);
-                    if (a > 0 && b > 0)
-                    {
-                        last.Text = "+" + (a + b) + " " + Items.Get(icon).Name;
-                        last.Until = Time.time + 3.2f;
-                        toasts[toasts.Count - 1] = last;
-                        return;
-                    }
-                }
+                var es = new GameObject("EventSystem");
+                es.AddComponent<EventSystem>();
+                es.AddComponent<StandaloneInputModule>();
+                DontDestroyOnLoad(es);
             }
-            toasts.Add(new ToastMsg { Text = text, Until = Time.time + 3.6f, Color = c, Icon = icon });
-            if (toasts.Count > 6) toasts.RemoveAt(0);
         }
 
-        static int ParseCount(string s)
+        /// <summary>Usado pelos prints automáticos: desenha a interface numa câmera.</summary>
+        public void UseCamera(Camera cam)
         {
-            if (!s.StartsWith("+")) return 0;
-            int sp = s.IndexOf(' ');
-            return sp > 1 && int.TryParse(s.Substring(1, sp - 1), out var n) ? n : 0;
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = cam;
+            canvas.planeDistance = 0.5f;
         }
 
-        static void LockCursor(bool locked)
+        void BuildHud()
         {
-            Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !locked;
+            underwaterTint = UIKit.Img(root, "Debaixo", UIKit.White, new Color(0.02f, 0.25f, 0.35f, 0f));
+            underwaterTint.rectTransform.Fill();
+            damageTint = UIKit.Img(root, "Dano", UIKit.White, new Color(0.7f, 0f, 0f, 0f));
+            damageTint.rectTransform.Fill();
+
+            // Mira
+            crosshair = UIKit.Img(root, "Mira", UIKit.Circle, new Color(1, 1, 1, 0.85f), false);
+            crosshair.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(7, 7));
+
+            // Aviso "[E] ..."
+            promptBox = UIKit.Img(root, "Acao", UIKit.Scroll, null, true, 0.7f).rectTransform;
+            promptBox.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 1f), new Vector2(0, -36), new Vector2(420, 58));
+            var key = UIKit.Img(promptBox, "Tecla", UIKit.Button, null, true, 0.45f);
+            key.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(30, 0), new Vector2(42, 40));
+            UIKit.Txt(key.transform, "E", "E", UIKit.Title, 28, UIKit.Gold, TextAnchor.MiddleCenter).rectTransform.Fill(0, 2, 0, 0);
+            promptText = UIKit.Txt(promptBox, "Texto", "", UIKit.BodyBold, 24, UIKit.Ink, TextAnchor.MiddleLeft);
+            promptText.rectTransform.Fill(84, 2, 34, 2);
+            promptText.horizontalOverflow = HorizontalWrapMode.Overflow;
+
+            // Rocha mirada
+            targetBox = UIKit.Rect(root, "Alvo").Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 1f), new Vector2(0, -36), new Vector2(320, 70));
+            targetName = UIKit.Txt(targetBox, "Nome", "", UIKit.Title, 30, UIKit.Cream, TextAnchor.MiddleCenter, true);
+            targetName.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(500, 36));
+            targetFill = UIKit.Bar(targetBox, "Barra", UIKit.BarGold, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -40), new Vector2(240, 26), out _);
+
+            // Vida e oxigênio
+            var vit = UIKit.Rect(root, "Vitais").Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(30, 28), new Vector2(420, 110));
+            var heart = UIKit.Img(vit, "Coracao", UIKit.Heart, null, false);
+            heart.rectTransform.Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0), new Vector2(50, 50));
+            healthFill = UIKit.Bar(vit, "Vida", UIKit.BarRed, new Vector2(0, 0), new Vector2(0, 0), new Vector2(58, 6), new Vector2(330, 38), out healthText);
+            oxyRow = UIKit.Rect(vit, "Oxigenio").Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 56), new Vector2(400, 50));
+            var bub = UIKit.Img(oxyRow, "Bolha", UIKit.Bubble, null, false);
+            bub.rectTransform.Place(new Vector2(0, 0), new Vector2(0, 0), Vector2.zero, new Vector2(50, 50));
+            oxyFill = UIKit.Bar(oxyRow, "Barra", UIKit.BarBlue, new Vector2(0, 0), new Vector2(0, 0), new Vector2(58, 6), new Vector2(330, 38), out var oxyLabel);
+            oxyLabel.text = "Fôlego";
+
+            // Moedas (placa de madeira)
+            var coins = UIKit.Img(root, "Moedas", UIKit.Wood, null, true, 0.6f).rectTransform;
+            coins.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-28, -24), new Vector2(230, 78));
+            var coin = UIKit.Img(coins, "Dobrao", UIKit.Coin, null, false);
+            coin.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(16, 0), new Vector2(52, 52));
+            coinsText = UIKit.Txt(coins, "Valor", "0", UIKit.Title, 44, UIKit.Gold, TextAnchor.MiddleRight, true);
+            coinsText.rectTransform.Fill(76, 4, 22, 4);
+
+            // Bússola e relógio
+            var comp = UIKit.Rect(root, "Bussola").Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-88, -116), new Vector2(110, 110));
+            var compBg = UIKit.Img(comp, "Fundo", UIKit.Circle, new Color(0.12f, 0.08f, 0.05f, 0.55f), false);
+            compBg.rectTransform.Fill(6, 6, 6, 6);
+            compassNeedle = UIKit.Img(comp, "Rosa", UIKit.Compass, null, false).rectTransform;
+            compassNeedle.Fill();
+            clockText = UIKit.Txt(root, "Relogio", "", UIKit.BodyBold, 24, UIKit.Cream, TextAnchor.MiddleCenter, true);
+            clockText.rectTransform.Place(new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-143, -232), new Vector2(200, 30));
+
+            // Barra de atalhos
+            float slot = 86, gap = 10, pad = 18;
+            float w = Inventory.HotbarSize * slot + (Inventory.HotbarSize - 1) * gap + pad * 2;
+            var hb = UIKit.Img(root, "Atalhos", UIKit.Wood, null, true, 0.55f).rectTransform;
+            hb.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 18), new Vector2(w, slot + pad * 2));
+            hotbarRt = hb;
+            for (int i = 0; i < Inventory.HotbarSize; i++)
+            {
+                var sv = SlotView.Create(hb, this, i, slot);
+                sv.Rt.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(pad + i * (slot + gap), 0), new Vector2(slot, slot));
+                sv.ShowNumber(i + 1);
+                hotbar.Add(sv);
+            }
+            itemName = UIKit.Txt(root, "NomeItem", "", UIKit.Title, 38, UIKit.Cream, TextAnchor.MiddleCenter, true);
+            itemName.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, slot + pad * 2 + 30), new Vector2(700, 46));
+
+            // Avisos
+            toastRoot = UIKit.Rect(root, "Avisos").Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(24, 120), new Vector2(520, 400));
+
+            // Barco
+            driveBox = UIKit.Img(root, "Pilotando", UIKit.Parchment, null, true, 0.35f).rectTransform;
+            driveBox.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 160), new Vector2(460, 120));
+            speedText = UIKit.Txt(driveBox, "Velocidade", "", UIKit.Title, 40, UIKit.Ink, TextAnchor.UpperCenter);
+            speedText.rectTransform.Fill(20, 0, 20, 16);
+            anchorText = UIKit.Txt(driveBox, "Ancora", "", UIKit.Body, 20, UIKit.InkSoft, TextAnchor.LowerCenter);
+            anchorText.rectTransform.Fill(20, 14, 20, 0);
+
+            // Marcador da boia
+            marker = UIKit.Rect(root, "Marcador").Place(Vector2.zero, new Vector2(0.5f, 0f), Vector2.zero, new Vector2(240, 60));
+            var dia = UIKit.Img(marker, "Losango", UIKit.Circle, UIKit.Gold, false);
+            dia.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), Vector2.zero, new Vector2(14, 14));
+            markerText = UIKit.Txt(marker, "Texto", "", UIKit.BodyBold, 20, UIKit.Cream, TextAnchor.LowerCenter, true);
+            markerText.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(240, 44));
+
+            // Ajuda
+            helpBox = UIKit.Img(root, "Ajuda", UIKit.Parchment, null, true, 0.3f).rectTransform;
+            helpBox.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(20, -18), new Vector2(560, 196));
+            var ht = UIKit.Txt(helpBox, "Texto",
+                "<b>WASD</b> andar · <b>Shift</b> correr · <b>Espaço</b> pular/subir\n" +
+                "<b>Clique</b> minerar · <b>E</b> pegar, falar, pilotar\n" +
+                "<b>1–6</b> trocar item · <b>Tab</b> mochila · <b>Q</b> largar\n" +
+                "<b>R</b> âncora (no barco) · <b>Ctrl</b> mergulhar · <b>H</b> esconder",
+                UIKit.Body, 21, UIKit.Ink, TextAnchor.MiddleLeft);
+            ht.rectTransform.Fill(34, 18, 24, 18);
         }
 
-        void Open(Panel p)
+        // ---------- Mochila ----------
+
+        RectTransform Window(string name, Vector2 size, string title, out RectTransform body)
         {
+            var win = UIKit.Img(root, name, UIKit.Parchment, null, true, 0.75f).rectTransform;
+            win.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), size);
+            var t = UIKit.Txt(win, "Titulo", title, UIKit.Title, 64, UIKit.Ink, TextAnchor.UpperCenter);
+            t.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -34), new Vector2(size.x - 120, 80));
+            var div = UIKit.Img(win, "Divisor", UIKit.Divider, null, false);
+            div.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -112), new Vector2(Mathf.Min(620, size.x - 160), 30));
+            body = UIKit.Rect(win, "Conteudo").Fill(60, 60, 60, 140);
+            return win;
+        }
+
+        void BuildBackpack()
+        {
+            dim = UIKit.Img(root, "Escurecer", UIKit.White, new Color(0.02f, 0.03f, 0.05f, 0.55f)).rectTransform;
+            dim.Fill();
+            dim.GetComponent<Image>().raycastTarget = true;
+
+            backpackWin = Window("Mochila", new Vector2(1180, 700), "Mochila", out var body);
+            bpTitleCount = UIKit.Txt(backpackWin, "Espacos", "", UIKit.Body, 22, UIKit.InkSoft, TextAnchor.UpperRight);
+            bpTitleCount.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-70, -60), new Vector2(320, 30));
+
+            bpGrid = UIKit.Rect(body, "Grade").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(10, -10), new Vector2(640, 440));
+
+            var info = UIKit.Img(body, "Info", UIKit.Wood, null, true, 0.6f).rectTransform;
+            info.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-10, -10), new Vector2(360, 440));
+            var iconBg = UIKit.Img(info, "IconeFundo", UIKit.Slot, null, true, 0.8f);
+            iconBg.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -26), new Vector2(150, 150));
+            bpInfoIcon = new GameObject("Icone", typeof(RectTransform)).AddComponent<RawImage>();
+            bpInfoIcon.rectTransform.SetParent(iconBg.transform, false);
+            bpInfoIcon.rectTransform.Fill(14, 14, 14, 14);
+            bpInfoIcon.raycastTarget = false;
+            bpInfoName = UIKit.Txt(info, "Nome", "", UIKit.Title, 40, UIKit.Gold, TextAnchor.UpperCenter, true);
+            bpInfoName.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -186), new Vector2(330, 50));
+            bpInfoDesc = UIKit.Txt(info, "Descricao", "", UIKit.Body, 22, UIKit.Cream, TextAnchor.UpperCenter);
+            bpInfoDesc.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -244), new Vector2(300, 120));
+            bpInfoPrice = UIKit.Txt(info, "Preco", "", UIKit.BodyBold, 22, UIKit.Gold, TextAnchor.LowerCenter, true);
+            bpInfoPrice.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 24), new Vector2(320, 34));
+
+            var hint = UIKit.Txt(body, "Dica", "Arraste para organizar  ·  botão direito larga no chão  ·  a barra de atalhos fica embaixo",
+                UIKit.Body, 20, UIKit.InkSoft, TextAnchor.LowerCenter);
+            hint.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, -20), new Vector2(1000, 30));
+            RebuildBackpackSlots();
+        }
+
+        void RebuildBackpackSlots()
+        {
+            foreach (var s in bpSlots) UIKit.Destroy(s.gameObject);
+            bpSlots.Clear();
+            int cols = 6;
+            float size = 96, gap = 12;
+            int count = game.Inventory.Size - Inventory.HotbarSize;
+            for (int i = 0; i < count; i++)
+            {
+                int idx = Inventory.HotbarSize + i;
+                var sv = SlotView.Create(bpGrid, this, idx, size);
+                sv.Rt.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2((i % cols) * (size + gap), -(i / cols) * (size + gap)), new Vector2(size, size));
+                bpSlots.Add(sv);
+            }
+        }
+
+        // ---------- Loja ----------
+
+        void BuildShop()
+        {
+            shopWin = Window("Loja", new Vector2(1400, 860), "Barraca do Seu Joca", out var body);
+            shopQuote = UIKit.Txt(shopWin, "Fala", "", UIKit.Body, 24, UIKit.InkSoft, TextAnchor.UpperCenter);
+            shopQuote.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -146), new Vector2(1100, 34));
+
+            var coins = UIKit.Img(shopWin, "Moedas", UIKit.Wood, null, true, 0.5f).rectTransform;
+            coins.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-70, -50), new Vector2(200, 66));
+            UIKit.Img(coins, "Dobrao", UIKit.Coin, null, false).rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(12, 0), new Vector2(44, 44));
+            shopCoins = UIKit.Txt(coins, "Valor", "0", UIKit.Title, 38, UIKit.Gold, TextAnchor.MiddleRight, true);
+            shopCoins.rectTransform.Fill(60, 2, 18, 2);
+
+            var left = UIKit.Rect(body, "Vender").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -50), new Vector2(600, 560));
+            UIKit.Txt(left, "Titulo", "Vender", UIKit.Title, 44, UIKit.Ink, TextAnchor.UpperLeft).rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(300, 54));
+            sellList = UIKit.Rect(left, "Lista").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -60), new Vector2(600, 500));
+
+            var right = UIKit.Rect(body, "Comprar").Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(0, -50), new Vector2(640, 560));
+            UIKit.Txt(right, "Titulo", "Comprar", UIKit.Title, 44, UIKit.Ink, TextAnchor.UpperLeft).rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(300, 54));
+            buyList = UIKit.Rect(right, "Lista").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -60), new Vector2(640, 500));
+
+            var close = UIKit.Btn(shopWin, "Fechar", "Fechar  (E)", () => SetPanel(Panel.None), 30);
+            ((RectTransform)close.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 44), new Vector2(260, 64));
+        }
+
+        void RebuildShop()
+        {
+            UIKit.ClearChildren(sellList);
+            UIKit.ClearChildren(buyList);
+            var inv = game.Inventory;
+            float y = 0;
+            int total = 0, rows = 0;
+            foreach (var def in Items.All)
+            {
+                int n = inv.Count(def.Type);
+                if (n <= 0 || def.SellPrice <= 0) continue;
+                total += n * def.SellPrice;
+                if (rows >= 6) continue;
+                rows++;
+                var row = UIKit.Rect(sellList, "Linha").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, y), new Vector2(600, 70));
+                var slot = UIKit.Img(row, "Fundo", UIKit.Slot, null, true, 0.5f);
+                slot.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(62, 62));
+                var ic = new GameObject("Icone", typeof(RectTransform)).AddComponent<RawImage>();
+                ic.rectTransform.SetParent(slot.transform, false);
+                ic.rectTransform.Fill(7, 7, 7, 7);
+                ic.texture = Icons.Get(def.Type);
+                ic.raycastTarget = false;
+                UIKit.Txt(row, "Nome", def.Name + "  <color=#6E4D2E>x" + n + "</color>", UIKit.BodyBold, 26, UIKit.Ink).rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(76, -4), new Vector2(300, 34));
+                UIKit.Txt(row, "Preco", def.SellPrice + " moeda" + (def.SellPrice > 1 ? "s" : "") + " cada", UIKit.Body, 21, UIKit.Green).rectTransform.Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(76, 4), new Vector2(300, 30));
+                var t = def.Type;
+                var b1 = UIKit.Btn(row, "Um", "Vender 1", () => { game.Sell(t, 1); shopVersion = -1; }, 22);
+                ((RectTransform)b1.transform).Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-118, 0), new Vector2(124, 52));
+                var b2 = UIKit.Btn(row, "Todos", "Todos", () => { game.Sell(t, inv.Count(t)); shopVersion = -1; }, 22);
+                ((RectTransform)b2.transform).Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(108, 52));
+                y -= 76;
+            }
+            if (total == 0)
+            {
+                var t = UIKit.Txt(sellList, "Vazio", "Nada para vender ainda.\nMinere rochas, pegue conchas na praia\ne mergulhe nos recifes atrás de pérolas!", UIKit.Body, 24, UIKit.InkSoft, TextAnchor.UpperCenter);
+                t.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(560, 160));
+            }
+            else
+            {
+                var all = UIKit.Btn(sellList, "Tudo", "Vender tudo   +" + total, () =>
+                {
+                    foreach (var d in Items.All) if (d.SellPrice > 0) game.Sell(d.Type, inv.Count(d.Type));
+                    shopQuote.text = "“Negócio fechado, marujo! Volte sempre.”";
+                    shopVersion = -1;
+                }, 30);
+                ((RectTransform)all.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 0), new Vector2(360, 62));
+            }
+
+            y = 0;
+            foreach (var o in game.Offers)
+            {
+                bool avail = o.Available();
+                bool afford = game.Coins >= o.Price;
+                var row = UIKit.Rect(buyList, "Oferta").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, y), new Vector2(640, 58));
+                var name = UIKit.Txt(row, "Nome", o.Name, UIKit.BodyBold, 24, avail ? UIKit.Ink : new Color(UIKit.Ink.r, UIKit.Ink.g, UIKit.Ink.b, 0.45f));
+                name.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(470, 30));
+                var desc = UIKit.Txt(row, "Desc", avail ? o.Description : o.Unavailable(), UIKit.Body, 18, avail ? UIKit.InkSoft : new Color(UIKit.InkSoft.r, UIKit.InkSoft.g, UIKit.InkSoft.b, 0.5f));
+                desc.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -28), new Vector2(480, 30));
+                desc.horizontalOverflow = HorizontalWrapMode.Overflow;
+                var offer = o;
+                var b = UIKit.Btn(row, "Comprar", "", () =>
+                {
+                    if (game.TryBuy(offer)) { shopQuote.text = "“Ótima escolha, capitão!”"; Sfx.UI(Sfx.Coin, 0.6f); }
+                    else Sfx.UI(Sfx.Error, 0.4f);
+                    shopVersion = -1;
+                }, 26);
+                b.interactable = avail && afford;
+                var brt = (RectTransform)b.transform;
+                brt.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(140, 52));
+                UIKit.Img(brt, "Dobrao", UIKit.Coin, null, false).rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(14, 0), new Vector2(30, 30));
+                var pt = b.GetComponentInChildren<Text>();
+                pt.text = o.Price.ToString();
+                pt.alignment = TextAnchor.MiddleRight;
+                pt.rectTransform.Fill(40, 4, 18, 4);
+                pt.color = avail && afford ? UIKit.Gold : new Color(0.8f, 0.75f, 0.65f, 0.6f);
+                if (!(avail && afford)) b.GetComponent<Image>().color = new Color(0.75f, 0.7f, 0.65f, 0.85f);
+                y -= 64;
+            }
+        }
+
+        // ---------- Pausa ----------
+
+        Slider MakeSlider(Transform parent, string label, float y, float min, float max, float value, System.Action<float> onChange)
+        {
+            UIKit.Txt(parent, label, label, UIKit.BodyBold, 26, UIKit.Cream, TextAnchor.MiddleLeft, true)
+                .rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(420, 34));
+            var bg = UIKit.Img(parent, label + "Barra", UIKit.BarFrame, null, true, 0.7f);
+            bg.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y - 40), new Vector2(420, 30));
+            var s = bg.gameObject.AddComponent<Slider>();
+            var fillArea = UIKit.Rect(bg.transform, "Area").Fill(6, 6, 6, 6);
+            var fill = UIKit.Img(fillArea, "Preenche", UIKit.BarGold, null, true, 0.6f);
+            fill.rectTransform.Fill();
+            var handleArea = UIKit.Rect(bg.transform, "AreaAlca").Fill(14, 0, 14, 0);
+            var handle = UIKit.Img(handleArea, "Alca", UIKit.Coin, null, false);
+            handle.rectTransform.sizeDelta = new Vector2(40, 40);
+            handle.raycastTarget = true;
+            bg.raycastTarget = true;
+            s.fillRect = fill.rectTransform;
+            s.handleRect = handle.rectTransform;
+            s.targetGraphic = handle;
+            s.direction = Slider.Direction.LeftToRight;
+            s.minValue = min;
+            s.maxValue = max;
+            s.value = value;
+            var nav = s.navigation; nav.mode = Navigation.Mode.None; s.navigation = nav;
+            s.onValueChanged.AddListener(v => onChange(v));
+            return s;
+        }
+
+        void BuildPause()
+        {
+            pauseWin = UIKit.Rect(root, "Pausa").Fill();
+            var bg = UIKit.Img(pauseWin, "Fundo", UIKit.White, new Color(0.02f, 0.05f, 0.09f, 0.78f));
+            bg.rectTransform.Fill();
+            bg.raycastTarget = true;
+            pauseCompass = UIKit.Img(pauseWin, "Rosa", UIKit.Compass, new Color(1, 1, 1, 0.18f), false).rectTransform;
+            pauseCompass.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(900, 900));
+            UIKit.Txt(pauseWin, "Titulo", "Mar Aberto", UIKit.Title, 150, UIKit.Gold, TextAnchor.MiddleCenter, true)
+                .rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -110), new Vector2(1200, 170));
+            var div = UIKit.Img(pauseWin, "Divisor", UIKit.Divider, new Color(1f, 0.85f, 0.55f, 1f), false);
+            div.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -280), new Vector2(620, 30));
+
+            var col = UIKit.Rect(pauseWin, "Coluna").Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -330), new Vector2(460, 640));
+            var cont = UIKit.Btn(col, "Continuar", "Continuar", () => SetPanel(Panel.None), 38);
+            ((RectTransform)cont.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), Vector2.zero, new Vector2(420, 78));
+            sensSlider = MakeSlider(col, "Sensibilidade do mouse", -110, 0.3f, 6f, game.Player != null ? game.Player.MouseSensitivity : 2f, v => { if (game.Player != null) game.Player.MouseSensitivity = v; });
+            volSlider = MakeSlider(col, "Volume geral", -200, 0f, 1f, AudioListener.volume, v => AudioListener.volume = v);
+            musicSlider = MakeSlider(col, "Música", -290, 0f, 0.6f, game.MusicVolume, v => game.MusicVolume = v);
+            var quit = UIKit.Btn(col, "Sair", "Sair do jogo", () => Application.Quit(), 34);
+            ((RectTransform)quit.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -400), new Vector2(420, 72));
+        }
+
+        // ---------- Abrir / fechar ----------
+
+        void SetPanel(Panel p, bool sound = true)
+        {
+            if (sound && p != panel) Sfx.UI(p == Panel.None ? Sfx.Close : Sfx.Open, 0.5f);
             panel = p;
             PanelChangedFrame = Time.frameCount;
-            game.Player.InputLocked = p != Panel.None;
-            LockCursor(p == Panel.None);
-            dragSlot = -1;
-            Sfx.Play(Sfx.Click, game.Player.transform.position, 0.3f);
+            if (game.Player != null) game.Player.InputLocked = p != Panel.None;
+            bool locked = p == Panel.None;
+            if (Application.isPlaying)
+            {
+                Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
+                Cursor.visible = !locked;
+                if (UIKit.CursorTex != null) Cursor.SetCursor(locked ? null : UIKit.CursorTex, new Vector2(4, 4), CursorMode.Auto);
+            }
+            dim.gameObject.SetActive(p == Panel.Backpack || p == Panel.Shop);
+            // A barra de atalhos fica por cima do escurecido (dá para arrastar itens entre ela e a mochila).
+            if (p == Panel.Backpack || p == Panel.Shop) hotbarRt.SetAsLastSibling();
+            if (p == Panel.Pause) pauseWin.SetAsLastSibling();
+            backpackWin.gameObject.SetActive(p == Panel.Backpack);
+            shopWin.gameObject.SetActive(p == Panel.Shop);
+            pauseWin.gameObject.SetActive(p == Panel.Pause);
+            if (p == Panel.Shop) shopVersion = -1;
+            if (p == Panel.Pause && game.Player != null) sensSlider.value = game.Player.MouseSensitivity;
+            CancelDrag();
         }
 
         public void OpenShop(Merchant m)
         {
             shopMerchant = m;
-            shopLine = m.Greeting;
-            Open(Panel.Shop);
+            shopQuote.text = "“" + m.Greeting + "”";
+            SetPanel(Panel.Shop);
         }
+
+        /// <summary>Para os prints: abre um painel sem som.</summary>
+        public void PreviewPanel(int which, Merchant m = null)
+        {
+            if (which == 2 && m != null) { shopMerchant = m; shopQuote.text = "“" + m.Greeting + "”"; }
+            SetPanel((Panel)which, false);
+        }
+
+        // ---------- Avisos ----------
+
+        public void Toast(string text) => Toast(text, Info);
+
+        public void Toast(string text, Color c, ItemType icon = ItemType.Nada, int count = 0)
+        {
+            if (toastRoot == null) return;
+            // Junta "+1 Cobre" seguidos.
+            if (icon != ItemType.Nada && toasts.Count > 0)
+            {
+                var last = toasts[toasts.Count - 1];
+                if (last.Type == icon && last.Until - Time.time > 1.2f)
+                {
+                    last.Count += count;
+                    last.Text.text = "+" + last.Count + " " + Items.Get(icon).Name;
+                    last.Until = Time.time + 3.5f;
+                    return;
+                }
+            }
+            var rt = UIKit.Img(toastRoot, "Aviso", UIKit.Scroll, null, true, 0.6f).rectTransform;
+            var tv = new ToastView { Rt = rt, Until = Time.time + 3.8f, Type = icon, Count = count };
+            tv.Group = rt.gameObject.AddComponent<CanvasGroup>();
+            float iconW = 0;
+            if (icon != ItemType.Nada)
+            {
+                tv.Icon = new GameObject("Icone", typeof(RectTransform)).AddComponent<RawImage>();
+                tv.Icon.rectTransform.SetParent(rt, false);
+                tv.Icon.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(26, 0), new Vector2(42, 42));
+                tv.Icon.texture = Icons.Get(icon);
+                tv.Icon.raycastTarget = false;
+                iconW = 46;
+            }
+            tv.Text = UIKit.Txt(rt, "Texto", text, UIKit.BodyBold, 23, c, TextAnchor.MiddleLeft);
+            tv.Text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            tv.Text.rectTransform.Fill(34 + iconW, 2, 30, 2);
+            float width = Mathf.Clamp(tv.Text.preferredWidth + 84 + iconW, 220, 760);
+            rt.Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(width, 54));
+            toasts.Add(tv);
+            while (toasts.Count > 6) { UIKit.Destroy(toasts[0].Rt.gameObject); toasts.RemoveAt(0); }
+        }
+
+        // ---------- Arrastar itens ----------
+
+        public void BeginDrag(int slot)
+        {
+            if (panel != Panel.Backpack) return;
+            var st = game.Inventory.Slots[slot];
+            if (st.IsEmpty) return;
+            DragFrom = slot;
+            if (dragGhost == null)
+            {
+                dragGhost = new GameObject("Arrastando", typeof(RectTransform)).AddComponent<RawImage>();
+                dragGhost.rectTransform.SetParent(root, false);
+                dragGhost.rectTransform.sizeDelta = new Vector2(84, 84);
+                dragGhost.raycastTarget = false;
+            }
+            dragGhost.texture = Icons.Get(st.Type);
+            dragGhost.gameObject.SetActive(true);
+            Sfx.UI(Sfx.Pickup, 0.35f);
+        }
+
+        public void DropOn(int slot)
+        {
+            if (DragFrom < 0) return;
+            if (slot != DragFrom) game.Inventory.MoveSlot(DragFrom, slot);
+            Sfx.UI(Sfx.Drop, 0.35f);
+            CancelDrag();
+        }
+
+        public void CancelDrag()
+        {
+            DragFrom = -1;
+            if (dragGhost != null) dragGhost.gameObject.SetActive(false);
+        }
+
+        public void DropToWorld(int slot)
+        {
+            if (game.Player == null) return;
+            var cam = game.Player.Cam.transform;
+            var item = game.Inventory.TakeFromSlot(slot, 1);
+            if (!item.IsEmpty)
+            {
+                WorldItem.Spawn(item, cam.position + cam.forward * 0.8f, cam.forward * 3f + Vector3.up);
+                Sfx.UI(Sfx.Drop, 0.4f);
+            }
+        }
+
+        // ---------- Atualização ----------
 
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
-                Open(panel == Panel.None ? Panel.Pause : Panel.None);
+            if (Input.GetKeyDown(KeyCode.Escape)) SetPanel(panel == Panel.None ? Panel.Pause : Panel.None);
             else if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.I))
             {
-                if (panel == Panel.None) Open(Panel.Backpack);
-                else if (panel == Panel.Backpack || panel == Panel.Shop) Open(Panel.None);
+                if (panel == Panel.None) SetPanel(Panel.Backpack);
+                else if (panel == Panel.Backpack || panel == Panel.Shop) SetPanel(Panel.None);
             }
-            else if (panel == Panel.Shop && Input.GetKeyDown(KeyCode.E) && Time.frameCount != PanelChangedFrame) Open(Panel.None);
-
+            else if (panel == Panel.Shop && Input.GetKeyDown(KeyCode.E) && Time.frameCount != PanelChangedFrame) SetPanel(Panel.None);
             if (Input.GetKeyDown(KeyCode.H)) helpUntil = helpUntil > Time.time ? 0 : float.MaxValue;
-            if (panel == Panel.None && Cursor.lockState != CursorLockMode.Locked && Input.GetMouseButtonDown(0)) LockCursor(true);
-            toasts.RemoveAll(t => t.Until < Time.time);
-
-            if (game.Inventory.Selected != lastSelected)
+            if (panel == Panel.None && Cursor.lockState != CursorLockMode.Locked && Input.GetMouseButtonDown(0))
             {
-                lastSelected = game.Inventory.Selected;
-                selectedChangedAt = Time.time;
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
             }
+            Refresh();
         }
 
-        // ---------- Estilo ----------
-
-        void Styles()
+        public void Refresh()
         {
-            uiScale = Mathf.Clamp(Screen.height / 1080f, 0.7f, 2f);
-            if (txt != null && Mathf.Approximately(txt.fontSize, Mathf.Round(18 * uiScale))) return;
-            if (round == null)
-            {
-                // Só servem de "marcador" de formato para Box().
-                round = new Texture2D(1, 1);
-                roundSmall = new Texture2D(1, 1);
-                circle = new Texture2D(1, 1);
-                white = new Texture2D(1, 1);
-            }
-            int F(float s) => Mathf.RoundToInt(s * uiScale);
-            txt = new GUIStyle(GUI.skin.label) { fontSize = F(18), fontStyle = FontStyle.Bold, richText = true, wordWrap = false };
-            txt.normal.textColor = Color.white;
-            txtSmall = new GUIStyle(txt) { fontSize = F(15), fontStyle = FontStyle.Normal };
-            txtTiny = new GUIStyle(txt) { fontSize = F(12), fontStyle = FontStyle.Bold };
-            txtBig = new GUIStyle(txt) { fontSize = F(24) };
-            txtTitle = new GUIStyle(txt) { fontSize = F(44), alignment = TextAnchor.MiddleCenter };
-            txtCenter = new GUIStyle(txt) { alignment = TextAnchor.MiddleCenter };
-            slotCount = new GUIStyle(txt) { fontSize = F(15), alignment = TextAnchor.LowerRight };
-            btn = new GUIStyle(txt) { fontSize = F(18) };
-            btnSmall = new GUIStyle(txt) { fontSize = F(15) };
-        }
-
-        float S(float v) => v * uiScale;
-
-        void Box(Rect r, Color c, Texture2D tex = null)
-        {
-            float rad;
-            if (tex == white) rad = 0;
-            else if (tex == circle) rad = Mathf.Min(r.width, r.height) * 0.5f;
-            else if (tex == roundSmall) rad = S(6);
-            else rad = S(12);
-            rad = Mathf.Min(rad, Mathf.Min(r.width, r.height) * 0.5f);
-            GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0, c, Vector4.zero, new Vector4(rad, rad, rad, rad));
-        }
-
-        void Label(Rect r, string text, GUIStyle st, Color c, bool shadow = true)
-        {
-            var old = st.normal.textColor;
-            if (shadow)
-            {
-                st.normal.textColor = new Color(0, 0, 0, 0.55f * c.a);
-                GUI.Label(new Rect(r.x + 1.5f, r.y + 1.5f, r.width, r.height), text, st);
-            }
-            st.normal.textColor = c;
-            GUI.Label(r, text, st);
-            st.normal.textColor = old;
-        }
-
-        bool Button(Rect r, string text, bool enabled = true, GUIStyle st = null)
-        {
-            bool hover = r.Contains(Event.current.mousePosition);
-            Box(r, enabled ? (hover ? new Color(0.30f, 0.52f, 0.60f, 0.95f) : new Color(0.20f, 0.38f, 0.46f, 0.95f)) : new Color(0.2f, 0.24f, 0.27f, 0.7f));
-            Label(r, text, st != null ? new GUIStyle(st) { alignment = TextAnchor.MiddleCenter } : txtCenter, enabled ? Color.white : new Color(1, 1, 1, 0.4f), false);
-            if (enabled && Event.current.type == EventType.MouseDown && Event.current.button == 0 && hover)
-            {
-                Event.current.Use();
-                Sfx.Play(Sfx.Click, game.Player.transform.position, 0.25f);
-                return true;
-            }
-            return false;
-        }
-
-        void Bar(Rect r, float t, Color fill, string text)
-        {
-            Box(r, new Color(0, 0, 0, 0.45f));
-            if (t > 0.001f)
-            {
-                var f = new Rect(r.x + S(3), r.y + S(3), (r.width - S(6)) * Mathf.Clamp01(t), r.height - S(6));
-                Box(f, fill, roundSmall);
-            }
-            if (!string.IsNullOrEmpty(text)) Label(new Rect(r.x + S(10), r.y, r.width, r.height), text, new GUIStyle(txtTiny) { alignment = TextAnchor.MiddleLeft }, Color.white);
-        }
-
-        void Coin(Rect r)
-        {
-            Box(r, new Color(0.75f, 0.52f, 0.12f), circle);
-            Box(new Rect(r.x + r.width * 0.14f, r.y + r.height * 0.14f, r.width * 0.72f, r.height * 0.72f), new Color(1f, 0.82f, 0.3f), circle);
-            Box(new Rect(r.x + r.width * 0.36f, r.y + r.height * 0.28f, r.width * 0.28f, r.height * 0.44f), new Color(0.85f, 0.6f, 0.15f), roundSmall);
-        }
-
-        void Icon(Rect r, ItemType t, float alpha = 1f)
-        {
-            var tex = Icons.Get(t);
-            if (tex == null) return;
-            var old = GUI.color;
-            GUI.color = new Color(1, 1, 1, alpha);
-            GUI.DrawTexture(r, tex, ScaleMode.ScaleToFit, true);
-            GUI.color = old;
-        }
-
-        // ---------- Desenho ----------
-
-        void OnGUI()
-        {
-            Styles();
-            float sw = Screen.width, sh = Screen.height;
             var p = game.Player;
+            var inv = game.Inventory;
             var env = game.Environment;
 
-            if (env.CameraUnderwater) Box(new Rect(0, 0, sw, sh), new Color(0.02f, 0.25f, 0.35f, 0.18f), white);
-            if (p.DamageFlash > 0) Box(new Rect(0, 0, sw, sh), new Color(0.8f, 0, 0, 0.22f * p.DamageFlash), white);
-            if (p.Oxygen <= 0) Box(new Rect(0, 0, sw, sh), new Color(0, 0, 0, 0.25f + 0.15f * Mathf.Sin(Time.time * 4f)), white);
+            // Telas coloridas
+            underwaterTint.color = new Color(0.02f, 0.25f, 0.35f, env != null && env.CameraUnderwater ? 0.16f : 0f);
+            float dmg = p != null ? p.DamageFlash : 0f;
+            float suffocate = p != null && p.Oxygen <= 0 ? 0.25f + 0.12f * Mathf.Sin(Time.time * 4f) : 0f;
+            damageTint.color = new Color(0.6f, 0f, 0f, Mathf.Max(0.22f * dmg, suffocate));
 
-            if (panel == Panel.None) Crosshair(sw, sh);
-            Vitals(sw, sh);
-            CoinsHud(sw, sh);
-            if (p.Driving != null) DrivingHud(sw, sh);
-            Hotbar(sw, sh);
-            Toasts(sw, sh);
-            Help(sw, sh);
-
-            if (panel == Panel.Backpack) Backpack(sw, sh);
-            else if (panel == Panel.Shop) Shop(sw, sh);
-            else if (panel == Panel.Pause) Pause(sw, sh);
-
-            // Item sendo arrastado segue o mouse.
-            if (dragSlot >= 0 && dragSlot < game.Inventory.Size)
+            // Vida / fôlego
+            if (p != null)
             {
-                var st = game.Inventory.Slots[dragSlot];
-                if (!st.IsEmpty)
-                {
-                    var m = Event.current.mousePosition;
-                    Icon(new Rect(m.x - S(30), m.y - S(30), S(60), S(60)), st.Type, 0.9f);
-                }
-            }
-        }
-
-        void Crosshair(float sw, float sh)
-        {
-            var p = game.Player;
-            var target = game.Hands.Target;
-            bool active = target != null || p.LookTarget != null;
-            float cs = S(active ? 8 : 5);
-            Box(new Rect(sw / 2 - cs / 2, sh / 2 - cs / 2, cs, cs), active ? Accent : new Color(1, 1, 1, 0.85f), circle);
-
-            float y = sh / 2 + S(26);
-            if (p.LookTarget != null)
-            {
-                string text = "<color=#FFD25A>[E]</color>  " + p.LookTarget.Prompt;
-                var size = txt.CalcSize(new GUIContent(text));
-                var r = new Rect(sw / 2 - size.x / 2 - S(14), y, size.x + S(28), S(34));
-                Box(r, Panel1);
-                Label(r, text, txtCenter, Color.white, false);
-                y += S(42);
-            }
-            if (target != null && !target.IsBroken)
-            {
-                float bw = S(200);
-                Label(new Rect(sw / 2 - S(150), y, S(300), S(26)), target.DisplayName, txtCenter, Color.white);
-                Bar(new Rect(sw / 2 - bw / 2, y + S(28), bw, S(12)), target.Health / target.MaxHealth, Accent, null);
-                if (game.Hands.ToolTier < target.RequiredTier)
-                    Label(new Rect(sw / 2 - S(220), y + S(42), S(440), S(26)), "Precisa de picareta nível " + target.RequiredTier, txtCenter, new Color(1f, 0.55f, 0.5f));
-            }
-        }
-
-        void Vitals(float sw, float sh)
-        {
-            var p = game.Player;
-            float x = S(24), w = S(250), h = S(24);
-            float y = sh - S(24) - h;
-            Bar(new Rect(x, y, w, h), p.Health / p.MaxHealth, new Color(0.88f, 0.28f, 0.28f), "Vida  " + Mathf.CeilToInt(p.Health));
-            if (p.HeadUnderwater || p.Oxygen < p.MaxOxygen - 0.5f)
-                Bar(new Rect(x, y - h - S(8), w, h), p.Oxygen / p.MaxOxygen, new Color(0.30f, 0.75f, 0.98f), "Oxigênio");
-        }
-
-        void CoinsHud(float sw, float sh)
-        {
-            string c = game.Coins.ToString();
-            var size = txtBig.CalcSize(new GUIContent(c));
-            float w = size.x + S(70), h = S(48);
-            var r = new Rect(sw - w - S(20), S(18), w, h);
-            Box(r, Panel1);
-            Coin(new Rect(r.x + S(10), r.y + S(8), S(32), S(32)));
-            Label(new Rect(r.x + S(50), r.y, size.x + S(10), h), c, new GUIStyle(txtBig) { alignment = TextAnchor.MiddleLeft }, Accent);
-
-            var env = game.Environment;
-            Label(new Rect(sw - S(220), r.yMax + S(4), S(200), S(24)), env.ClockText + (env.TimeOfDay > 0.25f && env.TimeOfDay < 0.78f ? "  dia" : "  noite"),
-                new GUIStyle(txtSmall) { alignment = TextAnchor.MiddleRight }, new Color(1, 1, 1, 0.8f));
-        }
-
-        void DrivingHud(float sw, float sh)
-        {
-            var b = game.Player.Driving;
-            float kmh = Mathf.Abs(b.Speed) * 3.6f;
-            var r = new Rect(sw / 2 - S(150), sh - S(190), S(300), S(64));
-            Box(r, Panel1);
-            Label(new Rect(r.x, r.y + S(4), r.width, S(32)), Mathf.RoundToInt(kmh) + " km/h", new GUIStyle(txtBig) { alignment = TextAnchor.MiddleCenter }, Color.white);
-            Label(new Rect(r.x, r.y + S(34), r.width, S(24)), "W/S motor · A/D leme · E sair", new GUIStyle(txtTiny) { alignment = TextAnchor.MiddleCenter }, new Color(1, 1, 1, 0.7f));
-        }
-
-        Rect SlotRect(int i, float x0, float y0, float size, float gap, int cols)
-        {
-            int cx = i % cols, cy = i / cols;
-            return new Rect(x0 + cx * (size + gap), y0 + cy * (size + gap), size, size);
-        }
-
-        void DrawSlot(Rect r, int index, bool selected, bool interactive)
-        {
-            var inv = game.Inventory;
-            var st = inv.Slots[index];
-            bool hover = interactive && r.Contains(Event.current.mousePosition);
-            if (hover) hoverSlot = index;
-            Box(r, selected ? new Color(0.95f, 0.78f, 0.35f, 0.95f) : new Color(0, 0, 0, 0.5f));
-            if (selected) Box(new Rect(r.x + S(3), r.y + S(3), r.width - S(6), r.height - S(6)), new Color(0.12f, 0.18f, 0.22f, 0.9f));
-            else if (hover) Box(r, new Color(1, 1, 1, 0.12f));
-            if (!st.IsEmpty && index != dragSlot)
-            {
-                Icon(new Rect(r.x + r.width * 0.12f, r.y + r.height * 0.1f, r.width * 0.76f, r.height * 0.76f), st.Type);
-                if (st.Count > 1) Label(new Rect(r.x, r.y, r.width - S(6), r.height - S(2)), st.Count.ToString(), slotCount, Color.white);
+                UIKit.SetFill(healthFill, p.Health / p.MaxHealth);
+                healthText.text = Mathf.CeilToInt(p.Health).ToString();
+                bool showOxy = p.HeadUnderwater || p.Oxygen < p.MaxOxygen - 0.5f;
+                oxyRow.gameObject.SetActive(showOxy);
+                UIKit.SetFill(oxyFill, p.Oxygen / p.MaxOxygen);
             }
 
-            if (!interactive) return;
-            var e = Event.current;
-            if (hover && e.type == EventType.MouseDown && e.button == 0 && !st.IsEmpty)
-            {
-                dragSlot = index;
-                e.Use();
-            }
-            else if (hover && e.type == EventType.MouseUp && e.button == 0 && dragSlot >= 0)
-            {
-                inv.MoveSlot(dragSlot, index);
-                dragSlot = -1;
-                Sfx.Play(Sfx.Click, game.Player.transform.position, 0.25f);
-                e.Use();
-            }
-            else if (hover && e.type == EventType.MouseDown && e.button == 1 && !st.IsEmpty)
-            {
-                // Botão direito: larga 1 no chão.
-                var cam = game.Player.Cam.transform;
-                var item = inv.TakeFromSlot(index, 1);
-                WorldItem.Spawn(item, cam.position + cam.forward * 0.8f, cam.forward * 3f + Vector3.up);
-                e.Use();
-            }
-        }
+            coinsText.text = game.Coins.ToString();
+            if (shopCoins != null) shopCoins.text = game.Coins.ToString();
+            if (env != null) clockText.text = env.ClockText + (env.TimeOfDay > 0.25f && env.TimeOfDay < 0.78f ? "  ·  dia" : "  ·  noite");
+            if (p != null) compassNeedle.localRotation = Quaternion.Euler(0, 0, p.Cam.transform.eulerAngles.y);
 
-        void Hotbar(float sw, float sh)
-        {
-            var inv = game.Inventory;
-            float size = S(68), gap = S(8);
-            float total = Inventory.HotbarSize * (size + gap) - gap;
-            float x0 = sw / 2 - total / 2, y0 = sh - size - S(20);
-            bool interactive = panel == Panel.Backpack;
-            Box(new Rect(x0 - S(8), y0 - S(8), total + S(16), size + S(16)), new Color(0, 0, 0, 0.25f));
-            for (int i = 0; i < Inventory.HotbarSize; i++)
-            {
-                var r = SlotRect(i, x0, y0, size, gap, Inventory.HotbarSize);
-                DrawSlot(r, i, i == inv.Selected, interactive);
-                Label(new Rect(r.x + S(6), r.y + S(2), S(20), S(20)), (i + 1).ToString(), txtTiny, new Color(1, 1, 1, 0.6f));
-            }
-            // Nome do item ao trocar de atalho.
+            // Atalhos
+            foreach (var s in hotbar) s.Refresh(inv, s.Index == inv.Selected);
+            if (inv.Selected != lastSelected) { lastSelected = inv.Selected; selectedChangedAt = Time.time; }
             var sel = inv.SelectedStack;
             float age = Time.time - selectedChangedAt;
-            if (!sel.IsEmpty && age < 2f && panel == Panel.None)
-            {
-                float a = Mathf.Clamp01((2f - age) / 0.5f);
-                Label(new Rect(0, y0 - S(40), sw, S(30)), Items.Get(sel.Type).Name, txtCenter, new Color(1, 1, 1, a));
-            }
-        }
+            itemName.text = sel.IsEmpty ? "" : Items.Get(sel.Type).Name;
+            itemName.color = new Color(UIKit.Cream.r, UIKit.Cream.g, UIKit.Cream.b, panel == Panel.None ? Mathf.Clamp01((2.2f - age) / 0.5f) : 0f);
 
-        void Toasts(float sw, float sh)
-        {
-            float y = S(20);
-            for (int i = 0; i < toasts.Count; i++)
+            // Mira, ação e alvo
+            bool hudOn = panel == Panel.None;
+            var target = game.Hands != null ? game.Hands.Target : null;
+            var look = p != null ? p.LookTarget : null;
+            crosshair.gameObject.SetActive(hudOn && (p == null || p.Driving == null));
+            crosshair.color = (target != null || look != null) ? UIKit.Gold : new Color(1, 1, 1, 0.85f);
+            crosshair.rectTransform.sizeDelta = Vector2.one * ((target != null || look != null) ? 11 : 7);
+            promptBox.gameObject.SetActive(hudOn && look != null);
+            if (look != null)
+            {
+                promptText.text = look.Prompt;
+                promptBox.sizeDelta = new Vector2(Mathf.Clamp(promptText.preferredWidth + 130, 260, 900), 58);
+            }
+            bool showTarget = hudOn && target != null && !target.IsBroken;
+            targetBox.gameObject.SetActive(showTarget);
+            targetBox.anchoredPosition = new Vector2(0, look != null ? -104 : -36);
+            if (showTarget)
+            {
+                bool weak = game.Hands.ToolTier < target.RequiredTier;
+                targetName.text = target.DisplayName + (weak ? "  <size=22><color=#FF8A70>(precisa de picareta nível " + target.RequiredTier + ")</color></size>" : "");
+                UIKit.SetFill(targetFill, target.Health / target.MaxHealth);
+            }
+
+            // Barco
+            var boat = p != null ? p.CurrentBoat : null;
+            driveBox.gameObject.SetActive(hudOn && boat != null);
+            if (boat != null)
+            {
+                float knots = Mathf.Abs(boat.Speed) * 1.944f;
+                speedText.text = p.Driving != null ? Mathf.RoundToInt(knots) + " nós" : "A bordo";
+                string anchor;
+                switch (boat.Anchor)
+                {
+                    case Boat.AnchorState.Set: anchor = "Âncora no fundo (" + Mathf.RoundToInt(boat.AnchorDepth) + " m)"; break;
+                    case Boat.AnchorState.Dropping: anchor = "Soltando âncora..."; break;
+                    case Boat.AnchorState.Raising: anchor = "Recolhendo âncora..."; break;
+                    case Boat.AnchorState.Hanging: anchor = "Âncora solta (não alcança o fundo)"; break;
+                    default: anchor = "Âncora recolhida"; break;
+                }
+                anchorText.text = anchor + "   ·   <b>R</b> âncora" + (p.Driving != null ? "  ·  <b>E</b> sair" : "");
+            }
+
+            // Marcador do primeiro recife (boia)
+            UpdateMarker(p);
+
+            helpBox.gameObject.SetActive(hudOn && Time.time < helpUntil);
+
+            // Avisos: somem com o tempo e empilham
+            float ty = 0;
+            for (int i = toasts.Count - 1; i >= 0; i--)
             {
                 var t = toasts[i];
-                float alpha = Mathf.Clamp01((t.Until - Time.time) / 0.6f);
-                var size = txt.CalcSize(new GUIContent(t.Text));
-                float iconW = t.Icon != ItemType.Nada ? S(34) : 0;
-                var r = new Rect(S(20), y, size.x + iconW + S(28), S(38));
-                Box(r, new Color(Panel1.r, Panel1.g, Panel1.b, Panel1.a * alpha));
-                if (t.Icon != ItemType.Nada) Icon(new Rect(r.x + S(8), r.y + S(4), S(30), S(30)), t.Icon, alpha);
-                var c = t.Color; c.a = alpha;
-                Label(new Rect(r.x + S(14) + iconW, r.y, size.x + S(10), r.height), t.Text, new GUIStyle(txt) { alignment = TextAnchor.MiddleLeft }, c, false);
-                y += S(44);
+                float left = t.Until - Time.time;
+                if (left <= 0) { UIKit.Destroy(t.Rt.gameObject); toasts.RemoveAt(i); continue; }
+                t.Group.alpha = Mathf.Clamp01(left / 0.5f) * Mathf.Clamp01((3.8f - left + 0.2f) / 0.2f);
             }
-        }
-
-        void Help(float sw, float sh)
-        {
-            if (Time.time > helpUntil || panel != Panel.None) return;
-            string[] lines =
+            for (int i = toasts.Count - 1; i >= 0; i--)
             {
-                "<color=#FFD25A>WASD</color> andar   <color=#FFD25A>Shift</color> correr   <color=#FFD25A>Espaço</color> pular/subir",
-                "<color=#FFD25A>Clique</color> minerar   <color=#FFD25A>E</color> pegar/usar   <color=#FFD25A>1-6</color> trocar item",
-                "<color=#FFD25A>Tab</color> mochila   <color=#FFD25A>Q</color> largar   <color=#FFD25A>Ctrl</color> mergulhar   <color=#FFD25A>H</color> esconder",
-            };
-            float w = S(560), h = S(30) * lines.Length + S(18);
-            var r = new Rect(sw - w - S(20), S(110), w, h);
-            Box(r, new Color(0, 0, 0, 0.35f));
-            for (int i = 0; i < lines.Length; i++)
-                Label(new Rect(r.x + S(14), r.y + S(9) + i * S(30), w, S(30)), lines[i], txtSmall, Color.white);
-        }
-
-        void PanelFrame(Rect r, string title)
-        {
-            Box(new Rect(0, 0, Screen.width, Screen.height), new Color(0, 0.03f, 0.06f, 0.45f), white);
-            Box(r, Panel1);
-            Label(new Rect(r.x + S(24), r.y + S(14), r.width, S(40)), title, txtBig, Accent);
-        }
-
-        void Backpack(float sw, float sh)
-        {
-            hoverSlot = -1;
-            var inv = game.Inventory;
-            int cols = 6;
-            float size = S(72), gap = S(8);
-            int rows = Mathf.CeilToInt((inv.Size - Inventory.HotbarSize) / (float)cols);
-            float gridW = cols * (size + gap) - gap;
-            float w = gridW + S(48) + S(260), h = S(80) + rows * (size + gap) + S(70);
-            var r = new Rect(sw / 2 - w / 2, sh / 2 - h / 2 - S(50), w, h);
-            PanelFrame(r, "Mochila");
-            Label(new Rect(r.xMax - S(320), r.y + S(18), S(300), S(30)), (inv.Size - Inventory.HotbarSize) + " espaços + 6 atalhos", new GUIStyle(txtSmall) { alignment = TextAnchor.MiddleRight }, new Color(1, 1, 1, 0.6f));
-
-            float gx = r.x + S(24), gy = r.y + S(70);
-            for (int i = Inventory.HotbarSize; i < inv.Size; i++)
-                DrawSlot(SlotRect(i - Inventory.HotbarSize, gx, gy, size, gap, cols), i, false, true);
-
-            // Detalhes do item sob o mouse
-            var info = new Rect(gx + gridW + S(20), gy, S(240), rows * (size + gap) - gap);
-            Box(info, Panel2);
-            int show = hoverSlot >= 0 ? hoverSlot : inv.Selected;
-            var st = inv.Slots[show];
-            if (!st.IsEmpty)
-            {
-                var def = Items.Get(st.Type);
-                Icon(new Rect(info.x + info.width / 2 - S(48), info.y + S(12), S(96), S(96)), st.Type);
-                Label(new Rect(info.x + S(12), info.y + S(112), info.width - S(24), S(28)), def.Name, txt, Accent);
-                var wrap = new GUIStyle(txtSmall) { wordWrap = true };
-                Label(new Rect(info.x + S(12), info.y + S(140), info.width - S(24), S(80)), def.Description, wrap, new Color(1, 1, 1, 0.85f));
-                if (def.SellPrice > 0)
-                    Label(new Rect(info.x + S(12), info.yMax - S(34), info.width - S(24), S(28)), "Vale " + def.SellPrice + " moeda(s) cada", txtSmall, Good);
-            }
-            else Label(new Rect(info.x, info.y, info.width, info.height), "Passe o mouse\nem um item", new GUIStyle(txtSmall) { alignment = TextAnchor.MiddleCenter, wordWrap = true }, new Color(1, 1, 1, 0.5f));
-
-            Label(new Rect(r.x, r.yMax - S(40), r.width, S(30)), "Arraste para organizar · botão direito larga 1 no chão · os atalhos ficam embaixo", new GUIStyle(txtTiny) { alignment = TextAnchor.MiddleCenter }, new Color(1, 1, 1, 0.6f));
-
-            // Soltou o item fora de um espaço: cancela.
-            if (Event.current.type == EventType.MouseUp && dragSlot >= 0 && hoverSlot < 0)
-            {
-                // Se soltou em cima da barra de atalhos, o DrawSlot dela já tratou.
-                dragSlot = -1;
-            }
-        }
-
-        void Shop(float sw, float sh)
-        {
-            var inv = game.Inventory;
-            float w = S(980), h = S(600);
-            var r = new Rect(sw / 2 - w / 2, sh / 2 - h / 2 - S(40), w, h);
-            PanelFrame(r, "Barraca do " + shopMerchant.MerchantName);
-            Label(new Rect(r.x + S(24), r.y + S(54), r.width - S(48), S(28)), "\"" + shopLine + "\"", new GUIStyle(txtSmall) { fontStyle = FontStyle.Italic }, new Color(1, 1, 1, 0.85f));
-
-            // Vender
-            float colW = (w - S(72)) / 2;
-            var left = new Rect(r.x + S(24), r.y + S(96), colW, h - S(150));
-            Box(left, Panel2);
-            Label(new Rect(left.x + S(16), left.y + S(10), colW, S(30)), "Vender", txt, Accent);
-            float y = left.y + S(48);
-            int totalValue = 0;
-            foreach (var def in Items.All)
-            {
-                int n = inv.Count(def.Type);
-                if (n <= 0 || def.SellPrice <= 0) continue;
-                totalValue += n * def.SellPrice;
-                var row = new Rect(left.x + S(10), y, colW - S(20), S(52));
-                Box(row, new Color(0, 0, 0, 0.25f));
-                Icon(new Rect(row.x + S(6), row.y + S(4), S(44), S(44)), def.Type);
-                Label(new Rect(row.x + S(56), row.y + S(4), S(200), S(24)), def.Name + "  x" + n, txtSmall, Color.white);
-                Label(new Rect(row.x + S(56), row.y + S(26), S(200), S(22)), def.SellPrice + " cada", txtTiny, Good);
-                if (Button(new Rect(row.xMax - S(186), row.y + S(9), S(82), S(34)), "1", true, btnSmall)) game.Sell(def.Type, 1);
-                if (Button(new Rect(row.xMax - S(96), row.y + S(9), S(88), S(34)), "Todos", true, btnSmall)) game.Sell(def.Type, n);
-                y += S(58);
-                if (y > left.yMax - S(110)) break;
-            }
-            if (totalValue == 0)
-                Label(new Rect(left.x, left.y + S(60), colW, S(80)), "Nada para vender.\nMinere rochas e pegue\nconchas na praia!", new GUIStyle(txtSmall) { alignment = TextAnchor.UpperCenter }, new Color(1, 1, 1, 0.6f));
-            else if (Button(new Rect(left.x + S(16), left.yMax - S(56), colW - S(32), S(42)), "Vender tudo  (+" + totalValue + ")"))
-            {
-                foreach (var def in Items.All)
-                    if (def.SellPrice > 0) game.Sell(def.Type, inv.Count(def.Type));
-                shopLine = "Negócio fechado! Volte sempre.";
+                var t = toasts[i];
+                t.Rt.anchoredPosition = Vector2.Lerp(t.Rt.anchoredPosition, new Vector2(0, -ty), Application.isPlaying ? Time.deltaTime * 12f : 1f);
+                ty += 60;
             }
 
-            // Comprar
-            var right = new Rect(left.xMax + S(24), left.y, colW, left.height);
-            Box(right, Panel2);
-            Label(new Rect(right.x + S(16), right.y + S(10), colW, S(30)), "Comprar", txt, Accent);
-            y = right.y + S(48);
-            foreach (var o in game.Offers)
+            // Janelas
+            if (panel == Panel.Backpack)
             {
-                bool avail = o.Available();
-                var row = new Rect(right.x + S(10), y, colW - S(20), S(78));
-                Box(row, new Color(0, 0, 0, 0.25f));
-                Label(new Rect(row.x + S(12), row.y + S(6), S(300), S(26)), o.Name, txt, avail ? Color.white : new Color(1, 1, 1, 0.45f));
-                var wrap = new GUIStyle(txtTiny) { wordWrap = true, fontStyle = FontStyle.Normal };
-                Label(new Rect(row.x + S(12), row.y + S(32), colW - S(170), S(44)), avail ? o.Description : o.Unavailable(), wrap, new Color(1, 1, 1, avail ? 0.75f : 0.45f));
-                bool afford = game.Coins >= o.Price;
-                var br = new Rect(row.xMax - S(130), row.y + S(20), S(120), S(40));
-                if (Button(br, "", avail && afford, btnSmall))
+                if (bpSlots.Count != inv.Size - Inventory.HotbarSize) RebuildBackpackSlots();
+                foreach (var s in bpSlots) s.Refresh(inv, false);
+                bpTitleCount.text = (inv.Size - Inventory.HotbarSize) + " espaços + 6 atalhos";
+                int show = HoverSlot >= 0 && HoverSlot < inv.Size ? HoverSlot : inv.Selected;
+                var st = inv.Slots[show];
+                if (!st.IsEmpty)
                 {
-                    if (game.TryBuy(o)) shopLine = "Ótima escolha!";
+                    var def = Items.Get(st.Type);
+                    bpInfoIcon.enabled = true;
+                    bpInfoIcon.texture = Icons.Get(st.Type);
+                    bpInfoName.text = def.Name;
+                    bpInfoDesc.text = def.Description;
+                    bpInfoPrice.text = def.SellPrice > 0 ? "Vale " + def.SellPrice + " moeda" + (def.SellPrice > 1 ? "s" : "") + " cada" : "";
                 }
-                Coin(new Rect(br.x + S(14), br.y + S(10), S(20), S(20)));
-                Label(new Rect(br.x + S(38), br.y, S(80), br.height), o.Price.ToString(), new GUIStyle(txt) { alignment = TextAnchor.MiddleLeft }, avail && afford ? Accent : new Color(1, 1, 1, 0.4f), false);
-                y += S(86);
+                else
+                {
+                    bpInfoIcon.enabled = false;
+                    bpInfoName.text = "";
+                    bpInfoDesc.text = "Passe o mouse em um item para ver os detalhes.";
+                    bpInfoPrice.text = "";
+                }
             }
+            if (panel == Panel.Shop && shopVersion != invVersion + game.Coins * 7919)
+            {
+                shopVersion = invVersion + game.Coins * 7919;
+                RebuildShop();
+            }
+            if (panel == Panel.Pause && pauseCompass != null && Application.isPlaying)
+                pauseCompass.localRotation = Quaternion.Euler(0, 0, Time.unscaledTime * 3f);
 
-            if (Button(new Rect(r.x + r.width / 2 - S(110), r.yMax - S(50), S(220), S(40)), "Fechar (E)")) Open(Panel.None);
+            if (dragGhost != null && dragGhost.gameObject.activeSelf)
+            {
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(root, Input.mousePosition, canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera, out var lp);
+                dragGhost.rectTransform.anchoredPosition = lp;
+                dragGhost.rectTransform.anchorMin = dragGhost.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                if (!Input.GetMouseButton(0) && Application.isPlaying) CancelDrag();
+            }
         }
 
-        void Pause(float sw, float sh)
+        void UpdateMarker(PlayerController p)
         {
-            Box(new Rect(0, 0, sw, sh), new Color(0.02f, 0.08f, 0.14f, 0.7f), white);
-            Label(new Rect(0, sh * 0.16f, sw, S(60)), "MAR ABERTO", txtTitle, Color.white);
-            float w = S(340), x = sw / 2 - w / 2, y = sh * 0.32f;
-            if (Button(new Rect(x, y, w, S(48)), "Continuar")) Open(Panel.None);
-            y += S(70);
-            Label(new Rect(x, y, w, S(26)), "Sensibilidade do mouse: " + game.Player.MouseSensitivity.ToString("0.0"), txtSmall, Color.white);
-            game.Player.MouseSensitivity = GUI.HorizontalSlider(new Rect(x, y + S(30), w, S(20)), game.Player.MouseSensitivity, 0.3f, 6f);
-            y += S(64);
-            Label(new Rect(x, y, w, S(26)), "Volume: " + Mathf.RoundToInt(AudioListener.volume * 100) + "%", txtSmall, Color.white);
-            AudioListener.volume = GUI.HorizontalSlider(new Rect(x, y + S(30), w, S(20)), AudioListener.volume, 0f, 1f);
-            y += S(80);
-            if (Button(new Rect(x, y, w, S(48)), "Sair do jogo")) Application.Quit();
+            var island = game.StartIsland;
+            Camera cam = p != null ? p.Cam : (canvas.worldCamera != null ? canvas.worldCamera : Camera.main);
+            if (island == null || island.Reefs == null || island.Reefs.Count == 0 || cam == null || panel != Panel.None)
+            {
+                marker.gameObject.SetActive(false);
+                return;
+            }
+            Vector3 target = island.Reefs[0].transform.position + Vector3.up * 3f;
+            Vector3 sp = cam.WorldToScreenPoint(target);
+            float dist = Vector3.Distance(cam.transform.position, target);
+            bool show = sp.z > 0 && dist > 25f && (game.Boat != null || dist < 700f);
+            marker.gameObject.SetActive(show);
+            if (!show) return;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(root, sp, canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : cam, out var lp);
+            marker.anchorMin = marker.anchorMax = new Vector2(0.5f, 0.5f);
+            marker.anchoredPosition = lp;
+            markerText.text = "Recife da boia\n<size=17>" + Mathf.RoundToInt(dist) + " m</size>";
+        }
+    }
+
+    /// <summary>Um espaço da mochila/atalhos (com arrastar e soltar).</summary>
+    public class SlotView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
+    {
+        public int Index;
+        public RectTransform Rt;
+        Hud hud;
+        Image bg;
+        RawImage icon;
+        Text count, number;
+        bool selected;
+
+        public static SlotView Create(Transform parent, Hud hud, int index, float size)
+        {
+            var img = UIKit.Img(parent, "Espaco" + index, UIKit.Slot, null, true, size / 120f);
+            img.raycastTarget = true;
+            var sv = img.gameObject.AddComponent<SlotView>();
+            sv.Index = index;
+            sv.hud = hud;
+            sv.bg = img;
+            sv.Rt = img.rectTransform;
+            sv.icon = new GameObject("Icone", typeof(RectTransform)).AddComponent<RawImage>();
+            sv.icon.rectTransform.SetParent(img.transform, false);
+            sv.icon.rectTransform.Fill(size * 0.12f, size * 0.12f, size * 0.12f, size * 0.12f);
+            sv.icon.raycastTarget = false;
+            sv.count = UIKit.Txt(img.transform, "Qtd", "", UIKit.Title, Mathf.RoundToInt(size * 0.3f), UIKit.Cream, TextAnchor.LowerRight, true);
+            sv.count.rectTransform.Fill(4, 4, 10, 4);
+            return sv;
+        }
+
+        public void ShowNumber(int n)
+        {
+            number = UIKit.Txt(transform, "Numero", n.ToString(), UIKit.BodyBold, 18, new Color(1f, 0.92f, 0.75f, 0.7f), TextAnchor.UpperLeft, true);
+            number.rectTransform.Fill(12, 4, 4, 6);
+        }
+
+        public void Refresh(Inventory inv, bool isSelected)
+        {
+            var st = inv.Slots[Index];
+            bool dragging = hud.DragFrom == Index;
+            if (isSelected != selected)
+            {
+                selected = isSelected;
+                bg.sprite = isSelected ? UIKit.SlotSelected : UIKit.Slot;
+            }
+            if (st.IsEmpty || dragging)
+            {
+                icon.enabled = false;
+                count.text = "";
+            }
+            else
+            {
+                icon.enabled = true;
+                icon.texture = Icons.Get(st.Type);
+                count.text = st.Count > 1 ? st.Count.ToString() : "";
+            }
+            transform.localScale = Vector3.one * (isSelected ? 1.06f : 1f);
+        }
+
+        public void OnPointerEnter(PointerEventData e) { hud.HoverSlot = Index; if (hud.DragFrom < 0) bg.color = new Color(1.1f, 1.05f, 0.95f); }
+        public void OnPointerExit(PointerEventData e) { if (hud.HoverSlot == Index) hud.HoverSlot = -1; bg.color = Color.white; }
+        public void OnPointerDown(PointerEventData e) { if (e.button == PointerEventData.InputButton.Left) hud.BeginDrag(Index); }
+        public void OnPointerUp(PointerEventData e)
+        {
+            if (e.button != PointerEventData.InputButton.Left || hud.DragFrom < 0) return;
+            // Solta no espaço que está debaixo do mouse.
+            var go = e.pointerCurrentRaycast.gameObject;
+            var target = go != null ? go.GetComponentInParent<SlotView>() : null;
+            if (target != null) hud.DropOn(target.Index);
+            else hud.CancelDrag();
+        }
+        public void OnPointerClick(PointerEventData e)
+        {
+            if (e.button == PointerEventData.InputButton.Right) hud.DropToWorld(Index);
         }
     }
 }

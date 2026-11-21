@@ -24,6 +24,7 @@ namespace MarAberto
                 case ItemType.Coco: return 0.16f;
                 case ItemType.PicaretaPedra: return 0.35f;
                 case ItemType.FragmentoMapa: return 0.16f;
+                case ItemType.Perola: return 0.07f;
                 case ItemType.Concha: return 0.1f;
                 default: return 0.14f;
             }
@@ -83,6 +84,9 @@ namespace MarAberto
                     break;
                 case ItemType.PicaretaPedra:
                     Tools.AddPickaxe(mb, 1, -0.25f);
+                    break;
+                case ItemType.Perola:
+                    mb.AddSphere(Vector3.zero, Vector3.one * 0.07f, new Color(0.97f, 0.95f, 1f), 3);
                     break;
                 default:
                     mb.AddBox(Vector3.zero, Vector3.one * 0.2f, Quaternion.identity, Color.magenta);

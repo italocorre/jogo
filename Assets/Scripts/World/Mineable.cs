@@ -29,6 +29,7 @@ namespace MarAberto
                     case ItemType.Carvao: return "Veio de Carvão";
                     case ItemType.Cobre: return "Veio de Cobre";
                     case ItemType.Ferro: return "Veio de Ferro";
+                    case ItemType.Perola: return "Ostra";
                     default: return Items.Get(Type).Name;
                 }
             }
@@ -58,6 +59,7 @@ namespace MarAberto
                 case ItemType.Carvao: MaxHealth = 4; RequiredTier = 1; radius = 1.0f; break;
                 case ItemType.Cobre: MaxHealth = 5; RequiredTier = 1; radius = 1.05f; break;
                 case ItemType.Ferro: MaxHealth = 7; RequiredTier = 2; radius = 1.15f; break;
+                case ItemType.Perola: MaxHealth = 2; RequiredTier = 1; radius = 0.45f; break;
                 default: MaxHealth = 3; radius = 1f; break;
             }
             radius *= 0.85f + (float)rng.NextDouble() * 0.4f;
@@ -68,6 +70,25 @@ namespace MarAberto
             oreColor = Items.Get(Type).Color;
             float ox = (float)rng.NextDouble() * 50f;
             var mb = new MeshBuilder();
+            if (Type == ItemType.Perola)
+            {
+                // Ostra: duas conchas lisas, levemente abertas, com a pérola aparecendo.
+                Color shellOut = new Color(0.52f, 0.47f, 0.50f), shellIn = new Color(0.90f, 0.82f, 0.86f);
+                mb.AddRock(new Vector3(0, 0.1f, 0), radius, seed, n => n.y > 0 ? shellIn : shellOut, 0.12f, new Vector3(1.2f, 0.28f, 1f));
+                mb.AddRock(new Vector3(0, 0.28f, -0.12f), radius * 0.95f, seed + 1, n => n.y < 0 ? shellIn : shellOut, 0.12f, new Vector3(1.15f, 0.25f, 0.95f));
+                mb.AddSphere(new Vector3(0, 0.2f, 0.12f), Vector3.one * 0.09f, new Color(0.97f, 0.95f, 1f), 3);
+                var omf = gameObject.AddComponent<MeshFilter>();
+                omf.sharedMesh = mb.Build("Ostra");
+                rend = gameObject.AddComponent<MeshRenderer>();
+                rend.sharedMaterial = Mats.Ore;
+                var oc = gameObject.AddComponent<SphereCollider>();
+                oc.center = Vector3.up * 0.2f;
+                oc.radius = radius * 1.1f;
+                col = oc;
+                transform.rotation = Quaternion.Euler(0, (float)rng.NextDouble() * 360f, 0);
+                baseScale = Vector3.one;
+                return;
+            }
             mb.AddRock(Vector3.up * radius * 0.35f, radius, seed, n =>
             {
                 if (Type == ItemType.Pedra)
@@ -133,6 +154,11 @@ namespace MarAberto
                 }
             }
             if (Type == ItemType.Pedra) Drop(ItemType.Pedra, rng.Next(2, 4));
+            else if (Type == ItemType.Perola)
+            {
+                if (rng.NextDouble() < 0.7) Drop(ItemType.Perola, 1);
+                Drop(ItemType.Concha, rng.Next(1, 3));
+            }
             else
             {
                 Drop(Type, rng.Next(1, 4));

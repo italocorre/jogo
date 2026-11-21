@@ -9,6 +9,7 @@ namespace MarAberto
         public const int Items = 9;
         public const int Player = 10;
         public const int Grass = 11;
+        public const int UI = 5;
         public const int Icons = 31;
 
         public static void Setup()
@@ -33,6 +34,11 @@ namespace MarAberto
         public LootSpot Spot;
         Rigidbody rb;
         float spawnTime;
+        float stillTime;
+        bool touching;
+
+        void OnCollisionStay(Collision c) => touching = true;
+        static PhysicsMaterial grip;
 
         public string Prompt => "Pegar " + Items.Get(Stack.Type).Name + (Stack.Count > 1 ? " x" + Stack.Count : "");
         public bool CanInteract => Time.time - spawnTime > 0.25f;
@@ -46,8 +52,15 @@ namespace MarAberto
             go.AddComponent<MeshFilter>().sharedMesh = ItemModels.Get(stack.Type);
             var mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterial = Mats.LowPoly;
-            var col = go.AddComponent<SphereCollider>();
-            col.radius = ItemModels.Radius(stack.Type);
+            // Caixa do tamanho do modelo: não sai rolando como uma bola.
+            var mesh = ItemModels.Get(stack.Type);
+            var col = go.AddComponent<BoxCollider>();
+            col.center = mesh.bounds.center;
+            col.size = Vector3.Max(mesh.bounds.size, Vector3.one * 0.08f);
+            if (grip == null)
+                grip = new PhysicsMaterial("Agarra") { dynamicFriction = 0.95f, staticFriction = 1f, bounciness = 0.05f,
+                    frictionCombine = PhysicsMaterialCombine.Maximum, bounceCombine = PhysicsMaterialCombine.Minimum };
+            col.sharedMaterial = grip;
             var wi = go.AddComponent<WorldItem>();
             wi.Stack = stack;
             wi.spawnTime = Time.time;
@@ -64,7 +77,7 @@ namespace MarAberto
 
         void FixedUpdate()
         {
-            if (rb == null) return;
+            if (rb == null || rb.isKinematic) return;
             // Debaixo d'água afunda devagar.
             float water = Ocean.HeightAt(transform.position.x, transform.position.z);
             if (transform.position.y < water)
@@ -73,6 +86,18 @@ namespace MarAberto
                 Vector3 v = rb.GetPointVelocity(transform.position);
                 rb.AddForce(-v * 2.5f, ForceMode.Acceleration);
             }
+            else
+            {
+                // Freia o giro e o deslize para o item assentar rápido.
+                rb.AddTorque(-rb.angularVelocity * 0.6f, ForceMode.Acceleration);
+            }
+            Vector3 vel = rb.GetPointVelocity(rb.worldCenterOfMass);
+            if (vel.sqrMagnitude < 0.04f && rb.angularVelocity.sqrMagnitude < 0.25f) stillTime += Time.fixedDeltaTime;
+            else stillTime = 0;
+            // Parado por um instante (ou caindo há muito tempo): congela no lugar.
+            if ((stillTime > 0.35f && touching) || (Time.time - spawnTime > 8f && touching))
+                rb.isKinematic = true;
+            touching = false;
             // Caiu fora do mundo
             if (transform.position.y < -120f) Destroy(gameObject);
         }
@@ -86,7 +111,7 @@ namespace MarAberto
                 Game.Instance.Hud.Toast("Mochila cheia!", new Color(1f, 0.6f, 0.5f));
                 return;
             }
-            Sfx.Play(Sfx.Pickup, transform.position, 0.6f);
+            Sfx.UI(Sfx.Pickup, 0.55f);
             if (left > 0)
             {
                 Stack.Count = left;

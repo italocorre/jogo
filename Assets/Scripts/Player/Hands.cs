@@ -80,6 +80,13 @@ namespace MarAberto
             return go;
         }
 
+        /// <summary>Mostra o item selecionado agora (usado nos prints).</summary>
+        public void ShowSelectedNow()
+        {
+            var st = Game.Instance.Inventory.SelectedStack;
+            ShowItem(st.IsEmpty ? ItemType.Nada : st.Type);
+        }
+
         void ShowItem(ItemType t)
         {
             if (t == shownType) return;
@@ -129,7 +136,7 @@ namespace MarAberto
             {
                 swingT = 0;
                 impactDone = false;
-                Sfx.Play(Sfx.Swing, cam.position + cam.forward, 0.25f);
+                Sfx.Play(Sfx.Swing, cam.position + cam.forward, 0.3f);
             }
 
             float speedMul = player.HeadUnderwater ? 0.7f : 1f;
@@ -190,12 +197,12 @@ namespace MarAberto
             if (m != null)
             {
                 if (!m.Hit(1f, ToolTier, hit.point, hit.normal))
-                    Game.Instance.Hud.Toast("Picareta fraca demais! Precisa de uma melhor.", new Color(1f, 0.6f, 0.5f));
+                    Game.Instance.Hud.Toast("Picareta fraca demais! Precisa de uma melhor.", Hud.Bad);
             }
             else
             {
                 Debris.Burst(hit.point, hit.normal, 2, new Color(0.7f, 0.65f, 0.55f));
-                Sfx.Play(Sfx.Hit, hit.point, 0.3f);
+                Sfx.Play(Sfx.Clank, hit.point, 0.35f);
             }
         }
     }

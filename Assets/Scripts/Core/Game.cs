@@ -34,22 +34,36 @@ namespace MarAberto
         public Hud Hud { get; private set; }
         public WorldEnvironment Environment { get; private set; }
         public Island StartIsland { get; private set; }
+        public Ocean Ocean { get; private set; }
         public Boat Boat { get; private set; }
         public int Coins { get; private set; }
         public int BackpackLevel { get; private set; }
         public int OxygenLevel { get; private set; }
 
-        AudioSource oceanAudio;
+        AudioSource oceanAudio, underAudio, music;
         AudioLowPassFilter lowPass;
+        float gullTimer = 8f;
+        float musicGap = 20f;
+        int musicIndex;
+        public float MusicVolume = 0.22f;
 
         void Awake()
+        {
+            if (Application.isPlaying) Setup(false);
+        }
+
+        /// <summary>Monta o jogo. Com preview=true é usado pelos prints automáticos do build.</summary>
+        public void Setup(bool preview)
         {
             Instance = this;
             Application.targetFrameRate = 144;
             Inventory = new Inventory(Inventory.HotbarSize + 12);
 
-            foreach (var c in FindObjectsByType<Camera>(FindObjectsSortMode.None)) Destroy(c.gameObject);
-            foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) Destroy(l.gameObject);
+            if (!preview)
+            {
+                foreach (var c in FindObjectsByType<Camera>(FindObjectsSortMode.None)) Destroy(c.gameObject);
+                foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) Destroy(l.gameObject);
+            }
 
             StartIsland = WorldBuilder.BuildIsland();
 
@@ -62,16 +76,19 @@ namespace MarAberto
 
             Environment = gameObject.AddComponent<WorldEnvironment>();
             Environment.Init(Player.Cam);
-            WorldBuilder.BuildOcean(Player.Cam.transform);
+            Ocean = WorldBuilder.BuildOcean(Player.Cam.transform);
 
-            oceanAudio = Player.Cam.gameObject.AddComponent<AudioSource>();
-            oceanAudio.clip = Sfx.OceanLoop;
-            oceanAudio.loop = true;
-            oceanAudio.volume = 0.35f;
-            oceanAudio.spatialBlend = 0f;
-            oceanAudio.Play();
+            // Ambiente: ondas, bolhas debaixo d'água e música (música fica fora do filtro "abafado").
+            oceanAudio = Sfx.Loop(Player.Cam.gameObject, Sfx.OceanLoop, 0.4f, false);
+            underAudio = Sfx.Loop(Player.Cam.gameObject, Sfx.UnderwaterLoop, 0f, false);
             lowPass = Player.Cam.gameObject.AddComponent<AudioLowPassFilter>();
             lowPass.cutoffFrequency = 22000f;
+            var musicGo = new GameObject("Musica");
+            musicGo.transform.SetParent(transform, false);
+            music = musicGo.AddComponent<AudioSource>();
+            music.spatialBlend = 0f;
+            music.loop = false;
+            music.volume = MusicVolume;
 
             // Começa só com a picareta.
             Inventory.Add(ItemType.PicaretaPedra, 1, false);
@@ -84,15 +101,45 @@ namespace MarAberto
         void Start()
         {
             Icons.RenderAll();
-            Hud.Toast("Bem-vindo à Ilha do Porto!", new Color(1f, 0.9f, 0.6f));
-            Hud.Toast("Fale com o mercador na barraca listrada.", new Color(0.9f, 0.95f, 1f));
+            Hud.Toast("Bem-vindo à Ilha do Porto!", Hud.Gold);
+            Hud.Toast("Fale com o mercador na barraca listrada.", Hud.Info);
+            musicGap = 6f;
         }
 
         void Update()
         {
+            float dt = Time.deltaTime;
             bool under = Environment.CameraUnderwater;
-            lowPass.cutoffFrequency = Mathf.Lerp(lowPass.cutoffFrequency, under ? 700f : 22000f, Time.deltaTime * 8f);
-            oceanAudio.volume = Mathf.Lerp(oceanAudio.volume, under ? 0.55f : 0.35f, Time.deltaTime * 4f);
+            lowPass.cutoffFrequency = Mathf.Lerp(lowPass.cutoffFrequency, under ? 650f : 22000f, dt * 8f);
+            // Perto da praia as ondas são mais altas; longe, quase silêncio.
+            Vector3 p = Player.transform.position;
+            float shore = Mathf.Clamp01(1f - (Vector2.Distance(new Vector2(p.x, p.z), new Vector2(StartIsland.transform.position.x, StartIsland.transform.position.z)) - StartIsland.Radius) / 160f);
+            oceanAudio.volume = Mathf.Lerp(oceanAudio.volume, under ? 0.15f : 0.15f + shore * 0.35f, dt * 2f);
+            underAudio.volume = Mathf.Lerp(underAudio.volume, under ? 0.45f : 0f, dt * 4f);
+
+            // Gaivotas de dia, perto da ilha.
+            gullTimer -= dt;
+            if (gullTimer <= 0)
+            {
+                gullTimer = Random.Range(12f, 30f);
+                bool day = Environment.TimeOfDay > 0.27f && Environment.TimeOfDay < 0.75f;
+                if (day && !under && shore > 0.2f)
+                    Sfx.Play(Sfx.Gull, p + new Vector3(Random.Range(-25f, 25f), 15f, Random.Range(-25f, 25f)), 0.35f, 0.12f);
+            }
+
+            // Música: toca uma faixa, pausa um pouco, toca outra.
+            music.volume = MusicVolume;
+            if (!music.isPlaying)
+            {
+                musicGap -= dt;
+                if (musicGap <= 0)
+                {
+                    music.clip = Sfx.Clip(Sfx.Music[musicIndex % Sfx.Music.Length]);
+                    musicIndex++;
+                    if (music.clip != null) music.Play();
+                    musicGap = Random.Range(40f, 90f);
+                }
+            }
         }
 
         // ---------- Economia ----------
@@ -100,14 +147,14 @@ namespace MarAberto
         public void AddCoins(int n)
         {
             Coins += n;
-            if (n > 0) Sfx.Play(Sfx.Coin, Player.transform.position, 0.5f);
+            if (n > 0) Sfx.UI(Sfx.Coin, 0.6f);
         }
 
         public bool Spend(int n)
         {
             if (Coins < n) return false;
             Coins -= n;
-            Sfx.Play(Sfx.Coin, Player.transform.position, 0.4f);
+            Sfx.UI(Sfx.Coin, 0.5f);
             return true;
         }
 
@@ -145,15 +192,39 @@ namespace MarAberto
                 {
                     new Offer
                     {
-                        Name = "Bote a motor", Price = 150,
+                        Name = "Bote a vapor", Price = 150,
                         Description = "Seu primeiro barco. Leva você para o mar aberto e até os minérios do fundo.",
                         Available = () => Boat == null,
                         Unavailable = () => "Você já tem um barco",
                         Buy = () =>
                         {
-                            Boat = Boat.Spawn(StartIsland.BoatSpawn, StartIsland.BoatSpawnRot);
-                            Hud.Toast("Seu barco está no fim do píer!", new Color(0.7f, 1f, 0.7f));
+                            GiveBoat();
+                            Hud.Toast("Seu barco está no fim do píer!", Hud.Good);
                         },
+                    },
+                    new Offer
+                    {
+                        Name = "Motor a vapor nível 2", Price = 120,
+                        Description = "Caldeira maior: o barco fica 45% mais rápido.",
+                        Available = () => Boat != null && Boat.MotorLevel == 1,
+                        Unavailable = () => Boat == null ? "Compre um barco primeiro" : "Já instalado",
+                        Buy = () => { Boat.MotorLevel = 2; Hud.Toast("Motor nível 2 instalado!", Hud.Good); },
+                    },
+                    new Offer
+                    {
+                        Name = "Motor a vapor nível 3", Price = 280,
+                        Description = "Caldeira de latão reforçada: quase o dobro da velocidade.",
+                        Available = () => Boat != null && Boat.MotorLevel == 2,
+                        Unavailable = () => Boat == null ? "Compre um barco primeiro" : Boat.MotorLevel < 2 ? "Precisa do nível 2" : "Já instalado",
+                        Buy = () => { Boat.MotorLevel = 3; Hud.Toast("Motor nível 3 instalado!", Hud.Good); },
+                    },
+                    new Offer
+                    {
+                        Name = "Corda longa da âncora", Price = 70,
+                        Description = "A âncora alcança 36 m de fundo (a comum só 16 m).",
+                        Available = () => Boat != null && Boat.RopeLength < 30f,
+                        Unavailable = () => Boat == null ? "Compre um barco primeiro" : "Já comprada",
+                        Buy = () => { Boat.RopeLength = 36f; Hud.Toast("Corda nova na âncora: 36 m!", Hud.Good); },
                     },
                     new Offer
                     {
@@ -165,7 +236,7 @@ namespace MarAberto
                         {
                             BackpackLevel++;
                             Inventory.Resize(Inventory.Size + 6);
-                            Hud.Toast("Mochila maior! Agora tem " + Inventory.Size + " espaços.", new Color(0.7f, 1f, 0.7f));
+                            Hud.Toast("Mochila maior! Agora tem " + Inventory.Size + " espaços.", Hud.Good);
                         },
                     },
                     new Offer
@@ -178,7 +249,7 @@ namespace MarAberto
                         {
                             OxygenLevel++;
                             Player.OxygenSeconds *= 1.6f;
-                            Hud.Toast("Agora você aguenta mais tempo debaixo d'água!", new Color(0.7f, 1f, 0.7f));
+                            Hud.Toast("Agora você aguenta mais tempo debaixo d'água!", Hud.Good);
                         },
                     },
                     new Offer
@@ -190,7 +261,7 @@ namespace MarAberto
                         Buy = () =>
                         {
                             Boat.MoveTo(StartIsland.BoatSpawn, StartIsland.BoatSpawnRot);
-                            Hud.Toast("Barco de volta ao píer.", new Color(0.7f, 1f, 0.7f));
+                            Hud.Toast("Barco de volta ao píer.", Hud.Good);
                         },
                     },
                     new Offer
@@ -206,12 +277,20 @@ namespace MarAberto
             }
         }
 
+        public Boat GiveBoat()
+        {
+            if (Boat == null) Boat = Boat.Spawn(StartIsland.BoatSpawn, StartIsland.BoatSpawnRot);
+            return Boat;
+        }
+
+        public void SetCoinsForPreview(int c) => Coins = c;
+
         public bool TryBuy(Offer o)
         {
             if (!o.Available()) return false;
             if (!Spend(o.Price))
             {
-                Hud.Toast("Moedas insuficientes.", new Color(1f, 0.6f, 0.5f));
+                Hud.Toast("Moedas insuficientes.", Hud.Bad);
                 return false;
             }
             o.Buy();

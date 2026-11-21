@@ -23,6 +23,7 @@ namespace MarAberto
         public Quaternion BoatSpawnRot { get; private set; }
         public Vector3 MerchantPos { get; private set; }
         public Vector3 DockEnd { get; private set; }
+        public List<Reef> Reefs { get; private set; }
 
         float sx, sz;
         System.Random rng;
@@ -136,6 +137,7 @@ namespace MarAberto
             PlaceOres();
             PlaceLoot();
             Merchant.Create(transform, MerchantPos, SpawnPoint);
+            Reefs = Reef.CreateAll(transform.parent, transform.position, Seed);
         }
 
         Vector3 dockStart, dockDir;
@@ -403,7 +405,7 @@ namespace MarAberto
                 Vector3 p = basePos + Vector3.up * (height * t) + lean * (t * t);
                 float r1 = Mathf.Lerp(0.3f, 0.18f, t);
                 Color c = (s % 2 == 0) ? C(0.62f, 0.49f, 0.33f) : C(0.53f, 0.41f, 0.27f);
-                mb.AddCylinder(prev, p, r0 * 1.12f, r1, 8, c, false);
+                mb.AddCylinder(prev, p, r0 * 1.12f, r1, 12, c, false);
                 prev = p;
                 r0 = r1;
             }
@@ -427,7 +429,7 @@ namespace MarAberto
                 Vector3 side = Vector3.Cross(Vector3.up, dir);
                 float len = R(3.4f, 4.8f);
                 float lift = R(0.5f, 1.3f);
-                int segs = 8;
+                int segs = 12;
                 Color dark = Color.Lerp(C(0.16f, 0.42f, 0.12f), C(0.22f, 0.50f, 0.14f), (float)rng.NextDouble());
                 Color light = Color.Lerp(C(0.42f, 0.66f, 0.18f), C(0.55f, 0.74f, 0.24f), (float)rng.NextDouble());
                 Vector3 PointAt(float t) => top + dir * (t * len) + Vector3.up * (lift * t * 2f - t * t * (lift * 2f + 1.9f));
@@ -438,13 +440,15 @@ namespace MarAberto
                     float w = Mathf.Sin(Mathf.Lerp(0.15f, 1f, t0) * Mathf.PI) * 0.95f + 0.1f;
                     Color ca = Color.Lerp(dark, light, t0); ca.a = t0;
                     Color cb = Color.Lerp(dark, light, t1); cb.a = t1;
-                    // Espinha central
-                    // Folíolos dos dois lados, caídos para baixo
+                    // Folíolos dos dois lados, compridos e caídos (luz suave: normal para cima)
                     for (int sd = -1; sd <= 1; sd += 2)
                     {
-                        Vector3 tip = Vector3.Lerp(a, b, 0.6f) + side * sd * w + Vector3.down * (0.35f + t0 * 0.3f) + dir * 0.25f;
-                        Color ct = Color.Lerp(light, dark, 0.3f); ct.a = t1;
-                        mb.AddTri(a, b, tip, ca, cb, ct);
+                        Vector3 mid = Vector3.Lerp(a, b, 0.5f) + side * sd * w * 0.55f + Vector3.down * (0.12f + t0 * 0.12f) + dir * 0.12f;
+                        Vector3 tip = Vector3.Lerp(a, b, 0.7f) + side * sd * w + Vector3.down * (0.38f + t0 * 0.3f) + dir * 0.3f;
+                        Color ct = Color.Lerp(light, dark, 0.25f); ct.a = t1;
+                        Vector3 nUp = (Vector3.up * 0.8f + side * sd * 0.2f).normalized;
+                        mb.AddSmoothTri(a, b, mid, nUp, nUp, nUp, ca, cb, ct);
+                        mb.AddSmoothTri(mid, b, tip, nUp, nUp, nUp, ct, cb, ct);
                     }
                 }
             }
@@ -467,15 +471,15 @@ namespace MarAberto
                 Vector3 lean = new Vector3(R(-0.6f, 0.6f), 0, R(-0.6f, 0.6f));
                 Vector3 top = p + Vector3.up * height + lean;
                 Color bark = C(0.42f, 0.30f, 0.20f);
-                trunks.AddCylinder(p - Vector3.up * 0.5f, p + Vector3.up * height * 0.5f + lean * 0.3f, 0.42f, 0.3f, 8, bark);
-                trunks.AddCylinder(p + Vector3.up * height * 0.5f + lean * 0.3f, top, 0.3f, 0.18f, 8, bark);
+                trunks.AddCylinder(p - Vector3.up * 0.5f, p + Vector3.up * height * 0.5f + lean * 0.3f, 0.42f, 0.3f, 12, bark);
+                trunks.AddCylinder(p + Vector3.up * height * 0.5f + lean * 0.3f, top, 0.3f, 0.18f, 12, bark);
                 // Galhos
                 for (int b = 0; b < 3; b++)
                 {
                     float a = R(0, Mathf.PI * 2);
                     Vector3 from = p + Vector3.up * height * R(0.5f, 0.75f) + lean * 0.5f;
                     Vector3 to = from + new Vector3(Mathf.Cos(a), R(0.5f, 0.9f), Mathf.Sin(a)) * R(1.4f, 2.2f);
-                    trunks.AddCylinder(from, to, 0.13f, 0.06f, 6, bark);
+                    trunks.AddCylinder(from, to, 0.13f, 0.06f, 8, bark);
                 }
                 // Copa feita de várias "nuvens" de folhas
                 int clumps = rng.Next(5, 8);

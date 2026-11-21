@@ -22,6 +22,9 @@ namespace MarAberto
 
         public Camera Cam { get; private set; }
         public bool Swimming { get; private set; }
+        public bool InWater { get; private set; }
+        /// <summary>Barco em que o jogador está em pé (ou pilotando).</summary>
+        public Boat CurrentBoat => Driving != null ? Driving : (platform != null ? platform.GetComponent<Boat>() : null);
         public bool HeadUnderwater { get; private set; }
         public bool InputLocked { get; set; }
         public bool Moving { get; private set; }
@@ -160,11 +163,11 @@ namespace MarAberto
 
                 if (grounded && Moving)
                 {
-                    stepTimer -= dt * (run ? 1.6f : 1f);
+                    stepTimer -= dt * (run ? 1.55f : 1f);
                     if (stepTimer <= 0)
                     {
-                        stepTimer = 0.45f;
-                        Sfx.Play(Sfx.Step, transform.position, 0.2f);
+                        stepTimer = 0.48f;
+                        Sfx.Play(StepSound(), transform.position, 0.35f, 0.1f);
                     }
                 }
             }
@@ -178,9 +181,11 @@ namespace MarAberto
             Cam.transform.localPosition = new Vector3(0, EyeHeight + bobY, 0);
 
             bool inWater = pos.y + 0.3f < water && platform == null;
-            if (inWater && !wasInWater && velocity.y < -3f) Sfx.Play(Sfx.Splash, pos, 0.8f);
+            InWater = inWater;
+            if (inWater && !wasInWater) Sfx.Play(velocity.y < -3f ? Sfx.Splash : Sfx.SmallSplash, pos, velocity.y < -3f ? 0.8f : 0.4f);
             wasInWater = inWater;
-            if (HeadUnderwater != wasHeadUnder) Sfx.Play(Sfx.Splash, Cam.transform.position, 0.35f);
+            if (HeadUnderwater && !wasHeadUnder) Sfx.Play(Sfx.Bubbles, Cam.transform.position, 0.5f);
+            else if (!HeadUnderwater && wasHeadUnder) Sfx.Play(Sfx.SmallSplash, Cam.transform.position, 0.35f);
             wasHeadUnder = HeadUnderwater;
 
             UpdateOxygen(dt);
@@ -188,6 +193,23 @@ namespace MarAberto
             UpdateHotbar();
 
             if (transform.position.y < -80f) Respawn();
+        }
+
+        string[] StepSound()
+        {
+            if (Physics.Raycast(transform.position + Vector3.up * 0.3f, Vector3.down, out var hit, 0.8f, interactMask, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.GetComponent<MeshCollider>() == null || hit.collider.GetComponentInParent<Boat>() != null) return Sfx.StepWood;
+                if (hit.point.y < 2.7f) return Sfx.StepSand;
+            }
+            return Sfx.StepGrass;
+        }
+
+        public void BoardBoat(Boat boat)
+        {
+            Teleport(boat.DeckPoint + Vector3.up * 0.15f, boat.transform.forward);
+            Sfx.Play(Sfx.SmallSplash, transform.position, 0.5f);
+            UpdatePlatform();
         }
 
         void UpdatePlatform()
@@ -240,6 +262,7 @@ namespace MarAberto
                     if (wi != null && wi.CanInteract) { LookTarget = wi; break; }
                 }
             }
+            if (Input.GetKeyDown(KeyCode.R) && CurrentBoat != null) CurrentBoat.ToggleAnchor();
             if (Input.GetKeyDown(KeyCode.E) && Time.frameCount - Game.Instance.Hud.PanelChangedFrame > 1)
             {
                 if (Driving != null) StopDriving();
@@ -282,7 +305,7 @@ namespace MarAberto
             yaw = 0;
             pitch = 0;
             platform = null;
-            Game.Instance.Hud.Toast("W/S acelerar · A/D virar · E sair", new Color(0.8f, 0.95f, 1f));
+
         }
 
         public void StopDriving()
@@ -345,7 +368,7 @@ namespace MarAberto
         void Respawn()
         {
             if (Driving != null) StopDriving();
-            Game.Instance.Hud.Toast("Você desmaiou e acordou na praia...");
+            Game.Instance.Hud.Toast("Você desmaiou e acordou na praia...", Hud.Bad);
             Health = MaxHealth;
             Oxygen = MaxOxygen;
             Teleport(spawnPos, spawnLook);

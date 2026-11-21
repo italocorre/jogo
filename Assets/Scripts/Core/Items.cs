@@ -15,6 +15,7 @@ namespace MarAberto
         Concha,
         Coco,
         PicaretaPedra,
+        Perola,
     }
 
     public class ItemDef
@@ -47,6 +48,7 @@ namespace MarAberto
             Def(ItemType.FragmentoMapa, "Fragmento de Mapa", "Junte vários para achar uma ilha nova.", new Color(0.93f, 0.85f, 0.60f), 0, 10);
             Def(ItemType.Concha, "Concha", "Achada na praia. Bonita e vendável.", new Color(0.98f, 0.82f, 0.78f), 2);
             Def(ItemType.Coco, "Coco", "Cai das palmeiras.", new Color(0.45f, 0.32f, 0.18f), 3, 20);
+            Def(ItemType.Perola, "Pérola", "Achada em ostras dos recifes. Vale muito!", new Color(0.96f, 0.94f, 0.98f), 25, 20);
             Def(ItemType.PicaretaPedra, "Picareta de Pedra", "Quebra rochas, carvão e cobre (nível 1).", new Color(0.6f, 0.6f, 0.58f), 0, 1, true, 1);
         }
 

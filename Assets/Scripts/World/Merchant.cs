@@ -17,7 +17,9 @@ namespace MarAberto
             "Opa! Tem minério pra vender?",
             "Bem-vindo à minha barraca, marujo!",
             "Cobre, carvão, conchas... eu compro de tudo!",
-            "Com um barco você chega no fundo do mar, onde tem ferro!",
+            "Com um barco você chega nos recifes, onde tem ferro e pérolas!",
+            "Viu a boia vermelha no mar? Ali tem um recife. Solte a âncora e mergulhe!",
+            "Dizem que há mais recifes escondidos, longe da costa...",
         };
 
         static Color C(float r, float g, float b) => new Color(r, g, b, 1f);
@@ -120,11 +122,14 @@ namespace MarAberto
 
         void BuildCharacter()
         {
-            var skin = C(0.86f, 0.62f, 0.45f);
-            var shirt = C(0.25f, 0.55f, 0.75f);
-            var pants = C(0.35f, 0.30f, 0.25f);
-            var straw = C(0.92f, 0.80f, 0.48f);
-            var beard = C(0.85f, 0.85f, 0.82f);
+            var skin = C(0.87f, 0.64f, 0.48f);
+            var shirt = C(0.92f, 0.90f, 0.84f);
+            var vest = C(0.55f, 0.16f, 0.14f);
+            var pants = C(0.24f, 0.28f, 0.40f);
+            var boots = C(0.22f, 0.14f, 0.09f);
+            var hat = C(0.16f, 0.13f, 0.12f);
+            var gold = C(0.95f, 0.76f, 0.30f);
+            var beard = C(0.88f, 0.87f, 0.84f);
 
             Transform Part(string name, Transform parent, Vector3 pos)
             {
@@ -139,40 +144,57 @@ namespace MarAberto
                 tr.gameObject.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
             }
 
-            // Pernas
+            // Pernas e botas
             var legs = new MeshBuilder();
-            legs.AddBox(new Vector3(-0.13f, 0.42f, 0), new Vector3(0.2f, 0.84f, 0.22f), Quaternion.identity, pants);
-            legs.AddBox(new Vector3(0.13f, 0.42f, 0), new Vector3(0.2f, 0.84f, 0.22f), Quaternion.identity, pants);
-            legs.AddBox(new Vector3(-0.13f, 0.05f, 0.05f), new Vector3(0.22f, 0.1f, 0.32f), Quaternion.identity, C(0.3f, 0.2f, 0.12f));
-            legs.AddBox(new Vector3(0.13f, 0.05f, 0.05f), new Vector3(0.22f, 0.1f, 0.32f), Quaternion.identity, C(0.3f, 0.2f, 0.12f));
+            foreach (float x in new[] { -0.12f, 0.12f })
+            {
+                legs.AddCapsule(new Vector3(x, 0.32f, 0), new Vector3(x, 0.8f, 0), 0.1f, pants);
+                legs.AddCylinder(new Vector3(x, 0.0f, 0.02f), new Vector3(x, 0.36f, 0.0f), 0.12f, 0.11f, 14, boots);
+                legs.AddSphere(new Vector3(x, 0.06f, 0.1f), new Vector3(0.11f, 0.07f, 0.15f), boots);
+            }
             Mesh(Part("Pernas", transform, Vector3.zero), legs);
 
             body = Part("Corpo", transform, new Vector3(0, 0.84f, 0));
             var torso = new MeshBuilder();
-            torso.AddBox(new Vector3(0, 0.33f, 0), new Vector3(0.58f, 0.66f, 0.34f), Quaternion.identity, shirt);
-            torso.AddBox(new Vector3(0, 0.05f, 0), new Vector3(0.6f, 0.1f, 0.36f), Quaternion.identity, C(0.35f, 0.22f, 0.12f)); // cinto
-            torso.AddBox(new Vector3(0, 0.05f, 0.18f), new Vector3(0.1f, 0.08f, 0.02f), Quaternion.identity, C(0.95f, 0.8f, 0.3f));
-            torso.AddBox(new Vector3(-0.38f, 0.38f, 0), new Vector3(0.16f, 0.55f, 0.18f), Quaternion.Euler(0, 0, -8), shirt * 0.9f);
-            torso.AddBox(new Vector3(-0.42f, 0.06f, 0), new Vector3(0.13f, 0.14f, 0.14f), Quaternion.identity, skin);
+            torso.AddSphere(new Vector3(0, 0.3f, 0), new Vector3(0.3f, 0.38f, 0.22f), shirt, 3); // barriga/camisa
+            torso.AddSphere(new Vector3(0, 0.34f, -0.01f), new Vector3(0.31f, 0.34f, 0.2f), vest, 3);
+            torso.AddCylinder(new Vector3(0, 0.02f, 0), new Vector3(0, 0.12f, 0), 0.29f, 0.3f, 18, C(0.35f, 0.22f, 0.12f)); // cinto
+            torso.AddSphere(new Vector3(0, 0.07f, 0.29f), new Vector3(0.06f, 0.05f, 0.02f), gold); // fivela
+            for (int i = 0; i < 3; i++) torso.AddSphere(new Vector3(0, 0.2f + i * 0.12f, 0.205f), Vector3.one * 0.02f, gold);
+            // Braço esquerdo apoiado no balcão
+            torso.AddCapsule(new Vector3(-0.32f, 0.55f, 0), new Vector3(-0.38f, 0.22f, 0.12f), 0.075f, shirt);
+            torso.AddSphere(new Vector3(-0.38f, 0.16f, 0.18f), Vector3.one * 0.07f, skin);
             Mesh(body, torso);
 
-            armR = Part("Braco", body, new Vector3(0.36f, 0.62f, 0));
+            armR = Part("Braco", body, new Vector3(0.32f, 0.56f, 0));
             var arm = new MeshBuilder();
-            arm.AddBox(new Vector3(0.02f, -0.26f, 0), new Vector3(0.16f, 0.55f, 0.18f), Quaternion.identity, shirt * 0.9f);
-            arm.AddBox(new Vector3(0.02f, -0.58f, 0), new Vector3(0.13f, 0.14f, 0.14f), Quaternion.identity, skin);
+            arm.AddCapsule(Vector3.zero, new Vector3(0.04f, -0.36f, 0.02f), 0.075f, shirt);
+            arm.AddSphere(new Vector3(0.05f, -0.45f, 0.03f), Vector3.one * 0.07f, skin);
             Mesh(armR, arm);
 
-            head = Part("Cabeca", body, new Vector3(0, 0.66f, 0));
+            head = Part("Cabeca", body, new Vector3(0, 0.7f, 0));
             var hm = new MeshBuilder();
-            hm.AddBox(new Vector3(0, 0.2f, 0), new Vector3(0.36f, 0.38f, 0.34f), Quaternion.identity, skin);
-            hm.AddBox(new Vector3(0, 0.08f, 0.15f), new Vector3(0.38f, 0.2f, 0.1f), Quaternion.identity, beard); // barba
-            hm.AddBox(new Vector3(0, 0.17f, 0.2f), new Vector3(0.18f, 0.05f, 0.04f), Quaternion.identity, beard); // bigode
-            hm.AddBox(new Vector3(0, 0.22f, 0.2f), new Vector3(0.07f, 0.08f, 0.06f), Quaternion.identity, skin * 0.92f); // nariz
-            hm.AddBox(new Vector3(-0.08f, 0.28f, 0.17f), new Vector3(0.05f, 0.05f, 0.02f), Quaternion.identity, C(0.1f, 0.1f, 0.12f));
-            hm.AddBox(new Vector3(0.08f, 0.28f, 0.17f), new Vector3(0.05f, 0.05f, 0.02f), Quaternion.identity, C(0.1f, 0.1f, 0.12f));
-            hm.AddCylinder(new Vector3(0, 0.38f, 0), new Vector3(0, 0.41f, 0), 0.42f, 0.42f, 12, straw); // aba do chapéu
-            hm.AddCylinder(new Vector3(0, 0.41f, 0), new Vector3(0, 0.6f, 0), 0.22f, 0.17f, 10, straw * 0.95f);
-            hm.AddCylinder(new Vector3(0, 0.42f, 0), new Vector3(0, 0.47f, 0), 0.225f, 0.22f, 10, C(0.7f, 0.2f, 0.2f), false);
+            hm.AddCylinder(new Vector3(0, -0.06f, 0), new Vector3(0, 0.05f, 0), 0.08f, 0.08f, 12, skin, false); // pescoço
+            hm.AddSphere(new Vector3(0, 0.17f, 0), new Vector3(0.17f, 0.19f, 0.17f), skin, 3);
+            hm.AddSphere(new Vector3(0, 0.07f, 0.08f), new Vector3(0.16f, 0.13f, 0.12f), beard, 3); // barba
+            hm.AddSphere(new Vector3(0, 0.15f, 0.165f), new Vector3(0.1f, 0.025f, 0.03f), beard); // bigode
+            hm.AddSphere(new Vector3(0, 0.19f, 0.175f), new Vector3(0.035f, 0.04f, 0.035f), skin * 0.95f); // nariz
+            foreach (float x in new[] { -0.065f, 0.065f })
+            {
+                hm.AddSphere(new Vector3(x, 0.24f, 0.148f), Vector3.one * 0.022f, C(0.1f, 0.08f, 0.07f)); // olhos
+                hm.AddSphere(new Vector3(x, 0.285f, 0.15f), new Vector3(0.04f, 0.012f, 0.015f), beard); // sobrancelha
+            }
+            hm.AddSphere(new Vector3(0.17f, 0.17f, 0), Vector3.one * 0.03f, gold); // brinco
+            // Chapéu de pirata (tricórnio)
+            hm.AddSphere(new Vector3(0, 0.33f, 0), new Vector3(0.19f, 0.11f, 0.19f), hat, 3);
+            hm.AddSphere(new Vector3(0, 0.31f, 0), new Vector3(0.36f, 0.04f, 0.33f), hat, 3);
+            for (int i = 0; i < 3; i++)
+            {
+                float a = (i * 120f + 90f) * Mathf.Deg2Rad;
+                Vector3 d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                hm.AddSphere(new Vector3(0, 0.36f, 0) + d * 0.27f, new Vector3(0.12f, 0.08f, 0.12f), hat);
+            }
+            hm.AddCylinder(new Vector3(0, 0.29f, 0), new Vector3(0, 0.33f, 0), 0.195f, 0.195f, 18, gold, false);
             Mesh(head, hm);
         }
 
