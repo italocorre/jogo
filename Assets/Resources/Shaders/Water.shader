@@ -87,7 +87,7 @@ Shader "MarAberto/Water"
 
                 // Normal das ondas + ondinhas de detalhe.
                 float3 n = normalize(i.normal);
-                float detail = saturate(1.0 - camDist / 260.0) * 0.32;
+                float detail = saturate(1.0 - camDist / 140.0) * 0.24;
                 float2 uv = i.wpos.xz;
                 float e = 0.15;
                 float h0 = DetailHeight(uv, _MA_Time);
@@ -140,7 +140,7 @@ Shader "MarAberto/Water"
                 // Brilho do sol (no HDR vira "brilhinho" com o bloom)
                 float3 hv = normalize(sunDir + v);
                 float nh = saturate(dot(n, hv));
-                float spec = pow(nh, 900.0) * 18.0 + pow(nh, 90.0) * 0.35;
+                float spec = pow(nh, 700.0) * 7.0 * saturate(1.0 - camDist / 300.0) + pow(nh, 80.0) * 0.3;
                 col += _MA_SunColor.rgb * spec * step(0.0, sunDir.y);
 
                 // Espuma: linhas na beira da praia e um pouco nas cristas.

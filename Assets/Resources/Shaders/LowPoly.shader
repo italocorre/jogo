@@ -57,8 +57,10 @@ Shader "MarAberto/LowPoly"
                 float up = saturate(IN.worldNormal.y);
                 float fade = saturate(depth / 1.2) * saturate(1.0 - depth / 40.0);
                 float c = MA_Caustics(IN.worldPos.xz, _MA_Time);
-                o.Emission = albedo * _MA_SunColor.rgb * c * up * fade * 1.6;
-                o.Albedo = lerp(albedo, albedo * float3(0.45, 0.8, 0.9), saturate(depth / 10.0));
+                // A luz enfraquece com a profundidade (vermelho primeiro).
+                float3 att = exp(-depth * float3(0.32, 0.10, 0.07));
+                o.Albedo = albedo * (att * 0.75 + float3(0.02, 0.08, 0.10));
+                o.Emission = albedo * att * _MA_SunColor.rgb * c * up * fade * 0.55;
             }
         }
         ENDCG

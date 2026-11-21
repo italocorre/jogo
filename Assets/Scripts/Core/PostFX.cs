@@ -10,14 +10,14 @@ namespace MarAberto
     [RequireComponent(typeof(Camera))]
     public class PostFX : MonoBehaviour
     {
-        public float Threshold = 1.1f;
+        public float Threshold = 1.4f;
         public float Knee = 0.6f;
-        public float BloomIntensity = 0.55f;
-        public float Exposure = 1.15f;
-        public float Saturation = 1.22f;
-        public float Contrast = 1.08f;
+        public float BloomIntensity = 0.28f;
+        public float Exposure = 0.92f;
+        public float Saturation = 1.12f;
+        public float Contrast = 1.12f;
         public float Vignette = 0.75f;
-        public float Warmth = 0.04f;
+        public float Warmth = 0.03f;
         public Color Lift = new Color(0.0f, 0.006f, 0.014f);
 
         Material mat;

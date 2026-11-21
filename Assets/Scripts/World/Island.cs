@@ -87,11 +87,11 @@ namespace MarAberto
         {
             float v = Noise.Fbm(x * 0.04f + 3f, z * 0.04f, 3);
             float patch = Noise.Fbm(x * 0.012f + 11f, z * 0.012f + 5f, 2);
-            Color sand = C(0.96f, 0.87f, 0.64f);
-            Color wetSand = C(0.82f, 0.71f, 0.50f);
-            Color grassA = C(0.34f, 0.62f, 0.16f);
-            Color grassB = C(0.52f, 0.74f, 0.20f);
-            Color grassDry = C(0.66f, 0.72f, 0.32f);
+            Color sand = C(0.90f, 0.80f, 0.58f);
+            Color wetSand = C(0.74f, 0.63f, 0.44f);
+            Color grassA = C(0.22f, 0.44f, 0.12f);
+            Color grassB = C(0.33f, 0.55f, 0.15f);
+            Color grassDry = C(0.50f, 0.56f, 0.24f);
             Color rock = C(0.53f, 0.51f, 0.48f);
             Color rockDark = C(0.40f, 0.39f, 0.37f);
 
@@ -99,7 +99,7 @@ namespace MarAberto
             if (y < -0.6f)
             {
                 float depth = Mathf.Clamp01(-y / 28f);
-                c = Color.Lerp(C(0.93f, 0.85f, 0.64f), C(0.52f, 0.58f, 0.52f), depth);
+                c = Color.Lerp(C(0.80f, 0.72f, 0.54f), C(0.40f, 0.47f, 0.44f), depth);
                 if (n.y < 0.8f) c = Color.Lerp(c, C(0.45f, 0.47f, 0.46f), 0.6f);
             }
             else if (y < 0.6f) c = Color.Lerp(wetSand, sand, Mathf.InverseLerp(-0.6f, 0.6f, y));
@@ -480,8 +480,8 @@ namespace MarAberto
                 // Copa feita de várias "nuvens" de folhas
                 int clumps = rng.Next(5, 8);
                 float baseR = R(1.6f, 2.3f);
-                Color leafTop = Color.Lerp(C(0.40f, 0.68f, 0.20f), C(0.55f, 0.78f, 0.26f), (float)rng.NextDouble());
-                Color leafBottom = C(0.17f, 0.38f, 0.12f);
+                Color leafTop = Color.Lerp(C(0.30f, 0.54f, 0.16f), C(0.44f, 0.64f, 0.20f), (float)rng.NextDouble());
+                Color leafBottom = C(0.12f, 0.28f, 0.09f);
                 for (int c = 0; c < clumps; c++)
                 {
                     Vector3 off = c == 0 ? Vector3.zero : new Vector3(R(-1.6f, 1.6f), R(-0.6f, 1.2f), R(-1.6f, 1.6f));
@@ -522,7 +522,7 @@ namespace MarAberto
                     Vector3 o = p + new Vector3(R(-2, 2), -s * 0.3f, R(-2, 2));
                     rocks.AddRock(o, s, rng.Next(), nn =>
                     {
-                        if (nn.y > 0.55f) return C(0.42f, 0.58f, 0.25f); // musgo
+                        if (nn.y > 0.78f) return C(0.34f, 0.46f, 0.22f); // musgo
                         return Color.Lerp(C(0.50f, 0.49f, 0.46f), C(0.62f, 0.60f, 0.56f), Noise.Perlin3(nn.x * 2, nn.y * 2, nn.z * 2));
                     }, 0.3f, new Vector3(1.1f, 0.8f, 1f));
                 }
@@ -556,7 +556,7 @@ namespace MarAberto
                     var mb = new MeshBuilder();
                     float ox = transform.position.x + start + cx * chunk;
                     float oz = transform.position.z + start + cz * chunk;
-                    float spacing = 0.95f;
+                    float spacing = 0.72f;
                     for (float gz = 0; gz < chunk; gz += spacing)
                     {
                         for (float gx = 0; gx < chunk; gx += spacing)
@@ -582,17 +582,17 @@ namespace MarAberto
         void AddTuft(MeshBuilder mb, Vector3 p, float lush)
         {
             float patch = Noise.Fbm(p.x * 0.03f + 1f, p.z * 0.03f + 9f, 2);
-            Color baseC = C(0.18f, 0.36f, 0.08f);
-            Color tipC = Color.Lerp(C(0.48f, 0.74f, 0.20f), C(0.70f, 0.78f, 0.30f), Mathf.Clamp01((patch - 0.5f) * 2.5f));
+            Color baseC = C(0.13f, 0.28f, 0.07f);
+            Color tipC = Color.Lerp(C(0.36f, 0.60f, 0.16f), C(0.54f, 0.64f, 0.24f), Mathf.Clamp01((patch - 0.5f) * 2.5f));
             int blades = 4;
-            float hScale = Mathf.Lerp(0.45f, 0.95f, lush);
+            float hScale = Mathf.Lerp(0.5f, 0.85f, lush);
             for (int b = 0; b < blades; b++)
             {
                 float a = R(0, Mathf.PI * 2);
                 Vector3 dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                 Vector3 side = new Vector3(-dir.z, 0, dir.x);
-                float h = R(0.35f, 0.75f) * hScale;
-                float w = R(0.05f, 0.08f);
+                float h = R(0.3f, 0.6f) * hScale;
+                float w = R(0.035f, 0.055f);
                 Vector3 b0 = p + dir * R(0, 0.18f);
                 Vector3 mid = b0 + Vector3.up * h * 0.55f + dir * h * 0.12f;
                 Vector3 tip = b0 + Vector3.up * h + dir * h * R(0.25f, 0.45f);
@@ -630,8 +630,8 @@ namespace MarAberto
                 if (!RandomLandPoint(3f, 40f, 0.8f, out var p)) continue;
                 b++;
                 float s = R(0.5f, 1.0f);
-                Color top = Color.Lerp(C(0.32f, 0.58f, 0.18f), C(0.48f, 0.70f, 0.22f), (float)rng.NextDouble());
-                Color bottom = C(0.16f, 0.34f, 0.10f);
+                Color top = Color.Lerp(C(0.26f, 0.48f, 0.15f), C(0.38f, 0.58f, 0.18f), (float)rng.NextDouble());
+                Color bottom = C(0.12f, 0.26f, 0.08f);
                 int parts = rng.Next(2, 4);
                 for (int k = 0; k < parts; k++)
                 {

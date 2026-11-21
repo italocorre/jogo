@@ -71,9 +71,9 @@ namespace MarAberto.EditorTools
             Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 12f, 0.62f);
             Vector3 dockEye = island.DockEnd + Vector3.up * 1.65f - dockDir * 3f - side * 0.6f;
             Shot("04_barco_no_pier", dockEye, boat.transform.position + Vector3.up * 0.3f, 0.45f);
-            Vector3 under = island.DockEnd + dockDir * 8f; under.y = -6f;
-            Shot("05_fundo_do_mar", under, under - dockDir * 10f + Vector3.down * 3f + side * 3f, 0.45f);
-            Shot("06_por_do_sol", spawnEye, spawnEye + island.SpawnLook * 10f, 0.735f);
+            Vector3 under = c + dockDir * (island.Radius + 30f) - side * 25f; under.y = island.Height(under.x, under.z) + 2.5f;
+            Shot("05_fundo_do_mar", under, under + dockDir * 12f + Vector3.down * 2f, 0.45f);
+            Shot("06_por_do_sol", spawnEye, spawnEye + island.SpawnLook * 10f, 0.715f);
             Vector3 hill = c + side * 30f; hill.y = island.Height(hill.x, hill.z) + 1.7f;
             Shot("07_grama_e_arvores", hill, hill + (dockDir + side * 0.5f).normalized * 10f + Vector3.down * 1.5f, 0.38f);
 
@@ -84,11 +84,12 @@ namespace MarAberto.EditorTools
             held.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
             var root = new GameObject("Maos").transform;
             root.SetParent(cam.transform, false);
-            root.localPosition = new Vector3(0.30f, -0.34f, 0.42f);
-            root.localRotation = Quaternion.Euler(28f, -12f, 8f);
+            root.localPosition = new Vector3(0.33f, -0.40f, 0.50f);
+            root.localRotation = Quaternion.Euler(18f, -22f, 4f);
             arm.transform.SetParent(root, false);
             held.transform.SetParent(root, false);
             held.transform.localPosition = new Vector3(0, -0.02f, 0);
+            held.transform.localScale = Vector3.one * 0.85f;
             Shot("08_primeira_pessoa", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.down * 1.5f, 0.40f);
             UnityEngine.Object.DestroyImmediate(root.gameObject);
 

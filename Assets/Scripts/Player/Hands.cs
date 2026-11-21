@@ -26,8 +26,8 @@ namespace MarAberto
         float bob;
         float switchAnim;
 
-        static readonly Vector3 restPos = new Vector3(0.30f, -0.34f, 0.42f);
-        static readonly Quaternion restRot = Quaternion.Euler(28f, -12f, 8f);
+        static readonly Vector3 restPos = new Vector3(0.33f, -0.40f, 0.50f);
+        static readonly Quaternion restRot = Quaternion.Euler(18f, -22f, 4f);
         static readonly int mask = ~((1 << Layers.IgnoreRaycast) | (1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass));
 
         static Color C(float r, float g, float b) => new Color(r, g, b, 1f);
@@ -62,7 +62,7 @@ namespace MarAberto
             Color cuff = C(0.95f, 0.93f, 0.88f);
             // Antebraço vindo de baixo/trás até a mão
             Vector3 hand = Vector3.zero;
-            Vector3 elbow = new Vector3(0.10f, -0.32f, -0.30f);
+            Vector3 elbow = new Vector3(0.16f, -0.26f, -0.14f);
             mb.AddCylinder(elbow, hand + new Vector3(0.02f, -0.07f, -0.08f), 0.075f, 0.055f, 7, skin);
             mb.AddCylinder(elbow + (elbow - hand).normalized * 0.4f, elbow + (hand - elbow).normalized * 0.08f, 0.1f, 0.095f, 7, sleeve);
             mb.AddCylinder(elbow + (hand - elbow).normalized * 0.05f, elbow + (hand - elbow).normalized * 0.11f, 0.1f, 0.1f, 7, cuff, false);
@@ -96,7 +96,7 @@ namespace MarAberto
             {
                 held.localPosition = new Vector3(0, -0.02f, 0);
                 held.localRotation = Quaternion.identity;
-                held.localScale = Vector3.one;
+                held.localScale = Vector3.one * 0.85f;
             }
             else
             {

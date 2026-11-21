@@ -69,12 +69,12 @@ namespace MarAberto
             float day = Mathf.Clamp01((elev + 0.08f) / 0.3f);      // 0 noite, 1 dia
             float golden = Mathf.Clamp01(1f - Mathf.Abs(elev - 0.08f) / 0.25f) * day;
 
-            Color dayTop = Hex("#2A78D6"), dayHor = Hex("#C4E7F6");
+            Color dayTop = Hex("#1F6CCB"), dayHor = Hex("#AFD8EE");
             Color nightTop = Hex("#060B1E"), nightHor = Hex("#18284A");
             Color sunsetHor = Hex("#F2A65E");
             Color top = Color.Lerp(nightTop, dayTop, day);
             Color hor = Color.Lerp(nightHor, dayHor, day);
-            hor = Color.Lerp(hor, sunsetHor, golden * 0.75f);
+            hor = Color.Lerp(hor, sunsetHor, golden * 0.9f);
 
             Color sunCol = Color.Lerp(Hex("#FFA860"), Hex("#FFF0D8"), Mathf.Clamp01(elev * 3f));
             if (elev > -0.05f)

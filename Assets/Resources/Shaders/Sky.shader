@@ -39,7 +39,7 @@ Shader "MarAberto/Sky"
                 col += _MA_SunColor.rgb * pow(saturate(sd), 300.0) * 0.6;
 
                 // Lua e estrelas
-                float night = 1.0 - _MA_Day;
+                float night = smoothstep(0.55, 1.0, 1.0 - _MA_Day);
                 float3 moonDir = normalize(float3(-sunDir.x, -sunDir.y, 0.2));
                 float md = dot(dir, moonDir);
                 col += float3(0.85, 0.9, 1.0) * smoothstep(0.9993, 0.9996, md) * night * 1.5;

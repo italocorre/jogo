@@ -51,7 +51,7 @@ Shader "MarAberto/Foliage"
             o.Emission = albedo * _MA_SunColor.rgb * back * 0.45;
             float depth = _MA_SeaLevel - IN.worldPos.y;
             if (depth > 0.0)
-                o.Albedo = lerp(albedo, albedo * float3(0.45, 0.8, 0.9), saturate(depth / 10.0));
+                o.Albedo = albedo * (exp(-depth * float3(0.32, 0.10, 0.07)) * 0.75 + float3(0.02, 0.08, 0.10));
         }
         ENDCG
     }
