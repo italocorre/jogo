@@ -89,9 +89,9 @@ namespace MarAberto
             float patch = Noise.Fbm(x * 0.012f + 11f, z * 0.012f + 5f, 2);
             Color sand = C(0.90f, 0.80f, 0.58f);
             Color wetSand = C(0.74f, 0.63f, 0.44f);
-            Color grassA = C(0.22f, 0.44f, 0.12f);
-            Color grassB = C(0.33f, 0.55f, 0.15f);
-            Color grassDry = C(0.50f, 0.56f, 0.24f);
+            Color grassA = C(0.19f, 0.37f, 0.10f);
+            Color grassB = C(0.27f, 0.46f, 0.12f);
+            Color grassDry = C(0.42f, 0.48f, 0.20f);
             Color rock = C(0.53f, 0.51f, 0.48f);
             Color rockDark = C(0.40f, 0.39f, 0.37f);
 
@@ -522,7 +522,7 @@ namespace MarAberto
                     Vector3 o = p + new Vector3(R(-2, 2), -s * 0.3f, R(-2, 2));
                     rocks.AddRock(o, s, rng.Next(), nn =>
                     {
-                        if (nn.y > 0.78f) return C(0.34f, 0.46f, 0.22f); // musgo
+                        if (nn.y > 0.9f) return C(0.36f, 0.44f, 0.25f); // musgo
                         return Color.Lerp(C(0.50f, 0.49f, 0.46f), C(0.62f, 0.60f, 0.56f), Noise.Perlin3(nn.x * 2, nn.y * 2, nn.z * 2));
                     }, 0.3f, new Vector3(1.1f, 0.8f, 1f));
                 }

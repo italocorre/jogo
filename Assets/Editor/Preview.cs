@@ -84,7 +84,7 @@ namespace MarAberto.EditorTools
             held.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
             var root = new GameObject("Maos").transform;
             root.SetParent(cam.transform, false);
-            root.localPosition = new Vector3(0.33f, -0.40f, 0.50f);
+            root.localPosition = new Vector3(0.32f, -0.36f, 0.48f);
             root.localRotation = Quaternion.Euler(18f, -22f, 4f);
             arm.transform.SetParent(root, false);
             held.transform.SetParent(root, false);

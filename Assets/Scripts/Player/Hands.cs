@@ -26,7 +26,7 @@ namespace MarAberto
         float bob;
         float switchAnim;
 
-        static readonly Vector3 restPos = new Vector3(0.33f, -0.40f, 0.50f);
+        static readonly Vector3 restPos = new Vector3(0.32f, -0.36f, 0.48f);
         static readonly Quaternion restRot = Quaternion.Euler(18f, -22f, 4f);
         static readonly int mask = ~((1 << Layers.IgnoreRaycast) | (1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass));
 

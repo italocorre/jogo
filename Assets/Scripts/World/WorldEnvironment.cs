@@ -81,7 +81,7 @@ namespace MarAberto
             {
                 sun.transform.rotation = Quaternion.LookRotation(-sunDir);
                 sun.color = sunCol;
-                sun.intensity = Mathf.Lerp(0f, 1.45f, day);
+                sun.intensity = Mathf.Lerp(0f, 1.3f, day);
             }
             else
             {
@@ -113,9 +113,9 @@ namespace MarAberto
             if (CameraUnderwater)
             {
                 float depth = Mathf.Clamp01(-cam.transform.position.y / 35f);
-                RenderSettings.fogColor = Color.Lerp(Hex("#1C7F8C"), Hex("#06263F"), depth) * Mathf.Lerp(0.25f, 1f, day);
-                RenderSettings.fogStartDistance = 0f;
-                RenderSettings.fogEndDistance = Mathf.Lerp(45f, 22f, depth);
+                RenderSettings.fogColor = Color.Lerp(Hex("#2A9FA8"), Hex("#0A3552"), depth) * Mathf.Lerp(0.25f, 1f, day);
+                RenderSettings.fogStartDistance = 2f;
+                RenderSettings.fogEndDistance = Mathf.Lerp(70f, 30f, depth);
                 if (cam != null) cam.backgroundColor = RenderSettings.fogColor;
             }
             else
