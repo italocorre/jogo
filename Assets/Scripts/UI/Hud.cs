@@ -201,7 +201,7 @@ namespace MarAberto
                 "<color=#8A2A14>Clique</color> minerar  ·  <color=#8A2A14>E</color> pegar, falar, pilotar\n" +
                 "<color=#8A2A14>1-6</color> trocar item  ·  <color=#8A2A14>Tab</color> mochila  ·  <color=#8A2A14>Q</color> largar\n" +
                 "<color=#8A2A14>R</color> âncora  ·  <color=#8A2A14>Ctrl</color> mergulhar  ·  <color=#8A2A14>H</color> esconder",
-                UIKit.Body, 21, UIKit.Ink, TextAnchor.MiddleLeft);
+                UIKit.BodyBold, 22, UIKit.Ink, TextAnchor.MiddleLeft);
             ht.rectTransform.Fill(34, 18, 24, 18);
         }
 
