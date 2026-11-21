@@ -90,7 +90,10 @@ namespace MarAberto
             mb.AddRock(new Vector3(-2.7f, 0.85f, 0.45f), 0.12f, 3, _ => C(0.9f, 0.5f, 0.25f), 0.2f);
             mb.AddRock(new Vector3(-2.55f, 1.28f, 0.2f), 0.1f, 4, _ => C(0.2f, 0.2f, 0.22f), 0.2f);
             // Lanterna pendurada
-            mb.AddBox(new Vector3(1.6f, 2.2f, 1.0f), new Vector3(0.18f, 0.25f, 0.18f), Quaternion.identity, C(1f, 0.85f, 0.45f));
+            mb.AddCylinder(new Vector3(1.6f, 2.55f, 1.0f), new Vector3(1.6f, 2.38f, 1.0f), 0.01f, 0.01f, 6, C(0.2f, 0.2f, 0.2f), false);
+            mb.AddSphere(new Vector3(1.6f, 2.22f, 1.0f), new Vector3(0.11f, 0.15f, 0.11f), C(1f, 0.86f, 0.5f), 2);
+            mb.AddCylinder(new Vector3(1.6f, 2.36f, 1.0f), new Vector3(1.6f, 2.42f, 1.0f), 0.09f, 0.05f, 10, C(0.25f, 0.22f, 0.2f));
+            mb.AddCylinder(new Vector3(1.6f, 2.04f, 1.0f), new Vector3(1.6f, 2.09f, 1.0f), 0.1f, 0.1f, 10, C(0.25f, 0.22f, 0.2f));
 
             var go = new GameObject("Barraca");
             go.transform.SetParent(root, false);

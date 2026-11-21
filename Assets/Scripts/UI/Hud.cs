@@ -197,10 +197,10 @@ namespace MarAberto
             helpBox = UIKit.Img(root, "Ajuda", UIKit.Parchment, null, true, 0.3f).rectTransform;
             helpBox.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(20, -18), new Vector2(560, 196));
             var ht = UIKit.Txt(helpBox, "Texto",
-                "<b>WASD</b> andar · <b>Shift</b> correr · <b>Espaço</b> pular/subir\n" +
-                "<b>Clique</b> minerar · <b>E</b> pegar, falar, pilotar\n" +
-                "<b>1–6</b> trocar item · <b>Tab</b> mochila · <b>Q</b> largar\n" +
-                "<b>R</b> âncora (no barco) · <b>Ctrl</b> mergulhar · <b>H</b> esconder",
+                "<color=#8A2A14>WASD</color> andar  ·  <color=#8A2A14>Shift</color> correr  ·  <color=#8A2A14>Espaço</color> pular\n" +
+                "<color=#8A2A14>Clique</color> minerar  ·  <color=#8A2A14>E</color> pegar, falar, pilotar\n" +
+                "<color=#8A2A14>1-6</color> trocar item  ·  <color=#8A2A14>Tab</color> mochila  ·  <color=#8A2A14>Q</color> largar\n" +
+                "<color=#8A2A14>R</color> âncora  ·  <color=#8A2A14>Ctrl</color> mergulhar  ·  <color=#8A2A14>H</color> esconder",
                 UIKit.Body, 21, UIKit.Ink, TextAnchor.MiddleLeft);
             ht.rectTransform.Fill(34, 18, 24, 18);
         }
@@ -405,7 +405,7 @@ namespace MarAberto
         void BuildPause()
         {
             pauseWin = UIKit.Rect(root, "Pausa").Fill();
-            var bg = UIKit.Img(pauseWin, "Fundo", UIKit.White, new Color(0.02f, 0.05f, 0.09f, 0.78f));
+            var bg = UIKit.Img(pauseWin, "Fundo", UIKit.White, new Color(0.02f, 0.05f, 0.09f, 0.86f));
             bg.rectTransform.Fill();
             bg.raycastTarget = true;
             pauseCompass = UIKit.Img(pauseWin, "Rosa", UIKit.Compass, new Color(1, 1, 1, 0.18f), false).rectTransform;
@@ -647,7 +647,7 @@ namespace MarAberto
                     case Boat.AnchorState.Hanging: anchor = "Âncora solta (não alcança o fundo)"; break;
                     default: anchor = "Âncora recolhida"; break;
                 }
-                anchorText.text = anchor + "   ·   <b>R</b> âncora" + (p.Driving != null ? "  ·  <b>E</b> sair" : "");
+                anchorText.text = anchor + "   ·   <color=#8A2A14>R</color> âncora" + (p.Driving != null ? "  ·  <color=#8A2A14>E</color> sair" : "");
             }
 
             // Marcador do primeiro recife (boia)

@@ -26,7 +26,7 @@ namespace MarAberto
         float bob;
         float switchAnim;
 
-        static readonly Vector3 restPos = new Vector3(0.32f, -0.36f, 0.48f);
+        static readonly Vector3 restPos = new Vector3(0.3f, -0.34f, 0.52f);
         static readonly Quaternion restRot = Quaternion.Euler(18f, -22f, 4f);
         static readonly int mask = ~((1 << Layers.IgnoreRaycast) | (1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass));
 
@@ -66,11 +66,11 @@ namespace MarAberto
             mb.AddCylinder(elbow, hand + new Vector3(0.02f, -0.07f, -0.08f), 0.075f, 0.055f, 7, skin);
             mb.AddCylinder(elbow + (elbow - hand).normalized * 0.4f, elbow + (hand - elbow).normalized * 0.08f, 0.1f, 0.095f, 7, sleeve);
             mb.AddCylinder(elbow + (hand - elbow).normalized * 0.05f, elbow + (hand - elbow).normalized * 0.11f, 0.1f, 0.1f, 7, cuff, false);
-            // Mão fechada em volta do cabo
-            mb.AddBox(new Vector3(0.0f, -0.01f, -0.01f), new Vector3(0.1f, 0.11f, 0.09f), Quaternion.Euler(0, 0, 8), skin);
+            // Mão fechada em volta do cabo (formas arredondadas)
+            mb.AddSphere(new Vector3(0.012f, -0.015f, -0.012f), new Vector3(0.05f, 0.058f, 0.046f), skin, 3);
             for (int i = 0; i < 4; i++)
-                mb.AddBox(new Vector3(-0.045f, 0.035f - i * 0.026f, 0.035f), new Vector3(0.03f, 0.024f, 0.05f), Quaternion.identity, i % 2 == 0 ? skin : skinDark);
-            mb.AddBox(new Vector3(0.035f, 0.04f, 0.03f), new Vector3(0.03f, 0.06f, 0.03f), Quaternion.Euler(0, 0, -25), skin);
+                mb.AddSphere(new Vector3(-0.036f, 0.03f - i * 0.022f, 0.028f), new Vector3(0.017f, 0.013f, 0.024f), i % 2 == 0 ? skin : skinDark, 2);
+            mb.AddCapsule(new Vector3(0.035f, 0.0f, 0.02f), new Vector3(0.012f, 0.04f, 0.04f), 0.014f, skin, 8);
             var go = new GameObject("Braco");
             go.AddComponent<MeshFilter>().sharedMesh = mb.Build("Braco");
             var mr = go.AddComponent<MeshRenderer>();
@@ -103,7 +103,7 @@ namespace MarAberto
             {
                 held.localPosition = new Vector3(0, -0.02f, 0);
                 held.localRotation = Quaternion.identity;
-                held.localScale = Vector3.one * 0.85f;
+                held.localScale = Vector3.one * 0.72f;
             }
             else
             {

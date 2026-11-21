@@ -4,7 +4,7 @@ Jogo de mundo aberto no mar, em primeira pessoa, para jogar com os amigos (até 
 Você começa numa ilha com uma picareta, minera, compra um barco, melhora ele, explora o mar
 atrás de ilhas novas e entra em guerra com os barcos dos amigos.
 
-O design completo está em [`docs/GDD.md`](docs/GDD.md).
+O design completo está em [`docs/GDD.md`](docs/GDD.md). Sons e fontes de uso livre: veja [`CREDITOS.md`](CREDITOS.md).
 
 ## ⬇️ Baixar e jogar
 
@@ -24,7 +24,8 @@ O design completo está em [`docs/GDD.md`](docs/GDD.md).
 | Espaço | Pular / subir na água (e subir no píer ou no barco) |
 | Ctrl ou C | Mergulhar |
 | Botão esquerdo | Minerar (com a picareta na mão) |
-| E | Pegar item, falar com o mercador, pilotar/sair do barco |
+| E | Pegar item, falar com o mercador, pilotar/sair do barco, subir no barco pela água |
+| R | Soltar / recolher a âncora (no barco) |
 | 1 a 6 / rodinha | Trocar item da mão |
 | Tab ou I | Abrir a mochila (arraste para organizar) |
 | Q | Largar o item da mão |
@@ -36,7 +37,10 @@ O design completo está em [`docs/GDD.md`](docs/GDD.md).
 2. Pegue conchas e cocos na praia.
 3. Venda tudo para o **Seu Joca**, na barraca listrada perto do píer.
 4. Junte **150 moedas** e compre o **bote a motor** — ele aparece no fim do píer.
-5. No mar, mergulhe para achar **cobre e ferro** no fundo (ferro precisa de picareta melhor — vem nas próximas ilhas).
+5. Pilote até a **boia vermelha** (aparece um marcador na tela): ali tem um **recife**.
+6. Aperte **R** para soltar a âncora, pule na água e mergulhe: corais, minérios ricos e **ostras com pérolas** (25 moedas cada!).
+7. Melhore o barco no mercador: **motor a vapor nível 2 e 3** e **corda longa da âncora** (recifes mais fundos).
+8. Há outros recifes escondidos mais longe da ilha. Explore!
 
 ## ⚙️ Configurar o build automático (uma vez só)
 
@@ -91,7 +95,7 @@ Unity **6000.0.72f1** (Unity 6 LTS), pipeline de renderização padrão (Built-i
 
 - [x] **Etapa 1** — Ilha inicial, primeira pessoa, picareta minerando, mar com ondas, céu com dia/noite, nado e oxigênio
 - [x] **Etapa 2** — Mercador, moedas, compra do barco, mochila e itens coletáveis, visual novo
-- [ ] **Etapa 3** — Navegar, ancorar e mergulhar para minerar
+- [x] **Etapa 3** — Navegar, ancorar e mergulhar: âncora, recifes, pérolas, melhorias do motor para minerar
 - [ ] **Etapa 4** — Peixes inimigos
 - [ ] **Etapa 5** — Multiplayer (até 20) + mundo salvo entre sessões
 - [ ] **Etapa 6** — Canhões, arpão, minas e PvP

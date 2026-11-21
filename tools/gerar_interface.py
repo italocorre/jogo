@@ -114,7 +114,7 @@ def slot(name, glow=False, size=128):
     rgb[rim] = b[rim]
     sh = np.asarray(Image.fromarray(inner.astype(np.uint8)).filter(ImageFilter.GaussianBlur(9)), np.float32) / 255
     rgb = rgb * (0.4 + 0.6 * np.where(inner > 0, sh, 1)[..., None])
-    a = outer * np.where(inner > 0, 0.82, 1.0)
+    a = outer * np.where(inner > 0, 0.96, 1.0)
     if glow:
         inner_glow = np.asarray(Image.fromarray((255 - inner).astype(np.uint8)).filter(ImageFilter.GaussianBlur(10)), np.float32) / 255
         rgb += np.array([255, 200, 90]) * (inner_glow * (inner > 0))[..., None] * 0.6
