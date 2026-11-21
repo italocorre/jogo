@@ -18,19 +18,46 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - name: Verificar segredos da Unity
+      - name: Preparar credenciais da Unity
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          RAW_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          RAW_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          RAW_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
+          # Remove espaços e quebras de linha coladas sem querer (causa comum de falha no login).
+          email="$(printf '%s' "$RAW_EMAIL" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          password="$(printf '%s' "$RAW_PASSWORD" | tr -d '\r\n')"
           missing=""
-          [ -z "$UNITY_LICENSE" ] && missing="$missing UNITY_LICENSE"
-          [ -z "$UNITY_EMAIL" ] && missing="$missing UNITY_EMAIL"
-          [ -z "$UNITY_PASSWORD" ] && missing="$missing UNITY_PASSWORD"
+          [ -z "$RAW_LICENSE" ] && missing="$missing UNITY_LICENSE"
+          [ -z "$email" ] && missing="$missing UNITY_EMAIL"
+          [ -z "$password" ] && missing="$missing UNITY_PASSWORD"
           if [ -n "$missing" ]; then
             echo "::error::Faltam segredos no repositório:$missing. Veja o README (seção 'Configurar o build')."
             exit 1
+          fi
+          if ! printf '%s' "$RAW_LICENSE" | grep -q "<License"; then
+            echo "::error::UNITY_LICENSE não parece ser o conteúdo do arquivo Unity_lic.ulf (deve começar com <?xml e conter <License>)."
+            exit 1
+          fi
+          echo "::add-mask::$password"
+          echo "UNITY_EMAIL=$email" >> "$GITHUB_ENV"
+          echo "UNITY_PASSWORD=$password" >> "$GITHUB_ENV"
+          {
+            echo "UNITY_LICENSE<<ULF_EOF_7f3a"
+            printf '%s\n' "$RAW_LICENSE" | tr -d '\r'
+            echo "ULF_EOF_7f3a"
+          } >> "$GITHUB_ENV"
+
+      - name: Testar login na conta Unity
+        run: |
+          body=$(jq -n --arg u "$UNITY_EMAIL" --arg p "$UNITY_PASSWORD" '{grant_type:"password",username:$u,password:$p}')
+          resp=$(curl -s -w '\n%{http_code}' -H 'Content-Type: application/json' -d "$body" https://core.cloud.unity3d.com/api/login || true)
+          code=$(printf '%s' "$resp" | tail -n1)
+          msg=$(printf '%s' "$resp" | sed '$d' | jq -r '.message // .error_description // .error // empty' 2>/dev/null || true)
+          if [ "$code" = "200" ]; then
+            echo "Login na Unity OK."
+          else
+            echo "::warning::A Unity recusou o login (HTTP $code) ${msg}. Confira UNITY_EMAIL/UNITY_PASSWORD. Conta criada com Google/Apple precisa ter uma senha definida em id.unity.com, e a verificação em duas etapas (2FA) precisa estar desligada."
           fi
 
       - name: Liberar espaço em disco
@@ -57,10 +84,6 @@ jobs:
 
       - name: Compilar com a Unity
         uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: StandaloneWindows64
           buildName: MarAberto

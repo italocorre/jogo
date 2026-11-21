@@ -47,6 +47,11 @@ Para isso funcionar, o GitHub precisa da sua licença **gratuita** da Unity:
    | `UNITY_EMAIL` | O e-mail da sua conta Unity |
    | `UNITY_PASSWORD` | A senha da sua conta Unity |
 
+   > ⚠️ **O login precisa funcionar com e-mail e senha.** Se a sua conta Unity foi criada com
+   > **"Entrar com Google/Apple/Facebook"**, ela não tem senha: entre em https://id.unity.com,
+   > use **"Esqueci minha senha"** com o seu e-mail para criar uma, e use essa senha no segredo.
+   > A **verificação em duas etapas (2FA)** também precisa estar **desligada** em id.unity.com → Security.
+
 5. Vá na aba **Actions → Gerar .exe (Windows) → Run workflow**.
    O primeiro build leva uns 15–25 minutos; os próximos são mais rápidos.
 
