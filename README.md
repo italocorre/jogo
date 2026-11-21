@@ -95,7 +95,7 @@ Unity **6000.0.72f1** (Unity 6 LTS), pipeline de renderização padrão (Built-i
 
 - [x] **Etapa 1** — Ilha inicial, primeira pessoa, picareta minerando, mar com ondas, céu com dia/noite, nado e oxigênio
 - [x] **Etapa 2** — Mercador, moedas, compra do barco, mochila e itens coletáveis, visual novo
-- [x] **Etapa 3** — Navegar, ancorar e mergulhar: âncora, recifes, pérolas, melhorias do motor para minerar
+- [x] **Etapa 3** — Navegar, ancorar e mergulhar: âncora, recifes, pérolas, melhorias do motor
 - [ ] **Etapa 4** — Peixes inimigos
 - [ ] **Etapa 5** — Multiplayer (até 20) + mundo salvo entre sessões
 - [ ] **Etapa 6** — Canhões, arpão, minas e PvP
