@@ -240,7 +240,7 @@ namespace MarAberto
                     if (wi != null && wi.CanInteract) { LookTarget = wi; break; }
                 }
             }
-            if (Input.GetKeyDown(KeyCode.E))
+            if (Input.GetKeyDown(KeyCode.E) && Time.frameCount - Game.Instance.Hud.PanelChangedFrame > 1)
             {
                 if (Driving != null) StopDriving();
                 else if (LookTarget != null) LookTarget.Interact(this);

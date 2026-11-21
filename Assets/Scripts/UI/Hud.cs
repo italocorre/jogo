@@ -32,6 +32,8 @@ namespace MarAberto
         static readonly Color Good = new Color(0.55f, 0.92f, 0.55f, 1f);
 
         public bool AnyPanelOpen => panel != Panel.None;
+        /// <summary>Quadro em que um painel abriu/fechou (para a tecla E não fazer duas coisas).</summary>
+        public int PanelChangedFrame { get; private set; } = -10;
 
         public void Init(Game g)
         {
@@ -85,6 +87,7 @@ namespace MarAberto
         void Open(Panel p)
         {
             panel = p;
+            PanelChangedFrame = Time.frameCount;
             game.Player.InputLocked = p != Panel.None;
             LockCursor(p == Panel.None);
             dragSlot = -1;
@@ -107,7 +110,7 @@ namespace MarAberto
                 if (panel == Panel.None) Open(Panel.Backpack);
                 else if (panel == Panel.Backpack || panel == Panel.Shop) Open(Panel.None);
             }
-            else if (panel == Panel.Shop && Input.GetKeyDown(KeyCode.E)) Open(Panel.None);
+            else if (panel == Panel.Shop && Input.GetKeyDown(KeyCode.E) && Time.frameCount != PanelChangedFrame) Open(Panel.None);
 
             if (Input.GetKeyDown(KeyCode.H)) helpUntil = helpUntil > Time.time ? 0 : float.MaxValue;
             if (panel == Panel.None && Cursor.lockState != CursorLockMode.Locked && Input.GetMouseButtonDown(0)) LockCursor(true);
