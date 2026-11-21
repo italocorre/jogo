@@ -19,13 +19,24 @@ O design completo está em [`docs/GDD.md`](docs/GDD.md).
 
 | Tecla | Ação |
 |---|---|
-| W A S D | Andar |
+| W A S D | Andar / pilotar o barco |
 | Shift | Correr / nadar mais rápido |
-| Espaço | Pular / subir na água |
+| Espaço | Pular / subir na água (e subir no píer ou no barco) |
 | Ctrl ou C | Mergulhar |
-| Botão esquerdo | Minerar |
+| Botão esquerdo | Minerar (com a picareta na mão) |
+| E | Pegar item, falar com o mercador, pilotar/sair do barco |
+| 1 a 6 / rodinha | Trocar item da mão |
+| Tab ou I | Abrir a mochila (arraste para organizar) |
+| Q | Largar o item da mão |
 | Esc | Menu (sensibilidade, volume, sair) |
 | H | Mostrar/esconder ajuda |
+
+### Como jogar
+1. Minere rochas (pedra, carvão, cobre) — os pedaços caem no chão: olhe e aperte **E** para pegar.
+2. Pegue conchas e cocos na praia.
+3. Venda tudo para o **Seu Joca**, na barraca listrada perto do píer.
+4. Junte **150 moedas** e compre o **bote a motor** — ele aparece no fim do píer.
+5. No mar, mergulhe para achar **cobre e ferro** no fundo (ferro precisa de picareta melhor — vem nas próximas ilhas).
 
 ## ⚙️ Configurar o build automático (uma vez só)
 
@@ -79,7 +90,7 @@ Unity **6000.0.72f1** (Unity 6 LTS), pipeline de renderização padrão (Built-i
 ## 🗺️ Etapas
 
 - [x] **Etapa 1** — Ilha inicial, primeira pessoa, picareta minerando, mar com ondas, céu com dia/noite, nado e oxigênio
-- [ ] **Etapa 2** — Mercador, moedas, compra do barco
+- [x] **Etapa 2** — Mercador, moedas, compra do barco, mochila e itens coletáveis, visual novo
 - [ ] **Etapa 3** — Navegar, ancorar e mergulhar para minerar
 - [ ] **Etapa 4** — Peixes inimigos
 - [ ] **Etapa 5** — Multiplayer (até 20) + mundo salvo entre sessões
