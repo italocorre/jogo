@@ -91,6 +91,19 @@ jobs:
           versioning: None
           allowDirtyBuild: true
 
+      - name: Publicar prints do jogo
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: prints
+          name: Prints automáticos (último build)
+          body: |
+            Prints tirados automaticamente durante o build ${{ github.run_number }} (commit ${{ github.sha }}).
+          prerelease: true
+          make_latest: false
+          files: screens/*
+          fail_on_unmatched_files: false
+
       - name: Compactar
         run: |
           cd build/StandaloneWindows64

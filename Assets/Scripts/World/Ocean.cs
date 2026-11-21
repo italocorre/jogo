@@ -87,7 +87,7 @@ namespace MarAberto
             return m;
         }
 
-        void PushGlobals()
+        public void PushGlobals()
         {
             for (int i = 0; i < waves.Length; i++)
             {
@@ -99,7 +99,9 @@ namespace MarAberto
             Shader.SetGlobalFloat(seaLevelId, SeaLevel);
         }
 
-        void LateUpdate()
+        void LateUpdate() => Follow();
+
+        public void Follow()
         {
             if (target != null)
             {

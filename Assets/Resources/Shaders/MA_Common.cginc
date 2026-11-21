@@ -12,6 +12,16 @@ float _MA_SeaLevel;
 float _MA_Underwater;
 float4 _MA_Wave0, _MA_Wave1, _MA_Wave2, _MA_Wave3;
 
+// Cores de vértice são escritas em sRGB; converte para o espaço linear.
+float3 MA_VertexColor(float3 c)
+{
+#if defined(UNITY_COLORSPACE_GAMMA)
+    return c;
+#else
+    return c * (c * (c * 0.305306011 + 0.682171111) + 0.012522878);
+#endif
+}
+
 float MA_Hash(float2 p)
 {
     p = frac(p * float2(123.34, 456.21));

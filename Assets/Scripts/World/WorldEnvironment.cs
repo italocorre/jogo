@@ -20,6 +20,8 @@ namespace MarAberto
         static readonly int dayId = Shader.PropertyToID("_MA_Day");
         static readonly int underId = Shader.PropertyToID("_MA_Underwater");
 
+        public Camera Cam { get => cam; set => cam = value; }
+
         public void Init(Camera camera)
         {
             cam = camera;
@@ -28,7 +30,7 @@ namespace MarAberto
             sun = sgo.AddComponent<Light>();
             sun.type = LightType.Directional;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.75f;
+            sun.shadowStrength = 0.85f;
             sun.shadowBias = 0.04f;
             sun.shadowNormalBias = 0.3f;
             RenderSettings.sun = sun;
@@ -45,7 +47,7 @@ namespace MarAberto
             QualitySettings.shadowResolution = ShadowResolution.High;
             QualitySettings.antiAliasing = 4;
             QualitySettings.vSyncCount = 1;
-            Update();
+            Tick(0f);
         }
 
         static Color Hex(string h)
@@ -54,9 +56,11 @@ namespace MarAberto
             return c;
         }
 
-        void Update()
+        void Update() => Tick(Time.deltaTime);
+
+        public void Tick(float dt)
         {
-            TimeOfDay = Mathf.Repeat(TimeOfDay + Time.deltaTime / DayLengthSeconds, 1f);
+            TimeOfDay = Mathf.Repeat(TimeOfDay + dt / DayLengthSeconds, 1f);
 
             // Sol nasce no leste (+X) e se põe no oeste.
             float ang = (TimeOfDay - 0.25f) * Mathf.PI * 2f;
@@ -65,19 +69,19 @@ namespace MarAberto
             float day = Mathf.Clamp01((elev + 0.08f) / 0.3f);      // 0 noite, 1 dia
             float golden = Mathf.Clamp01(1f - Mathf.Abs(elev - 0.08f) / 0.25f) * day;
 
-            Color dayTop = Hex("#3C8DDB"), dayHor = Hex("#BFE3F2");
+            Color dayTop = Hex("#2A78D6"), dayHor = Hex("#C4E7F6");
             Color nightTop = Hex("#060B1E"), nightHor = Hex("#18284A");
             Color sunsetHor = Hex("#F2A65E");
             Color top = Color.Lerp(nightTop, dayTop, day);
             Color hor = Color.Lerp(nightHor, dayHor, day);
             hor = Color.Lerp(hor, sunsetHor, golden * 0.75f);
 
-            Color sunCol = Color.Lerp(Hex("#FFB070"), Hex("#FFF4E0"), Mathf.Clamp01(elev * 3f));
+            Color sunCol = Color.Lerp(Hex("#FFA860"), Hex("#FFF0D8"), Mathf.Clamp01(elev * 3f));
             if (elev > -0.05f)
             {
                 sun.transform.rotation = Quaternion.LookRotation(-sunDir);
                 sun.color = sunCol;
-                sun.intensity = Mathf.Lerp(0f, 1.25f, day);
+                sun.intensity = Mathf.Lerp(0f, 1.45f, day);
             }
             else
             {
@@ -88,9 +92,9 @@ namespace MarAberto
                 sun.intensity = 0.22f;
             }
 
-            RenderSettings.ambientSkyColor = Color.Lerp(Hex("#22305A"), Hex("#9CC6E8"), day);
-            RenderSettings.ambientEquatorColor = Color.Lerp(Hex("#1A2340"), Color.Lerp(Hex("#B9D3D8"), sunsetHor, golden * 0.4f), day);
-            RenderSettings.ambientGroundColor = Color.Lerp(Hex("#0E1420"), Hex("#6B6A55"), day);
+            RenderSettings.ambientSkyColor = Color.Lerp(Hex("#1C2850"), Hex("#7FA8D8"), day);
+            RenderSettings.ambientEquatorColor = Color.Lerp(Hex("#141C34"), Color.Lerp(Hex("#9DB4BA"), sunsetHor, golden * 0.4f), day);
+            RenderSettings.ambientGroundColor = Color.Lerp(Hex("#0A0F18"), Hex("#5A5444"), day);
 
             Shader.SetGlobalColor(skyTopId, top);
             Shader.SetGlobalColor(skyHorId, hor);

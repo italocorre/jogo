@@ -91,9 +91,18 @@ namespace MarAberto.EditorTools
             Build(path, true);
         }
 
+        [MenuItem("Mar Aberto/Tirar prints")]
+        public static void CapturePreviews()
+        {
+            ConfigurePlayer();
+            try { Preview.CaptureAll("screens"); }
+            catch (Exception e) { Debug.LogWarning("[MarAberto] Prints falharam: " + e); }
+        }
+
         static void Build(string path, bool exitOnFinish)
         {
             ConfigurePlayer();
+            if (exitOnFinish) CapturePreviews();
             CreateScene();
             Directory.CreateDirectory(Path.GetDirectoryName(path));
 

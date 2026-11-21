@@ -17,6 +17,34 @@ namespace MarAberto
 
         public int VertexCount => verts.Count;
 
+        /// <summary>Triângulo com cor por vértice e normal opcional (ex.: grama com normal para cima).</summary>
+        public void AddTri(Vector3 a, Vector3 b, Vector3 c, Color ca, Color cb, Color cc, Vector3? normal = null)
+        {
+            Vector3 n;
+            if (normal.HasValue) n = normal.Value;
+            else
+            {
+                n = Vector3.Cross(b - a, c - a);
+                if (n.sqrMagnitude < 1e-12f) return;
+                n.Normalize();
+            }
+            int i = verts.Count;
+            verts.Add(a); verts.Add(b); verts.Add(c);
+            normals.Add(n); normals.Add(n); normals.Add(n);
+            colors.Add(ca); colors.Add(cb); colors.Add(cc);
+            tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
+        }
+
+        /// <summary>Adiciona vértices com normais próprias (sombreamento suave).</summary>
+        public void AddSmoothTri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Color ca, Color cb, Color cc)
+        {
+            int i = verts.Count;
+            verts.Add(a); verts.Add(b); verts.Add(c);
+            normals.Add(na); normals.Add(nb); normals.Add(nc);
+            colors.Add(ca); colors.Add(cb); colors.Add(cc);
+            tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
+        }
+
         public void AddTri(Vector3 a, Vector3 b, Vector3 c, Color col)
         {
             var n = Vector3.Cross(b - a, c - a);

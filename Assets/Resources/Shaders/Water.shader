@@ -2,19 +2,22 @@ Shader "MarAberto/Water"
 {
     Properties
     {
-        _Shallow ("Água rasa", Color) = (0.16, 0.80, 0.74, 1)
-        _Deep ("Água funda", Color) = (0.02, 0.23, 0.42, 1)
+        _Scatter ("Cor da água", Color) = (0.03, 0.42, 0.58, 1)
+        _Shallow ("Turquesa raso", Color) = (0.20, 0.85, 0.78, 1)
         _Foam ("Espuma", Color) = (0.95, 0.98, 1.0, 1)
+        _Absorb ("Absorção (RGB)", Vector) = (0.42, 0.11, 0.08, 0)
     }
     SubShader
     {
         Tags { "Queue"="Transparent-10" "RenderType"="Transparent" "IgnoreProjector"="True" }
-        Cull Off
-        ZWrite Off
-        Blend SrcAlpha OneMinusSrcAlpha
+
+        GrabPass { "_MAWaterGrab" }
 
         Pass
         {
+            Cull Off
+            ZWrite On
+
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -24,7 +27,8 @@ Shader "MarAberto/Water"
             #include "MA_Common.cginc"
 
             UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
-            float4 _Shallow, _Deep, _Foam;
+            sampler2D _MAWaterGrab;
+            float4 _Scatter, _Shallow, _Foam, _Absorb;
 
             struct appdata { float4 vertex : POSITION; };
 
@@ -34,8 +38,9 @@ Shader "MarAberto/Water"
                 float3 wpos : TEXCOORD0;
                 float3 normal : TEXCOORD1;
                 float4 screenPos : TEXCOORD2;
-                float2 extra : TEXCOORD3; // x = altura da onda, y = profundidade na câmera
-                UNITY_FOG_COORDS(4)
+                float4 grabPos : TEXCOORD3;
+                float3 extra : TEXCOORD4; // x = altura da onda, y = profundidade na câmera, z = fade
+                UNITY_FOG_COORDS(5)
             };
 
             v2f vert (appdata v)
@@ -55,17 +60,24 @@ Shader "MarAberto/Water"
                 o.normal = normalize(cross(b, t));
                 o.pos = mul(UNITY_MATRIX_VP, float4(p, 1.0));
                 o.screenPos = ComputeScreenPos(o.pos);
-                o.extra = float2(g.y, -mul(UNITY_MATRIX_V, float4(p, 1.0)).z);
+                o.grabPos = ComputeGrabScreenPos(o.pos);
+                o.extra = float3(g.y, -mul(UNITY_MATRIX_V, float4(p, 1.0)).z, fade);
                 UNITY_TRANSFER_FOG(o, o.pos);
                 return o;
             }
 
             float DetailHeight(float2 p, float t)
             {
-                float h = MA_ValueNoise(p * 0.55 + float2(t * 0.35, t * 0.22));
-                h += MA_ValueNoise(p * 1.3 - float2(t * 0.28, -t * 0.4)) * 0.5;
-                h += MA_ValueNoise(p * 3.1 + float2(-t * 0.5, t * 0.6)) * 0.25;
+                float h = MA_ValueNoise(p * 0.45 + float2(t * 0.30, t * 0.18));
+                h += MA_ValueNoise(p * 1.1 - float2(t * 0.24, -t * 0.36)) * 0.55;
+                h += MA_ValueNoise(p * 2.7 + float2(-t * 0.5, t * 0.55)) * 0.3;
+                h += MA_ValueNoise(p * 6.3 + float2(t * 0.8, t * 0.3)) * 0.12;
                 return h;
+            }
+
+            float SceneDepth(float4 sp)
+            {
+                return LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(sp)));
             }
 
             fixed4 frag (v2f i, float facing : VFACE) : SV_Target
@@ -75,67 +87,75 @@ Shader "MarAberto/Water"
 
                 // Normal das ondas + ondinhas de detalhe.
                 float3 n = normalize(i.normal);
-                float detail = saturate(1.0 - camDist / 220.0) * 0.35;
+                float detail = saturate(1.0 - camDist / 260.0) * 0.32;
                 float2 uv = i.wpos.xz;
-                float e = 0.2;
+                float e = 0.15;
                 float h0 = DetailHeight(uv, _MA_Time);
                 float hx = DetailHeight(uv + float2(e, 0), _MA_Time);
                 float hz = DetailHeight(uv + float2(0, e), _MA_Time);
                 n = normalize(n + float3(h0 - hx, 0, h0 - hz) / e * detail);
 
                 float3 sunDir = normalize(_MA_SunDir.xyz);
-                float light = lerp(0.12, 1.0, _MA_Day);
+                float light = lerp(0.1, 1.0, _MA_Day);
                 bool fromBelow = facing < 0 || _MA_Underwater > 0.5;
 
                 if (fromBelow)
                 {
                     // Olhando a superfície de baixo: janela de luz (Snell) e reflexo total nas bordas.
                     float cosT = saturate(-dot(n, v));
-                    float window = smoothstep(0.55, 0.85, cosT);
-                    float3 above = MA_SkyColor(float3(-v.x, abs(v.y), -v.z)) * 1.15 + _MA_SunColor.rgb * pow(saturate(dot(-v, sunDir)), 40.0) * 2.0;
-                    float3 col = lerp(unity_FogColor.rgb * 0.9, above, window);
+                    float window = smoothstep(0.5, 0.8, cosT);
+                    float3 above = MA_SkyColor(float3(-v.x, abs(v.y), -v.z)) * 1.2
+                                 + _MA_SunColor.rgb * pow(saturate(dot(-v, sunDir)), 30.0) * 3.0;
+                    float3 col = lerp(unity_FogColor.rgb, above, window);
                     UNITY_APPLY_FOG(i.fogCoord, col);
                     return fixed4(col, 1.0);
                 }
 
-                // Profundidade da água atrás deste pixel (para transparência e espuma da praia).
-                float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.screenPos)));
-                float waterDepth = max(0.0, sceneZ - i.extra.y);
+                // ---------- Refração: o que está debaixo d'água ----------
+                float eye = i.extra.y;
+                float sceneZ = SceneDepth(i.screenPos);
+                float depthStraight = max(0.0, sceneZ - eye);
+                float2 distort = n.xz * 0.045 * saturate(depthStraight * 0.6);
+                float4 sp2 = i.screenPos; sp2.xy += distort * sp2.w;
+                float4 gp2 = i.grabPos;   gp2.xy += distort * gp2.w;
+                float sceneZ2 = SceneDepth(sp2);
+                if (sceneZ2 < eye) { sp2 = i.screenPos; gp2 = i.grabPos; sceneZ2 = sceneZ; }
+                float waterDepth = max(0.0, sceneZ2 - eye);
+                float3 refr = tex2Dproj(_MAWaterGrab, UNITY_PROJ_COORD(gp2)).rgb;
 
-                float absorb = 1.0 - exp(-waterDepth * 0.28);
-                float3 water = lerp(_Shallow.rgb, _Deep.rgb, absorb);
-                // Luz atravessando a crista das ondas (tom turquesa).
-                float crest = saturate(i.extra.x * 0.7 + 0.3);
-                water += _Shallow.rgb * crest * 0.18 * saturate(dot(sunDir, -v) * 0.5 + 0.6);
-                float diffuse = saturate(dot(n, sunDir)) * 0.35 + 0.65;
-                water *= diffuse * light;
+                // Luz atravessando a água: vermelho some primeiro (fica turquesa / azul).
+                float3 trans = exp(-waterDepth * _Absorb.xyz);
+                float3 scatter = lerp(_Shallow.rgb, _Scatter.rgb, saturate(waterDepth / 14.0)) * light;
+                // Brilho "por dentro" da onda quando o sol está atrás dela.
+                float sss = pow(saturate(dot(v, -sunDir) * 0.6 + 0.4), 3.0) * saturate(i.extra.x * 0.8 + 0.4);
+                scatter += _Shallow.rgb * sss * 0.35 * light;
+                float3 water = refr * trans + scatter * (1.0 - trans);
 
                 // Reflexo do céu (Fresnel)
                 float ndv = saturate(dot(n, v));
-                float fresnel = 0.03 + 0.97 * pow(1.0 - ndv, 5.0);
+                float fresnel = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
                 float3 refl = MA_SkyColor(reflect(-v, n));
-                float3 col = lerp(water, refl, fresnel * 0.85);
+                float3 col = lerp(water, refl, fresnel * 0.9);
 
-                // Brilho do sol
+                // Brilho do sol (no HDR vira "brilhinho" com o bloom)
                 float3 hv = normalize(sunDir + v);
-                float spec = pow(saturate(dot(n, hv)), 350.0) * 3.0 + pow(saturate(dot(n, hv)), 60.0) * 0.15;
+                float nh = saturate(dot(n, hv));
+                float spec = pow(nh, 900.0) * 18.0 + pow(nh, 90.0) * 0.35;
                 col += _MA_SunColor.rgb * spec * step(0.0, sunDir.y);
 
-                // Espuma: beira da praia e crista das ondas.
-                float foamNoise = MA_ValueNoise(uv * 1.7 + float2(_MA_Time * 0.4, 0)) * 0.6 + MA_ValueNoise(uv * 4.3 - _MA_Time * 0.3) * 0.4;
-                float shore = saturate(1.0 - waterDepth / 1.3);
-                float shoreBands = saturate(sin(waterDepth * 6.0 - _MA_Time * 2.0) * 0.5 + 0.5);
-                float foam = smoothstep(0.35, 0.6, shore * (0.6 + shoreBands * 0.6) * foamNoise * 1.8);
-                foam += smoothstep(0.55, 0.75, (i.extra.x - 0.55) * 1.6 + foamNoise * 0.6) * 0.8;
-                foam = saturate(foam) * saturate(1.0 - camDist / 600.0);
-                col = lerp(col, _Foam.rgb * light, foam);
-
-                float alpha = saturate(0.35 + absorb * 1.3 + fresnel);
-                alpha = max(alpha, foam);
-                alpha *= saturate(waterDepth * 4.0); // borda suave na areia
+                // Espuma: linhas na beira da praia e um pouco nas cristas.
+                float fn = MA_ValueNoise(uv * 1.3 + float2(_MA_Time * 0.25, 0)) * 0.55 + MA_ValueNoise(uv * 3.7 - _MA_Time * 0.2) * 0.45;
+                float shore = saturate(1.0 - depthStraight / 1.6);
+                float bands = saturate(sin(depthStraight * 5.0 - _MA_Time * 1.6) * 0.5 + 0.5);
+                float foam = smoothstep(0.42, 0.62, shore * (0.55 + bands * 0.5) * fn * 1.7);
+                foam += smoothstep(0.25, 0.04, depthStraight) * 0.7;
+                float crest = (i.extra.x - 0.85) * 1.2 + (fn - 0.5) * 0.7;
+                foam += smoothstep(0.15, 0.45, crest) * 0.45 * i.extra.z;
+                foam = saturate(foam) * saturate(1.0 - camDist / 500.0);
+                col = lerp(col, _Foam.rgb * light * 1.1, foam);
 
                 UNITY_APPLY_FOG(i.fogCoord, col);
-                return fixed4(col, alpha);
+                return fixed4(col, 1.0);
             }
             ENDCG
         }

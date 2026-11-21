@@ -4,6 +4,7 @@ Shader "MarAberto/LowPoly"
     {
         _Color ("Cor", Color) = (1,1,1,1)
         _Glossiness ("Brilho", Range(0,1)) = 0.08
+        _Detail ("Detalhe do terreno", Range(0,1)) = 0
     }
     SubShader
     {
@@ -24,10 +25,26 @@ Shader "MarAberto/LowPoly"
 
         fixed4 _Color;
         half _Glossiness;
+        half _Detail;
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
-            float3 albedo = IN.color.rgb * _Color.rgb;
+            float3 albedo = MA_VertexColor(IN.color.rgb) * _Color.rgb;
+
+            if (_Detail > 0.0)
+            {
+                // Variação suave de cor para o terreno não parecer liso.
+                float2 p = IN.worldPos.xz;
+                float n1 = MA_ValueNoise(p * 0.08);
+                float n2 = MA_ValueNoise(p * 0.6);
+                float n3 = MA_ValueNoise(p * 3.1);
+                float v = n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
+                albedo *= lerp(1.0, 0.82 + v * 0.36, _Detail);
+                // Areia molhada perto da água.
+                float wet = saturate(1.0 - abs(IN.worldPos.y - 0.25) / 0.6);
+                albedo *= lerp(1.0, 0.78, wet * _Detail);
+            }
+
             o.Albedo = albedo;
             o.Metallic = 0;
             o.Smoothness = _Glossiness;
@@ -38,11 +55,10 @@ Shader "MarAberto/LowPoly"
             if (depth > 0.0)
             {
                 float up = saturate(IN.worldNormal.y);
-                float fade = saturate(depth / 1.5) * saturate(1.0 - depth / 40.0);
+                float fade = saturate(depth / 1.2) * saturate(1.0 - depth / 40.0);
                 float c = MA_Caustics(IN.worldPos.xz, _MA_Time);
-                o.Emission = albedo * _MA_SunColor.rgb * c * up * fade * 0.9;
-                // Água absorve o vermelho: o fundo fica azulado.
-                o.Albedo = lerp(albedo, albedo * float3(0.55, 0.85, 0.95), saturate(depth / 12.0));
+                o.Emission = albedo * _MA_SunColor.rgb * c * up * fade * 1.6;
+                o.Albedo = lerp(albedo, albedo * float3(0.45, 0.8, 0.9), saturate(depth / 10.0));
             }
         }
         ENDCG

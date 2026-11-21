@@ -26,3 +26,4 @@
 crashlytics-build.properties
 # checagem local de compilação
 /.checkbuild/
+/screens/

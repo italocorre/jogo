@@ -75,10 +75,24 @@ namespace MarAberto
                 float k = Noise.Perlin3(n.x * 2.6f + ox, n.y * 2.6f, n.z * 2.6f);
                 return k > 0.52f ? oreColor : stone;
             }, 0.3f);
+            if (Type != ItemType.Pedra)
+            {
+                // Cristais do minério saindo da rocha.
+                int crystals = 4 + rng.Next(4);
+                for (int i = 0; i < crystals; i++)
+                {
+                    Vector3 d = new Vector3((float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() - 0.5f).normalized;
+                    d.y = Mathf.Abs(d.y) * 0.8f + 0.2f;
+                    d.Normalize();
+                    Vector3 basePos = Vector3.up * radius * 0.35f + Vector3.Scale(d * radius * 0.8f, new Vector3(1f, 0.75f, 1f));
+                    float len = radius * (0.25f + (float)rng.NextDouble() * 0.3f);
+                    mb.AddCylinder(basePos - d * 0.05f, basePos + d * len, radius * 0.14f, 0.01f, 5, Color.Lerp(oreColor, Color.white, (float)rng.NextDouble() * 0.25f));
+                }
+            }
             var mf = gameObject.AddComponent<MeshFilter>();
             mf.sharedMesh = mb.Build("Rocha");
             rend = gameObject.AddComponent<MeshRenderer>();
-            rend.sharedMaterial = Mats.LowPoly;
+            rend.sharedMaterial = Mats.Ore;
             var sc = gameObject.AddComponent<SphereCollider>();
             sc.center = Vector3.up * radius * 0.35f;
             sc.radius = radius * 0.95f;
@@ -98,7 +112,7 @@ namespace MarAberto
             }
             Health -= damage;
             shake = 1f;
-            Debris.Burst(point, normal, Health <= 0 ? 10 : 4, Health <= 0 ? oreColor : Color.Lerp(oreColor, Color.gray, 0.5f));
+            Debris.Burst(point, normal, Health <= 0 ? 12 : 5, Health <= 0 ? oreColor : Color.Lerp(oreColor, Color.gray, 0.5f));
             Sfx.Play(Sfx.Hit, point, 0.8f);
             if (Health <= 0) Break();
             return true;
@@ -107,19 +121,24 @@ namespace MarAberto
         void Break()
         {
             Sfx.Play(Sfx.Break, transform.position, 1f);
-            var inv = Game.Instance.Inventory;
             var rng = new System.Random();
-            if (Type == ItemType.Pedra)
+            Vector3 c = transform.position + Vector3.up * 0.6f;
+            void Drop(ItemType t, int n)
             {
-                inv.Add(ItemType.Pedra, rng.Next(2, 5));
+                for (int i = 0; i < n; i++)
+                {
+                    Vector3 v = new Vector3((float)rng.NextDouble() - 0.5f, 1.2f, (float)rng.NextDouble() - 0.5f) * 3.2f;
+                    if (Underwater) v *= 0.4f;
+                    WorldItem.Spawn(new ItemStack(t, 1), c + Random.insideUnitSphere * 0.3f, v);
+                }
             }
+            if (Type == ItemType.Pedra) Drop(ItemType.Pedra, rng.Next(2, 4));
             else
             {
-                inv.Add(Type, rng.Next(1, 4));
-                if (rng.NextDouble() < 0.5) inv.Add(ItemType.Pedra, 1);
+                Drop(Type, rng.Next(1, 4));
+                if (rng.NextDouble() < 0.4) Drop(ItemType.Pedra, 1);
             }
-            if (Underwater && rng.NextDouble() < 0.08)
-                inv.Add(ItemType.FragmentoMapa, 1);
+            if (Underwater && rng.NextDouble() < 0.1) Drop(ItemType.FragmentoMapa, 1);
 
             rend.enabled = false;
             col.enabled = false;
