@@ -121,6 +121,7 @@ namespace MarAberto
                     for (int i = 0; i < 3; i++)
                     {
                         float r = Random.value;
+                        if (Random.value < 0.18f) { inv.Add(Random.value < 0.6f ? ItemType.SementeBatata : ItemType.SementeMelancia, Random.Range(1, 3)); continue; }
                         if (r < 0.2f) inv.Add(ItemType.Corda, Random.Range(1, 3));
                         else if (r < 0.38f) inv.Add(ItemType.Madeira, Random.Range(2, 4));
                         else if (r < 0.5f) inv.Add(ItemType.Coco, 1);

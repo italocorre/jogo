@@ -130,6 +130,7 @@ namespace MarAberto
             if (Tier >= 3 && rng.NextDouble() < 0.12) Give(ItemType.Metralhadora, 1, 1);
             if (rng.NextDouble() < 0.15) Give(ItemType.Receptor, 1, 1);
             Give(ItemType.Perola, 0, Tier);
+            if (rng.NextDouble() < 0.5) Give(rng.NextDouble() < 0.5 ? ItemType.SementeBatata : ItemType.SementeMelancia, 1, 3);
             Sfx.UI(Sfx.Coin, 0.7f);
             g.Hud.Toast("Tesouro encontrado!", Hud.Gold);
         }

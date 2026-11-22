@@ -405,10 +405,26 @@ namespace MarAberto
             var g = Game.Instance;
             int m = ~(Layers.PlayerMask | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.Remote));
             if (!Physics.Raycast(cam.position, cam.forward, out var hit, 5f, m, QueryTriggerInteraction.Ignore)) { g.Hud.Toast("Mire no chão perto para plantar.", Hud.Bad); return; }
-            if (hit.collider.GetComponentInParent<BuildPiece>() != null || hit.collider.GetComponentInParent<Raft>() != null || hit.normal.y < 0.7f)
-            { g.Hud.Toast("Plante em terra firme e plana.", Hud.Bad); return; }
-            if (hit.point.y < Ocean.SeaLevel + 0.4f) { g.Hud.Toast("Muito perto da água para plantar.", Hud.Bad); return; }
-            if (Physics.CheckSphere(hit.point + Vector3.up * 0.6f, 0.9f, 1 << Layers.Build | 1 << Layers.Props, QueryTriggerInteraction.Ignore))
+            bool crop = kind == PieceKind.PlantaBatata || kind == PieceKind.PlantaMelancia;
+            var hitPiece = hit.collider.GetComponentInParent<BuildPiece>();
+            bool bed = crop && hitPiece != null && hitPiece.Kind == PieceKind.Canteiro && hit.normal.y > 0.7f;
+            Raft raft = bed ? hitPiece.GetComponentInParent<Raft>() : null;
+            if (!bed)
+            {
+                if (hitPiece != null || hit.collider.GetComponentInParent<Raft>() != null || hit.normal.y < 0.7f)
+                { g.Hud.Toast(crop ? "Plante na terra ou num canteiro." : "Plante em terra firme e plana.", Hud.Bad); return; }
+                if (hit.point.y < Ocean.SeaLevel + 0.4f) { g.Hud.Toast("Muito perto da água para plantar.", Hud.Bad); return; }
+            }
+            if (crop)
+            {
+                foreach (var c in Physics.OverlapSphere(hit.point + Vector3.up * 0.2f, 0.4f, 1 << Layers.Build | 1 << Layers.Props, QueryTriggerInteraction.Collide))
+                {
+                    var bp = c.GetComponentInParent<BuildPiece>();
+                    if (bp != null && bp.Kind == PieceKind.Canteiro) continue;
+                    g.Hud.Toast("Muito perto de outra planta.", Hud.Bad); return;
+                }
+            }
+            else if (Physics.CheckSphere(hit.point + Vector3.up * 0.6f, 0.9f, 1 << Layers.Build | 1 << Layers.Props, QueryTriggerInteraction.Ignore))
             { g.Hud.Toast("Muito perto de outra planta ou construção.", Hud.Bad); return; }
             if (g.World != null && g.Net != null)
             {
@@ -416,10 +432,10 @@ namespace MarAberto
                 if (claim != null && claim != NetConfig.Team) { g.Hud.Toast("Território de " + claim + ".", Hud.Bad); return; }
             }
             g.Inventory.Remove(type, 1);
-            NetGame.RequestPlace(kind, null, false, hit.point - Vector3.up * 0.05f, Quaternion.Euler(0, Random.Range(0f, 360f), 0));
+            NetGame.RequestPlace(kind, raft, false, hit.point - Vector3.up * 0.05f, Quaternion.Euler(0, Random.Range(0f, 360f), 0));
             Sfx.Play(Sfx.StepGrass, hit.point, 0.7f);
             Debris.Burst(hit.point, Vector3.up, 6, new Color(0.35f, 0.25f, 0.15f));
-            g.Hud.Toast("Plantado! Cresce em uns 6 minutos.", Hud.Good);
+            g.Hud.Toast(crop ? (bed ? "Plantado no canteiro! Cresce mais rápido (e com chuva, mais ainda)." : "Plantado! Cresce em uns 5 minutos (no canteiro e na chuva, mais rápido).") : "Plantado! Cresce em uns 6 minutos.", Hud.Good);
         }
 
         static float Smooth(float x)

@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva, Porta, Janela, Cerca, Lampiao, Rede }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva, Porta, Janela, Cerca, Lampiao, Rede, Canteiro, PlantaBatata, PlantaMelancia }
     public enum Station { Nenhuma, Bancada, Fundicao, Refinaria, Fogueira }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -65,13 +65,16 @@ namespace MarAberto
                 case PieceKind.Cerca: return "Cerca";
                 case PieceKind.Lampiao: return "Lampião";
                 case PieceKind.Rede: return "Rede coletora";
+                case PieceKind.Canteiro: return "Canteiro de horta";
+                case PieceKind.PlantaBatata: return "Pé de batata";
+                case PieceKind.PlantaMelancia: return "Pé de melancia";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
             || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
-            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva || k == PieceKind.Lampiao;
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva || k == PieceKind.Lampiao || k == PieceKind.Canteiro || k == PieceKind.PlantaBatata || k == PieceKind.PlantaMelancia;
 
         /// <summary>Peças que vão na borda do piso, como a parede.</summary>
         public static bool IsWallLike(PieceKind k) => k == PieceKind.Parede || k == PieceKind.Porta || k == PieceKind.Janela || k == PieceKind.Cerca || k == PieceKind.Rede;
@@ -110,6 +113,9 @@ namespace MarAberto
                 case PieceKind.Cerca: return new Vector3(Cell, 1.0f, 0.12f);
                 case PieceKind.Lampiao: return new Vector3(0.4f, 1.7f, 0.4f);
                 case PieceKind.Rede: return new Vector3(Cell, 0.9f, 0.12f);
+                case PieceKind.Canteiro: return new Vector3(1.9f, 0.4f, 1.0f);
+                case PieceKind.PlantaBatata:
+                case PieceKind.PlantaMelancia: return new Vector3(0.5f, 0.4f, 0.5f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -572,6 +578,61 @@ namespace MarAberto
                     Box(root, new Vector3(0, 1.6f, -2.9f), new Vector3(0.6f, 0.6f, 3.4f));
                     Box(root, new Vector3(0, 0.1f, 0.15f), new Vector3(1.9f, 0.2f, 3.2f));
                     root.AddComponent<Helicopter>();
+                    break;
+                }
+                case PieceKind.Canteiro:
+                {
+                    // Caixa de tábuas com terra escura (planta-se em cima, até na jangada).
+                    foreach (float z in new[] { -0.47f, 0.47f })
+                        planks.AddBoxUV(new Vector3(0, 0.18f, z), new Vector3(1.9f, 0.36f, 0.06f), Quaternion.identity, W(0.72f), 0.5f);
+                    foreach (float x in new[] { -0.92f, 0.92f })
+                        planks.AddBoxUV(new Vector3(x, 0.18f, 0), new Vector3(0.06f, 0.36f, 1.0f), Quaternion.identity, W(0.68f), 0.5f);
+                    for (int i = 0; i < 6; i++)
+                        other.AddRock(new Vector3(-0.7f + i * 0.28f, 0.27f, 0), 0.22f, 80 + i, _ => C(0.24f, 0.17f, 0.11f), 0.2f, new Vector3(0.75f, 0.25f, 2f), 1);
+                    Box(root, new Vector3(0, 0.17f, 0), new Vector3(1.9f, 0.34f, 1.0f));
+                    break;
+                }
+                case PieceKind.PlantaBatata:
+                case PieceKind.PlantaMelancia:
+                {
+                    bool melon = k == PieceKind.PlantaMelancia;
+                    other.AddRock(new Vector3(0, 0.0f, 0), 0.2f, 6, _ => C(0.3f, 0.21f, 0.14f), 0.15f, new Vector3(1f, 0.3f, 1f), 1);
+                    var broto = new GameObject("Broto");
+                    broto.transform.SetParent(root.transform, false);
+                    var sb = new MeshBuilder();
+                    Color leaf = melon ? C(0.3f, 0.55f, 0.2f) : C(0.35f, 0.5f, 0.22f);
+                    int nl = melon ? 9 : 7;
+                    for (int i = 0; i < nl; i++)
+                    {
+                        float a = i * Mathf.PI * 2f / nl + (i % 2) * 0.3f;
+                        Vector3 d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                        Vector3 side = Vector3.Cross(Vector3.up, d) * (melon ? 0.07f : 0.05f);
+                        Vector3 b0 = Vector3.up * (melon ? 0.05f : 0.12f + (i % 3) * 0.04f);
+                        Vector3 tip = b0 + d * (melon ? 0.3f : 0.2f) + Vector3.up * (melon ? 0.02f : 0.1f);
+                        Color c0 = leaf; c0.a = 0.3f; Color c1 = leaf; c1.a = 1f;
+                        sb.AddTri(b0 - side, tip, b0 + side, c0, c1, c0, Vector3.up);
+                        sb.AddTri(b0 + side, tip, b0 - side, c0, c1, c0, Vector3.up);
+                    }
+                    broto.AddComponent<MeshFilter>().sharedMesh = sb.Build("Broto");
+                    broto.AddComponent<MeshRenderer>().sharedMaterial = Mats.Foliage;
+                    var fruto = new GameObject("Fruto");
+                    fruto.transform.SetParent(root.transform, false);
+                    var fb = new MeshBuilder();
+                    if (melon)
+                    {
+                        fb.AddRock(new Vector3(0.12f, 0.12f, 0.05f), 0.15f, 7, n => Mathf.Repeat(Mathf.Atan2(n.z, n.x) * 3f, 1f) > 0.5f ? C(0.18f, 0.4f, 0.15f) : C(0.3f, 0.55f, 0.22f), 0.03f, new Vector3(1.25f, 0.95f, 1f), 2);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < 3; i++)
+                            fb.AddRock(new Vector3(Mathf.Cos(i * 2.1f) * 0.12f, 0.04f, Mathf.Sin(i * 2.1f) * 0.12f), 0.05f, 8 + i, _ => C(0.62f, 0.47f, 0.3f), 0.15f, new Vector3(1.2f, 0.8f, 1f), 1);
+                    }
+                    fruto.AddComponent<MeshFilter>().sharedMesh = fb.Build("Fruto");
+                    fruto.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    fruto.SetActive(false);
+                    var bc = root.AddComponent<BoxCollider>();
+                    bc.center = new Vector3(0, 0.2f, 0); bc.size = new Vector3(0.5f, 0.4f, 0.5f); bc.isTrigger = true;
+                    root.AddComponent<Crop>().Melon = melon;
                     break;
                 }
                 case PieceKind.MudaCoqueiro:

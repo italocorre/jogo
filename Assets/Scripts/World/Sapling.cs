@@ -121,4 +121,63 @@ namespace MarAberto
             return go;
         }
     }
+
+    /// <summary>Plantação (batata ou melancia): cresce mais rápido no canteiro e na chuva. E colhe quando madura.</summary>
+    public class Crop : MonoBehaviour, IInteractable
+    {
+        public const float GrowTime = 300f;   // 5 minutos (bem menos com chuva e canteiro)
+        public bool Melon;
+        public float Age;
+        Transform sprout, fruit;
+        bool onBed, harvested;
+        float bedCheck;
+
+        bool Ripe => Age >= GrowTime;
+        public string Prompt => Ripe ? "Colher " + (Melon ? "melancia" : "batatas")
+            : (Melon ? "Pé de melancia" : "Pé de batata") + " (" + Mathf.RoundToInt(100f * Age / GrowTime) + "%" + (Weather.Instance != null && Weather.Instance.Rain > 0.2f ? ", chuva ajudando" : "") + ")";
+        public bool CanInteract => !harvested;
+
+        void Start()
+        {
+            sprout = transform.Find("Broto");
+            fruit = transform.Find("Fruto");
+        }
+
+        void Update()
+        {
+            if (harvested) return;
+            bedCheck -= Time.deltaTime;
+            if (bedCheck <= 0)
+            {
+                bedCheck = 5f;
+                onBed = false;
+                foreach (var c in Physics.OverlapSphere(transform.position + Vector3.down * 0.1f, 0.3f, 1 << Layers.Build, QueryTriggerInteraction.Ignore))
+                {
+                    var bp = c.GetComponentInParent<BuildPiece>();
+                    if (bp != null && bp.Kind == PieceKind.Canteiro) { onBed = true; break; }
+                }
+            }
+            if (!Ripe)
+            {
+                float rate = 1f + (onBed ? 0.6f : 0f) + (Weather.Instance != null ? Weather.Instance.Rain * 1.2f : 0f);
+                Age += Time.deltaTime * rate;
+            }
+            float k = Mathf.Clamp01(Age / GrowTime);
+            if (sprout != null) sprout.localScale = Vector3.one * Mathf.Lerp(0.3f, 1.4f, k);
+            if (fruit != null && fruit.gameObject.activeSelf != Ripe) fruit.gameObject.SetActive(Ripe);
+        }
+
+        public void Interact(PlayerController player)
+        {
+            var g = Game.Instance;
+            if (!Ripe) { g.Hud.Toast("Ainda está crescendo. No canteiro e com chuva cresce mais rápido.", Hud.Info); return; }
+            harvested = true;
+            if (Melon) { g.Inventory.Add(ItemType.Melancia, onBed ? 2 : 1); g.Inventory.Add(ItemType.SementeMelancia, 2); }
+            else { g.Inventory.Add(ItemType.Batata, onBed ? 4 : 3); g.Inventory.Add(ItemType.SementeBatata, 2); }
+            Sfx.Play(Sfx.StepGrass, transform.position, 0.7f);
+            Debris.Burst(transform.position + Vector3.up * 0.2f, Vector3.up, 6, new Color(0.3f, 0.5f, 0.2f));
+            var bp = GetComponent<BuildPiece>();
+            if (bp != null) NetGame.RequestRemove(bp); else Destroy(gameObject);
+        }
+    }
 }

@@ -294,6 +294,14 @@ namespace MarAberto
                 Description = "Clique mirando na água; quando a boia afundar, clique de novo para pegar o peixe.", Cost = L((Gra, 3), (Cor, 2)) });
             Add(new Recipe { Id = "peixe_assado", Name = "Peixe assado", Category = CraftCategory.Comida, Output = ItemType.PeixeAssado, Station = Station.Fogueira, StartUnlocked = true,
                 Description = "Assado na fogueira.", Cost = L((ItemType.PeixeCru, 1)) });
+            Add(new Recipe { Id = "canteiro", Name = "Canteiro de horta", Category = CraftCategory.Comida, Piece = PieceKind.Canteiro, IconOverride = ItemType.SementeBatata, StartUnlocked = true,
+                Description = "Construa com o martelo (até na jangada). Plante sementes em cima: crescem mais rápido e dão mais.", Cost = L((Mad, 3), (Fol, 2), (Ped, 2)) });
+            Add(new Recipe { Id = "batata_assada", Name = "Batata assada", Category = CraftCategory.Comida, Output = ItemType.BatataAssada, Station = Station.Fogueira, StartUnlocked = true,
+                Description = "Assada na fogueira.", Cost = L((ItemType.Batata, 1)) });
+            Add(new Recipe { Id = "ensopado", Name = "Ensopado", Category = CraftCategory.Comida, Output = ItemType.Ensopado, Station = Station.Fogueira, StartUnlocked = true,
+                Description = "Carne + batata + água limpa: a comida mais forte do jogo (cura bastante).", Cost = L((ItemType.CarneCrua, 1), (ItemType.Batata, 2), (ItemType.AguaLimpa, 1)) });
+            Add(new Recipe { Id = "ensopado_peixe", Name = "Ensopado de peixe", Category = CraftCategory.Comida, Output = ItemType.Ensopado, Station = Station.Fogueira, StartUnlocked = true,
+                Description = "Peixe + batata + água limpa.", Cost = L((ItemType.PeixeCru, 1), (ItemType.Batata, 2), (ItemType.AguaLimpa, 1)) });
             Add(new Recipe { Id = "carne_crua_assada", Name = "Carne assada (caça)", Category = CraftCategory.Comida, Output = ItemType.CarneAssada, Station = Station.Fogueira, StartUnlocked = true,
                 Description = "Carne de javali ou caranguejo assada na fogueira.", Cost = L((ItemType.CarneCrua, 1)) });
             Add(new Recipe { Id = "carne_assada", Name = "Carne assada", Category = CraftCategory.Comida, Output = ItemType.CarneAssada, Station = Station.Fogueira, StartUnlocked = true,

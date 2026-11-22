@@ -64,6 +64,12 @@ namespace MarAberto
         TanqueOxigenio,
         Mascara,
         LanternaMergulho,
+        SementeBatata,
+        SementeMelancia,
+        Batata,
+        BatataAssada,
+        Melancia,
+        Ensopado,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca, Gancho, Besta, Pistola }
@@ -168,6 +174,19 @@ namespace MarAberto
             SetRarity(ItemType.Mascara, 1);
             Def(ItemType.LanternaMergulho, "Lanterna de Mergulho", "Na mão: ilumina para onde você olha (ótima no fundo do mar e à noite).", new Color(0.9f, 0.8f, 0.4f), 0, 1);
             SetRarity(ItemType.LanternaMergulho, 1);
+            Def(ItemType.SementeBatata, "Semente de Batata", "Clique na terra ou num canteiro para plantar. Achada em barris boiando.", new Color(0.6f, 0.47f, 0.3f), 1, 20);
+            defs[ItemType.SementeBatata].Plant = PieceKind.PlantaBatata;
+            Def(ItemType.SementeMelancia, "Semente de Melancia", "Clique na terra ou num canteiro para plantar. Achada em barris boiando.", new Color(0.2f, 0.18f, 0.15f), 1, 20);
+            defs[ItemType.SementeMelancia].Plant = PieceKind.PlantaMelancia;
+            Def(ItemType.Batata, "Batata", "Crua mata pouco a fome. Asse na fogueira ou faça ensopado.", new Color(0.65f, 0.5f, 0.32f), 2, 20);
+            SetFood(ItemType.Batata, 8f, 0f, 0f);
+            Def(ItemType.BatataAssada, "Batata Assada", "Mata bem a fome.", new Color(0.55f, 0.38f, 0.22f), 3, 20);
+            SetFood(ItemType.BatataAssada, 30f, 0f, 5f);
+            Def(ItemType.Melancia, "Melancia", "Mata a sede e um pouco a fome.", new Color(0.3f, 0.55f, 0.22f), 3, 10);
+            SetFood(ItemType.Melancia, 12f, 35f, 0f);
+            Def(ItemType.Ensopado, "Ensopado", "Carne, batata e água na fogueira: a comida mais forte. Cura bastante.", new Color(0.6f, 0.35f, 0.2f), 8, 10);
+            SetFood(ItemType.Ensopado, 70f, 15f, 35f);
+            SetRarity(ItemType.Ensopado, 1);
             Def(ItemType.CarneAssada, "Carne Assada", "Assada na fogueira: mata bem a fome e cura.", new Color(0.55f, 0.3f, 0.18f), 6, 20);
             SetFood(ItemType.CarneAssada, 45f, 0f, 15f);
             Def(ItemType.PeixeCru, "Peixe (cru)", "Pescado com a vara. Melhor assar na fogueira.", new Color(0.6f, 0.7f, 0.8f), 2, 20);
