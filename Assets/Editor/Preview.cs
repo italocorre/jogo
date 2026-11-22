@@ -11,7 +11,7 @@ namespace MarAberto.EditorTools
     /// </summary>
     public static class Preview
     {
-        const int W = 1600, H = 900;
+        const int W = 1280, H = 720;
 
         public static void CaptureAll(string folder)
         {
@@ -27,7 +27,7 @@ namespace MarAberto.EditorTools
             var boat = game.GiveBoat();
             Icons.RenderAll();
 
-            var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
+            var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 1 };
             var uiCamGo = new GameObject("CameraInterface");
             var uiCam = uiCamGo.AddComponent<Camera>();
             uiCam.clearFlags = CameraClearFlags.Depth;
@@ -45,6 +45,8 @@ namespace MarAberto.EditorTools
             Vector3 dockDir = (island.DockEnd - island.SpawnPoint); dockDir.y = 0; dockDir.Normalize();
             Vector3 side = Vector3.Cross(Vector3.up, dockDir);
 
+            // No GitHub a Unity desenha por software: cada print leva minutos. Só os principais por padrão.
+            const bool AllShots = false;
             void Shot(string name, Vector3 pos, Vector3 look, float tod, bool ui = false)
             {
                 try
@@ -96,20 +98,20 @@ namespace MarAberto.EditorTools
             var reef = island.Reefs[0];
             Vector3 rc = reef.transform.position;
             Vector3 reefEye = rc + new Vector3(12f, 0, 8f); reefEye.y = reef.Height(reefEye.x, reefEye.z) + 3.5f;
-            Shot("05_recife_fundo", reefEye, rc + Vector3.down * 14f, 0.45f);
-            Shot("06_por_do_sol", spawnEye, spawnEye + island.SpawnLook * 10f, 0.715f);
+            if (AllShots) Shot("05_recife_fundo", reefEye, rc + Vector3.down * 14f, 0.45f);
+            if (AllShots) Shot("06_por_do_sol", spawnEye, spawnEye + island.SpawnLook * 10f, 0.715f);
             Vector3 hill = c + dockDir * 120f + side * 25f; hill.y = island.Height(hill.x, hill.z) + 1.7f;
             Shot("07_floresta_e_montanhas", hill, c + Vector3.up * 45f, 0.38f);
             Vector3 palmEye = island.SpawnPoint + Vector3.up * 0.6f - side * 3f;
-            Shot("15_coqueiros", palmEye, palmEye - side * 10f + Vector3.up * 5f, 0.36f);
+            if (AllShots) Shot("15_coqueiros", palmEye, palmEye - side * 10f + Vector3.up * 5f, 0.36f);
             // Mochila deixada ao desmaiar
             Vector3 bpPos = island.SpawnPoint + island.SpawnLook * 3f; bpPos.y = island.Height(bpPos.x, bpPos.z);
             var lost = LostBackpack.Spawn(bpPos, new[] { new ItemStack(ItemType.Cobre, 4) }, 20);
-            Shot("16_mochila_perdida", bpPos - island.SpawnLook * 2.2f + Vector3.up * 1.3f + side * 0.5f, bpPos + Vector3.up * 0.25f, 0.42f);
+            if (AllShots) Shot("16_mochila_perdida", bpPos - island.SpawnLook * 2.2f + Vector3.up * 1.3f + side * 0.5f, bpPos + Vector3.up * 0.25f, 0.42f);
             UnityEngine.Object.DestroyImmediate(lost.gameObject);
             Vector3 buoyView = rc + (c - rc).normalized * 22f + Vector3.up * 2.5f;
-            Shot("08_boia_do_recife", buoyView, rc + Vector3.up * 1f, 0.5f);
-            Shot("09_noite", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.up * 1f, 0.95f);
+            if (AllShots) Shot("08_boia_do_recife", buoyView, rc + Vector3.up * 1f, 0.5f);
+            if (AllShots) Shot("09_noite", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.up * 1f, 0.95f);
 
             // Interface
             if (hands != null) hands.gameObject.SetActive(true);
@@ -129,12 +131,12 @@ namespace MarAberto.EditorTools
             game.Hud.Toast("Âncora presa no fundo (12 m). Pode mergulhar!", Hud.Good);
             Shot("10_interface", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.down * 1.2f, 0.42f, true);
             game.Hud.PreviewPanel(1);
-            Shot("11_mochila", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
+            if (AllShots) Shot("11_mochila", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
             inv.Add(ItemType.Graveto, 6, false); inv.Add(ItemType.Pedra, 6, false); inv.Add(ItemType.Folha, 9, false); inv.Add(ItemType.Madeira, 4, false);
             game.Hud.PreviewCraft(CraftCategory.Ferramentas);
             Shot("12_tab_fabricar", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
             game.Hud.PreviewPanel(3);
-            Shot("13_pausa", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
+            if (AllShots) Shot("13_pausa", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
             game.Hud.PreviewPanel(0);
             // Noite com a tocha na mão
             inv.Add(ItemType.Tocha, 1, false);
