@@ -53,7 +53,7 @@ Shader "MarAberto/Terrain"
             float2 top = IN.worldPos.xz * _Scale;
 
             float3 sand = Tile(_Sand, top);
-            float3 grass = Tile(_Grass, top * 1.3);
+            float3 grass = Tile(_Grass, top * 1.3) * float3(0.78, 1.0, 0.6); // grama mais verde e viva
             float3 ground = Tile(_Ground, top);
 
             // Rocha triplanar

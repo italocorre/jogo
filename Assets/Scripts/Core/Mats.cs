@@ -68,7 +68,7 @@ namespace MarAberto
         }
 
         /// <summary>Tábuas de madeira (píer, barraca, barco). Cor do vértice tinge a madeira.</summary>
-        public static Material Planks => TexturedPBR("Tabuas", "Models/modular_wooden_pier/textures/modular_wooden_pier_planks_diff_1k", "Models/modular_wooden_pier/textures/modular_wooden_pier_planks_nor_gl_1k", 0.12f, true);
+        public static Material Planks => TexturedPBR("Tabuas", "Textures/Chao/tabuas_diff", "Textures/Chao/tabuas_nor", 0.12f, true);
         public static Material Poles => TexturedPBR("Estacas", "Models/modular_wooden_pier/textures/modular_wooden_pier_poles_diff_1k", "Models/modular_wooden_pier/textures/modular_wooden_pier_poles_nor_gl_1k", 0.1f, true);
         public static Material Bark => TexturedPBR("Casca", "Textures/Chao/bark_brown_02_diff", "Textures/Chao/bark_brown_02_nor", 0.08f, true);
 

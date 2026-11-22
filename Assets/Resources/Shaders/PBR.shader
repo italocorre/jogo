@@ -23,7 +23,7 @@ Shader "MarAberto/PBR"
         Cull [_Cull]
 
         CGPROGRAM
-        #pragma surface surf Standard fullforwardshadows addshadow alphatest:_Cutoff vertex:vert
+        #pragma surface surf Standard fullforwardshadows addshadow alphatest:_Cutoff vertex:vert keepalpha
         #pragma target 3.0
         #include "MA_Common.cginc"
 
