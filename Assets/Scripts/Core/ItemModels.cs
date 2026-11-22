@@ -483,6 +483,76 @@ namespace MarAberto
                     mb.AddBox(new Vector3(0, -0.07f, -0.07f), new Vector3(0.035f, 0.08f, 0.04f), Quaternion.Euler(15, 0, 0), wood);
                     break;
                 }
+                case ItemType.Besta:
+                {
+                    Color wood = C(0.45f, 0.3f, 0.18f), metal = C(0.3f, 0.3f, 0.32f), str = C(0.88f, 0.85f, 0.75f);
+                    mb.AddBox(new Vector3(0, 0, 0), new Vector3(0.05f, 0.05f, 0.6f), Quaternion.identity, wood);           // coronha
+                    mb.AddBox(new Vector3(0, -0.06f, -0.18f), new Vector3(0.04f, 0.1f, 0.05f), Quaternion.Euler(-15, 0, 0), wood); // pegada
+                    Vector3 prev = Vector3.zero;
+                    for (int i = 0; i <= 8; i++)
+                    {
+                        float u = i / 8f, x = Mathf.Lerp(-0.3f, 0.3f, u), z = 0.27f - Mathf.Sin(u * Mathf.PI) * 0.06f;
+                        Vector3 p = new Vector3(x, 0.02f, z);
+                        if (i > 0) mb.AddCylinder(prev, p, 0.012f, 0.012f, 6, metal, false);
+                        prev = p;
+                    }
+                    mb.AddCylinder(new Vector3(-0.3f, 0.02f, 0.27f), new Vector3(0, 0.03f, 0.02f), 0.003f, 0.003f, 4, str, false);
+                    mb.AddCylinder(new Vector3(0.3f, 0.02f, 0.27f), new Vector3(0, 0.03f, 0.02f), 0.003f, 0.003f, 4, str, false);
+                    break;
+                }
+                case ItemType.Virote:
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        float x = -0.03f + i * 0.03f;
+                        mb.AddCylinder(new Vector3(x, -0.2f, 0), new Vector3(x, 0.18f, 0), 0.008f, 0.008f, 6, C(0.55f, 0.42f, 0.28f));
+                        mb.AddCylinder(new Vector3(x, 0.18f, 0), new Vector3(x, 0.24f, 0), 0.016f, 0.002f, 6, C(0.4f, 0.4f, 0.42f));
+                    }
+                    break;
+                }
+                case ItemType.Pistola:
+                {
+                    Color metal = C(0.2f, 0.2f, 0.22f), wood = C(0.42f, 0.26f, 0.15f), brass = C(0.78f, 0.6f, 0.3f);
+                    mb.AddCylinder(new Vector3(0, 0.04f, -0.05f), new Vector3(0, 0.04f, 0.28f), 0.018f, 0.015f, 10, metal);   // cano
+                    mb.AddCylinder(new Vector3(0, 0.04f, 0.27f), new Vector3(0, 0.04f, 0.29f), 0.022f, 0.022f, 10, brass);
+                    mb.AddBox(new Vector3(0, 0.03f, -0.06f), new Vector3(0.04f, 0.05f, 0.1f), Quaternion.identity, metal);   // fecho
+                    mb.AddBox(new Vector3(0, -0.04f, -0.12f), new Vector3(0.036f, 0.14f, 0.05f), Quaternion.Euler(-25, 0, 0), wood); // cabo
+                    mb.AddSphere(new Vector3(0, -0.1f, -0.15f), new Vector3(0.025f, 0.02f, 0.03f), brass, 1);
+                    mb.AddBox(new Vector3(0, -0.01f, -0.04f), new Vector3(0.006f, 0.03f, 0.006f), Quaternion.identity, metal); // gatilho
+                    mb.AddBox(new Vector3(0, 0.075f, -0.08f), new Vector3(0.008f, 0.03f, 0.02f), Quaternion.Euler(-30, 0, 0), metal); // cão
+                    break;
+                }
+                case ItemType.Polvora:
+                {
+                    Color sack = C(0.62f, 0.52f, 0.38f);
+                    mb.AddRock(new Vector3(0, 0, 0), 0.09f, 31, n => sack, 0.12f, new Vector3(1f, 1.1f, 1f), 2);
+                    mb.AddCylinder(new Vector3(0, 0.08f, 0), new Vector3(0, 0.12f, 0), 0.025f, 0.04f, 8, sack);
+                    mb.AddCylinder(new Vector3(0, 0.085f, 0), new Vector3(0, 0.095f, 0), 0.03f, 0.03f, 8, C(0.3f, 0.22f, 0.15f));
+                    break;
+                }
+                case ItemType.BalaPistola:
+                {
+                    for (int i = 0; i < 5; i++)
+                        mb.AddSphere(new Vector3(Mathf.Cos(i * 1.3f) * 0.03f, 0.015f + (i == 4 ? 0.025f : 0f), Mathf.Sin(i * 1.3f) * 0.03f), Vector3.one * 0.016f, C(0.45f, 0.45f, 0.48f), 1);
+                    break;
+                }
+                case ItemType.Couro:
+                {
+                    Color hide = C(0.55f, 0.38f, 0.24f), fur = C(0.3f, 0.22f, 0.15f);
+                    mb.AddRock(Vector3.zero, 0.16f, 41, n => n.y > 0 ? hide : fur, 0.25f, new Vector3(1.2f, 0.12f, 1f), 2);
+                    break;
+                }
+                case ItemType.ArmaduraCouro:
+                case ItemType.ArmaduraFerro:
+                {
+                    bool iron = t == ItemType.ArmaduraFerro;
+                    Color main = iron ? C(0.58f, 0.58f, 0.6f) : C(0.5f, 0.34f, 0.2f), trim = iron ? C(0.35f, 0.33f, 0.32f) : C(0.32f, 0.22f, 0.14f);
+                    mb.AddRock(new Vector3(0, 0, 0), 0.2f, 51, n => main, 0.04f, new Vector3(1.05f, 1.25f, 0.55f), 2);    // tronco
+                    foreach (float sx in new[] { -1f, 1f })
+                        mb.AddRock(new Vector3(sx * 0.2f, 0.18f, 0), 0.08f, 52, n => trim, 0.05f, new Vector3(1.2f, 0.7f, 1f), 1); // ombreiras
+                    mb.AddCylinder(new Vector3(0, -0.12f, 0), new Vector3(0, -0.09f, 0), 0.19f, 0.19f, 12, trim);                 // cinto
+                    break;
+                }
                 case ItemType.Municao:
                 {
                     // Caixinha com balas de latão.

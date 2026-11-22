@@ -6,7 +6,7 @@ namespace MarAberto
     /// <summary>Flecha ou bala de canhão: voa com gravidade; acerta jogadores e peixes (construções não sofrem dano).</summary>
     public class Projectile : MonoBehaviour
     {
-        public enum Kind { Flecha, BalaCanhao }
+        public enum Kind { Flecha, BalaCanhao, Virote, BalaPistola }
         Kind kind;
         Vector3 vel;
         bool visualOnly;        // disparo de outro jogador: só aparece aqui
@@ -17,12 +17,13 @@ namespace MarAberto
 
         public static Projectile Fire(Kind k, Vector3 from, Vector3 velocity, bool visualOnly)
         {
-            var go = new GameObject(k == Kind.Flecha ? "Flecha" : "BalaDeCanhao");
+            var go = new GameObject(k.ToString());
             go.transform.position = from;
             go.transform.rotation = Quaternion.LookRotation(velocity);
             var p = go.AddComponent<Projectile>();
             p.kind = k; p.vel = velocity; p.visualOnly = visualOnly;
-            go.AddComponent<MeshFilter>().sharedMesh = k == Kind.Flecha ? ArrowMesh() : BallMesh();
+            go.AddComponent<MeshFilter>().sharedMesh = k == Kind.BalaCanhao ? BallMesh() : k == Kind.BalaPistola ? SmallBallMesh() : ArrowMesh();
+            if (k == Kind.Virote) go.transform.localScale = new Vector3(1.3f, 1.3f, 0.7f);
             go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
             if (!visualOnly) NetGame.SendProjectile(k, from, velocity);
             return p;
@@ -43,6 +44,15 @@ namespace MarAberto
             return arrowMesh = mb.Build("Flecha");
         }
 
+        static Mesh smallBall;
+        static Mesh SmallBallMesh()
+        {
+            if (smallBall != null) return smallBall;
+            var mb = new MeshBuilder();
+            mb.AddSphere(Vector3.zero, Vector3.one * 0.015f, new Color(0.4f, 0.4f, 0.42f), 1);
+            return smallBall = mb.Build("BalaPistola");
+        }
+
         static Mesh BallMesh()
         {
             if (ballMesh != null) return ballMesh;
@@ -59,10 +69,10 @@ namespace MarAberto
             if (life > 8f) { Destroy(gameObject); return; }
             Vector3 pos = transform.position;
             bool underwater = pos.y < Ocean.HeightAt(pos.x, pos.z);
-            vel += Physics.gravity * dt * (kind == Kind.Flecha ? 0.6f : 1f);
+            vel += Physics.gravity * dt * (kind == Kind.Flecha ? 0.6f : kind == Kind.Virote ? 0.35f : kind == Kind.BalaPistola ? 0.15f : 1f);
             if (underwater) vel *= 1f - Mathf.Clamp01(dt * 4f);  // a água freia
             Vector3 step = vel * dt;
-            float radius = kind == Kind.Flecha ? 0.03f : 0.12f;
+            float radius = kind == Kind.BalaCanhao ? 0.12f : 0.03f;
             if (Physics.SphereCast(pos, radius, step.normalized, out var hit, step.magnitude + 0.01f, mask, QueryTriggerInteraction.Ignore))
             {
                 OnHit(hit);
@@ -94,11 +104,13 @@ namespace MarAberto
                 }
                 else
                 {
+                    float pvp = kind == Kind.Virote ? 18f : kind == Kind.BalaPistola ? 26f : 12f;
+                    float pve = kind == Kind.Virote ? 38f : kind == Kind.BalaPistola ? 45f : 25f;
                     var rp = hit.collider.GetComponentInParent<RemotePlayer>();
-                    if (rp != null) NetGame.HitPlayer(rp, 12f);
+                    if (rp != null) NetGame.HitPlayer(rp, pvp);
                     var sc = hit.collider.GetComponentInParent<SeaCreature>();
-                    if (sc != null) sc.Hit(25f, hit.point);
-                    hit.collider.GetComponentInParent<LandAnimal>()?.Hit(25f, hit.point);
+                    if (sc != null) sc.Hit(pve, hit.point);
+                    hit.collider.GetComponentInParent<LandAnimal>()?.Hit(pve, hit.point);
                 }
             }
             if (ball)
@@ -106,6 +118,12 @@ namespace MarAberto
                 Debris.Burst(hit.point, hit.normal, 14, new Color(0.35f, 0.33f, 0.3f));
                 SmokePuff.Spawn(hit.point, Vector3.up);
                 Sfx.Play(Sfx.Break, hit.point, 1f);
+                Destroy(gameObject);
+            }
+            else if (kind == Kind.BalaPistola)
+            {
+                Debris.Burst(hit.point, hit.normal, 4, new Color(0.5f, 0.47f, 0.42f));
+                Sfx.Play(Sfx.Hit, hit.point, 0.35f, 0.25f);
                 Destroy(gameObject);
             }
             else
@@ -146,7 +164,7 @@ namespace MarAberto
             Vector3 from = muzzle != null ? muzzle.position : transform.position + Vector3.up + dir;
             Projectile.Fire(Projectile.Kind.BalaCanhao, from, dir * 60f, false);
             SmokePuff.Spawn(from, dir * 2f);
-            Sfx.Play(Sfx.Break, from, 1f);
+            Sfx.Play(Sfx.CannonShot, from, 1f);
             cooldown = 2.5f;
         }
 

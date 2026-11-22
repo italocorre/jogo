@@ -40,3 +40,6 @@ Licenças em `Assets/Resources/Fonts/OFL-*.txt`.
 ## Mais sons (CC0, OpenGameArt)
 - "7 Eating Crunches" (tito), "Liquid Bottle Drink Set" (qubodup), "15 vocal male strain/hurt/pain sounds",
   "5 break, crunch impacts", "tree chop fall thud".
+
+## Sons de tiro (CC-BY-SA 3.0, OpenGameArt)
+- "Q009's weapon sounds" (Q009) — pistola (tiro_pistola) e explosão do canhão (tiro_canhao). https://opengameart.org/content/q009s-weapon-sounds

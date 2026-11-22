@@ -165,6 +165,20 @@ namespace MarAberto
                 Description = "Atira flechas longe. Bom contra tubarões e outros jogadores.", Cost = L((Gra, 4), (Cor, 3)), Research = L((Gra, 6), (Cor, 4)) });
             Add(new Recipe { Id = "flechas", Name = "Flechas (10)", Category = CraftCategory.Armas, Output = ItemType.Flecha, OutputCount = 10,
                 Description = "Munição do arco.", Cost = L((Gra, 3), (Ped, 1), (Fol, 1)), Research = L((Gra, 4), (Ped, 2)) });
+            Add(new Recipe { Id = "besta", Name = "Besta", Category = CraftCategory.Armas, Output = ItemType.Besta, Station = Station.Bancada,
+                Description = "Dispara virotes fortes e retos. Recarga de ~2 s.", Cost = L((Mad, 3), (Cor, 3), (ItemType.LingoteFerro, 1)), Research = L((ItemType.LingoteFerro, 2), (Cor, 4)) });
+            Add(new Recipe { Id = "virotes", Name = "Virotes (8)", Category = CraftCategory.Armas, Output = ItemType.Virote, OutputCount = 8, Station = Station.Bancada,
+                Description = "Munição da besta.", Cost = L((Gra, 3), (ItemType.LingoteFerro, 1)), Research = L((ItemType.LingoteFerro, 1), (Gra, 4)) });
+            Add(new Recipe { Id = "polvora", Name = "Pólvora (2)", Category = CraftCategory.Armas, Output = ItemType.Polvora, OutputCount = 2, Station = Station.Bancada,
+                Description = "Carvão moído com conchas.", Cost = L((Car, 2), (ItemType.Concha, 1)), Research = L((Car, 4), (ItemType.Concha, 2)) });
+            Add(new Recipe { Id = "pistola", Name = "Pistola de pólvora", Category = CraftCategory.Armas, Output = ItemType.Pistola, Station = Station.Bancada,
+                Description = "A arma mais forte que se carrega na mão. Recarga lenta.", Cost = L((ItemType.LingoteFerro, 5), (Mad, 2), (ItemType.Polvora, 2)), Research = L((ItemType.LingoteFerro, 6), (ItemType.Polvora, 3)) });
+            Add(new Recipe { Id = "bala_pistola", Name = "Balas de pistola (6)", Category = CraftCategory.Armas, Output = ItemType.BalaPistola, OutputCount = 6, Station = Station.Fundicao,
+                Description = "Feitas na fundição.", Cost = L((ItemType.LingoteFerro, 1), (ItemType.Polvora, 2)), Research = L((ItemType.Polvora, 2)) });
+            Add(new Recipe { Id = "armadura_couro", Name = "Armadura de couro", Category = CraftCategory.Armas, Output = ItemType.ArmaduraCouro,
+                Description = "Basta ter na mochila: -25% de dano recebido.", Cost = L((ItemType.Couro, 6), (Cor, 2)), Research = L((ItemType.Couro, 3)) });
+            Add(new Recipe { Id = "armadura_ferro", Name = "Armadura de ferro", Category = CraftCategory.Armas, Output = ItemType.ArmaduraFerro, Station = Station.Bancada,
+                Description = "Basta ter na mochila: -45% de dano recebido.", Cost = L((ItemType.LingoteFerro, 8), (ItemType.Couro, 3)), Research = L((ItemType.LingoteFerro, 8), (ItemType.Couro, 2)) });
             Add(new Recipe { Id = "canhao", Name = "Canhão", Category = CraftCategory.Armas, Piece = PieceKind.Canhao, IconOverride = ItemType.BalaCanhao,
                 Description = "Construa na jangada (ou na base). E dispara na direção em que você olha. Não quebra construções.",
                 Cost = L((ItemType.LingoteFerro, 8), (Mad, 4)), Research = L((ItemType.LingoteFerro, 6), (Car, 4)) });

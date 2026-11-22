@@ -15,6 +15,7 @@ namespace MarAberto
         public float Health;
         public bool Dead { get; private set; }
         public Island Home;
+        public int Tier = 1;
 
         enum State { Wander, Flee, Charge, Dying }
         State state = State.Wander;
@@ -34,7 +35,9 @@ namespace MarAberto
             var a = go.AddComponent<LandAnimal>();
             a.Kind = k;
             a.Home = home;
-            a.Health = k == AnimalKind.Javali ? 45f : 10f;
+            int tier = home != null ? Mathf.Max(1, home.Tier) : 1;
+            a.Tier = tier;
+            a.Health = k == AnimalKind.Javali ? 45f + (tier - 1) * 25f : 10f;
             a.Build();
             a.PickWander();
             return a;
@@ -142,7 +145,7 @@ namespace MarAberto
             if (Kind == AnimalKind.Javali) Sfx.Play(new[] { "javali" }, transform.position, 0.9f, 0.15f);
             if (Health <= 0) { Die(); return; }
             // Javali bravo ataca; caranguejo foge.
-            state = Kind == AnimalKind.Javali && Health > 12f ? State.Charge : State.Flee;
+            state = Kind == AnimalKind.Javali && (Health > 12f || Tier >= 3) ? State.Charge : State.Flee;
             stateT = 0f;
         }
 
@@ -153,7 +156,9 @@ namespace MarAberto
             var g = Game.Instance;
             int meat = Kind == AnimalKind.Javali ? 3 : 1;
             int left = g.Inventory.Add(ItemType.CarneCrua, meat, false);
-            g.Hud.Toast((Kind == AnimalKind.Javali ? "Javali" : "Caranguejo") + " abatido: +" + (meat - left) + " carne crua", Hud.Good);
+            int hide = Kind == AnimalKind.Javali ? Random.Range(1, 3) + (Tier >= 3 ? 1 : 0) : 0;
+            if (hide > 0) g.Inventory.Add(ItemType.Couro, hide, false);
+            g.Hud.Toast((Kind == AnimalKind.Javali ? "Javali" : "Caranguejo") + " abatido: +" + (meat - left) + " carne crua" + (hide > 0 ? ", +" + hide + " couro" : ""), Hud.Good);
             LandLife.Instance?.OnKilled();
         }
 
@@ -183,7 +188,7 @@ namespace MarAberto
                 case State.Wander:
                     if ((new Vector3(target.x, pos.y, target.z) - pos).magnitude < 0.5f || stateT > 12f) { PickWander(); stateT = 0f; }
                     if (!boar && distP < 3.5f) { state = State.Flee; stateT = 0; }
-                    if (boar && distP < 4f && Random.value < dt * 0.4f) { state = State.Charge; stateT = 0; Sfx.Play(new[] { "javali" }, pos, 1f, 0.1f); }
+                    if (boar && distP < 4f + Tier * 2f && Random.value < dt * (0.25f + Tier * 0.25f)) { state = State.Charge; stateT = 0; Sfx.Play(new[] { "javali" }, pos, 1f, 0.1f); }
                     break;
                 case State.Flee:
                 {
@@ -198,7 +203,7 @@ namespace MarAberto
                     speed = 5.5f;
                     if (distP < 1.3f && attackCd <= 0)
                     {
-                        g.Player.Damage(12f);
+                        g.Player.Damage(12f + (Tier - 1) * 6f);
                         attackCd = 1.8f;
                         Sfx.Play(new[] { "javali" }, pos, 1f, 0.1f);
                     }
@@ -256,7 +261,8 @@ namespace MarAberto
             if (isl == null || !isl.Generated || cooldown > 0) return;
             int crabs = 0, boars = 0;
             foreach (var a in mine) if (a != null && !a.Dead) { if (a.Kind == AnimalKind.Caranguejo) crabs++; else boars++; }
-            int maxBoars = isl.Type == IslandType.Floresta ? 3 : isl.Type == IslandType.Montanha ? 2 : isl.Type == IslandType.Vulcanica ? 0 : 1;
+            int maxBoars = isl.Tier >= 3 ? 1 : 0;
+            maxBoars += isl.Type == IslandType.Floresta ? 3 : isl.Type == IslandType.Montanha ? 2 : isl.Type == IslandType.Vulcanica ? 0 : 1;
             for (int tries = 0; tries < 12; tries++)
             {
                 Vector3 sp = p + Quaternion.Euler(0, Random.value * 360f, 0) * Vector3.forward * Random.Range(25f, 55f);

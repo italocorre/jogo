@@ -52,9 +52,17 @@ namespace MarAberto
         LancaTitanio,
         CarneCrua,
         Gancho,
+        Besta,
+        Virote,
+        Pistola,
+        Polvora,
+        BalaPistola,
+        Couro,
+        ArmaduraCouro,
+        ArmaduraFerro,
     }
 
-    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca, Gancho }
+    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca, Gancho, Besta, Pistola }
 
     public class ItemDef
     {
@@ -134,6 +142,20 @@ namespace MarAberto
             SetFood(ItemType.CarneCrua, 12f, 0f, 0f);
             Def(ItemType.Gancho, "Gancho", "Segure o clique para dar força e solte para jogar no mar. Segure de novo para puxar: traz tábuas, folhas, galhos e barris que boiam.", new Color(0.6f, 0.55f, 0.45f), 0, 1);
             defs[ItemType.Gancho].Kind = ToolKind.Gancho;
+            Def(ItemType.Besta, "Besta", "Clique para disparar um virote: mais forte e mais reto que o arco, mas demora para recarregar.", new Color(0.45f, 0.32f, 0.2f), 0, 1);
+            defs[ItemType.Besta].Kind = ToolKind.Besta;
+            SetRarity(ItemType.Besta, 1);
+            Def(ItemType.Virote, "Virote", "Munição da besta.", new Color(0.55f, 0.5f, 0.45f), 1, 50);
+            Def(ItemType.Pistola, "Pistola de Pólvora", "Clique para atirar (gasta bala de pistola). Dano alto, recarga lenta.", new Color(0.25f, 0.22f, 0.2f), 0, 1);
+            defs[ItemType.Pistola].Kind = ToolKind.Pistola;
+            SetRarity(ItemType.Pistola, 2);
+            Def(ItemType.Polvora, "Pólvora", "Carvão moído com conchas. Para balas de pistola.", new Color(0.2f, 0.2f, 0.2f), 2, 50);
+            Def(ItemType.BalaPistola, "Bala de Pistola", "Munição da pistola de pólvora.", new Color(0.6f, 0.58f, 0.55f), 2, 50);
+            Def(ItemType.Couro, "Couro", "Tirado do javali. Para armadura de couro.", new Color(0.55f, 0.38f, 0.25f), 3, 30);
+            Def(ItemType.ArmaduraCouro, "Armadura de Couro", "Na mochila, protege: -25% de dano recebido.", new Color(0.5f, 0.34f, 0.22f), 0, 1);
+            SetRarity(ItemType.ArmaduraCouro, 1);
+            Def(ItemType.ArmaduraFerro, "Armadura de Ferro", "Na mochila, protege: -45% de dano recebido.", new Color(0.6f, 0.6f, 0.62f), 0, 1);
+            SetRarity(ItemType.ArmaduraFerro, 2);
             Def(ItemType.CarneAssada, "Carne Assada", "Assada na fogueira: mata bem a fome e cura.", new Color(0.55f, 0.3f, 0.18f), 6, 20);
             SetFood(ItemType.CarneAssada, 45f, 0f, 15f);
             Def(ItemType.PeixeCru, "Peixe (cru)", "Pescado com a vara. Melhor assar na fogueira.", new Color(0.6f, 0.7f, 0.8f), 2, 20);

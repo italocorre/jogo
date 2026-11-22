@@ -181,6 +181,8 @@ namespace MarAberto
             // Comer e plantar com o item na mão (clique).
             bool click = !driving && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButtonDown(0);
             if (click && def != null && def.Kind == ToolKind.Arco) ShootBow(cam);
+            else if (click && def != null && def.Kind == ToolKind.Besta) ShootGun(cam, false);
+            else if (click && def != null && def.Kind == ToolKind.Pistola) ShootGun(cam, true);
             else if (click && def != null && def.Kind == ToolKind.Pesca) FishClick(cam);
             else if (click && def != null && (def.Food > 0 || def.Drink > 0)) Eat(type, def);
             UpdateHook(dt, cam, def != null && def.Kind == ToolKind.Gancho && !driving);
@@ -252,6 +254,28 @@ namespace MarAberto
             Projectile.Fire(Projectile.Kind.Flecha, cam.position + cam.forward * 0.6f + cam.right * 0.1f, cam.forward * 55f, false);
             Sfx.Play(Sfx.Swing, cam.position, 0.5f);
             switchAnim = 0.35f;
+            NetGame.SendSwing(false);
+        }
+
+        /// <summary>Besta (virote) ou pistola de pólvora (bala). Recarga lenta.</summary>
+        void ShootGun(Transform cam, bool pistol)
+        {
+            var g = Game.Instance;
+            if (Time.time < bowCooldown) { g.Hud.Toast("Recarregando...", Hud.Info); return; }
+            var ammo = pistol ? ItemType.BalaPistola : ItemType.Virote;
+            if (g.Inventory.Count(ammo) <= 0) { g.Hud.Toast(pistol ? "Sem balas de pistola (B > Armas)." : "Sem virotes (B > Armas).", Hud.Bad); return; }
+            g.Inventory.Remove(ammo, 1);
+            bowCooldown = Time.time + (pistol ? 2.6f : 1.8f);
+            Vector3 from = cam.position + cam.forward * 0.6f + cam.right * 0.1f;
+            Projectile.Fire(pistol ? Projectile.Kind.BalaPistola : Projectile.Kind.Virote, from, cam.forward * (pistol ? 170f : 85f), false);
+            if (pistol)
+            {
+                Sfx.Play(Sfx.Gunshot, cam.position, 0.9f, 0.06f);
+                SmokePuff.Spawn(from + cam.forward * 0.3f, cam.forward);
+                player.Kick(2.5f);
+            }
+            else Sfx.Play(Sfx.Swing, cam.position, 0.6f);
+            switchAnim = 0.4f;
             NetGame.SendSwing(false);
         }
 

@@ -37,6 +37,8 @@ namespace MarAberto
         public static readonly string[] FallHit = { "queda_1", "queda_2", "queda_3" };
         public static readonly string[] Chop = { "machado_1" };
         public static readonly string[] TreeFall = { "arvore_cai" };
+        public static readonly string[] Gunshot = { "tiro_pistola" };
+        public static readonly string[] CannonShot = { "tiro_canhao" };
 
         public const string OceanLoop = "amb_ondas";
         public const string BoatWaterLoop = "amb_agua_barco";

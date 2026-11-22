@@ -433,8 +433,22 @@ namespace MarAberto
 
         float hurtSoundAt;
 
+        /// <summary>Armadura na mochila: quanto do dano ela segura (0..1).</summary>
+        public static float ArmorReduction()
+        {
+            var inv = Game.Instance != null ? Game.Instance.Inventory : null;
+            if (inv == null) return 0f;
+            if (inv.Count(ItemType.ArmaduraFerro) > 0) return 0.45f;
+            if (inv.Count(ItemType.ArmaduraCouro) > 0) return 0.25f;
+            return 0f;
+        }
+
+        /// <summary>Coice da arma: joga a mira um pouco para cima.</summary>
+        public void Kick(float degrees) => pitch = Mathf.Clamp(pitch - degrees, -88f, 88f);
+
         public void Damage(float amount, bool flash = true)
         {
+            if (flash) amount *= 1f - ArmorReduction();
             if (amount >= 2f && Time.time - hurtSoundAt > 0.5f) { hurtSoundAt = Time.time; Sfx.UI(Sfx.Hurt, 0.55f); }
             Health -= amount;
             if (flash) damageFlash = 1f;
