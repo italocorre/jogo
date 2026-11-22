@@ -102,6 +102,7 @@ namespace MarAberto
             {
                 case ItemType.Coco: return 0.16f;
                 case ItemType.PicaretaPedra: return 0.35f;
+                case ItemType.Tocha: return 0.3f;
                 case ItemType.FragmentoMapa: return 0.16f;
                 case ItemType.Perola: return 0.07f;
                 case ItemType.Concha: return 0.1f;
@@ -260,6 +261,21 @@ namespace MarAberto
                 case ItemType.PicaretaPedra:
                     Tools.AddPickaxe(mb, 1, -0.25f);
                     break;
+                case ItemType.Tocha:
+                {
+                    // Cabo de madeira com pano enrolado e piche no topo (a chama é colocada por TorchLight).
+                    Color wood = C(0.50f, 0.34f, 0.20f), woodDark = C(0.36f, 0.24f, 0.14f);
+                    Color cloth = C(0.62f, 0.52f, 0.38f), tar = C(0.10f, 0.08f, 0.07f);
+                    mb.AddCylinder(new Vector3(0, -0.27f, 0), new Vector3(0, 0.22f, 0), 0.02f, 0.026f, 8, wood);
+                    mb.AddCylinder(new Vector3(0, -0.27f, 0), new Vector3(0, -0.22f, 0), 0.022f, 0.021f, 8, woodDark);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float y = 0.18f + i * 0.035f;
+                        mb.AddCylinder(new Vector3(0, y, 0), new Vector3(0, y + 0.035f, 0), 0.04f + (i % 2) * 0.004f, 0.042f, 10, i == 3 ? tar : cloth);
+                    }
+                    mb.AddSphere(new Vector3(0, 0.33f, 0), new Vector3(0.04f, 0.025f, 0.04f), tar, 2);
+                    break;
+                }
                 default:
                     mb.AddBox(Vector3.zero, Vector3.one * 0.2f, Quaternion.identity, Color.magenta);
                     break;

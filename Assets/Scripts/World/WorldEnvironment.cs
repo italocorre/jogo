@@ -45,12 +45,13 @@ namespace MarAberto
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
 
-            QualitySettings.shadowDistance = 140f;
-            QualitySettings.shadowCascades = 4;
+            QualitySettings.shadowDistance = 90f;
+            QualitySettings.shadowCascades = 2;
             QualitySettings.shadows = ShadowQuality.All;
             QualitySettings.shadowResolution = ShadowResolution.High;
             QualitySettings.antiAliasing = 4;
-            QualitySettings.vSyncCount = 1;
+            // Sem VSync: com VSync, quando o quadro passa de 16 ms o jogo cai direto para 30 fps.
+            QualitySettings.vSyncCount = 0;
             Tick(0f);
         }
 
@@ -74,13 +75,13 @@ namespace MarAberto
             float golden = Mathf.Clamp01(1f - Mathf.Abs(elev - 0.08f) / 0.25f) * day;
 
             Color dayTop = Hex("#2F78C8"), dayHor = Hex("#CFE1EE");
-            Color nightTop = Hex("#121630"), nightHor = Hex("#3A3560");
+            Color nightTop = Hex("#03050C"), nightHor = Hex("#0A0F1C"); // noite escura de verdade
             Color sunsetHor = Hex("#F4A07A");
             Color top = Color.Lerp(nightTop, dayTop, day);
             Color hor = Color.Lerp(nightHor, dayHor, day);
             hor = Color.Lerp(hor, sunsetHor, golden * 0.9f);
 
-            Color sunCol = Color.Lerp(Hex("#FFA27A"), Hex("#FFE4BC"), Mathf.Clamp01(elev * 3f));
+            Color sunCol = Color.Lerp(Hex("#FFA27A"), Hex("#FFF4E6"), Mathf.Clamp01(elev * 3f)); // sol branco de dia (menos amarelo)
             if (elev > -0.05f)
             {
                 sun.transform.rotation = Quaternion.LookRotation(-sunDir);
@@ -92,14 +93,15 @@ namespace MarAberto
                 // Lua: luz fraca e azulada.
                 Vector3 moonDir = new Vector3(-sunDir.x, -sunDir.y, 0.2f).normalized;
                 sun.transform.rotation = Quaternion.LookRotation(-moonDir);
-                sun.color = Hex("#9DB4FF");
-                sun.intensity = 0.22f;
+                sun.color = Hex("#8FA6D8");
+                sun.intensity = 0.12f;
             }
 
             // Luz ambiente natural: céu azulado em cima, horizonte neutro, chão quente (luz refletida da areia/terra).
-            RenderSettings.ambientSkyColor = Color.Lerp(Hex("#1C2240"), Hex("#9DB8D8"), day);
-            RenderSettings.ambientEquatorColor = Color.Lerp(Hex("#161A30"), Color.Lerp(Hex("#A9B2B6"), sunsetHor, golden * 0.4f), day);
-            RenderSettings.ambientGroundColor = Color.Lerp(Hex("#0E0E18"), Hex("#6B5E4C"), day);
+            // À noite: escuro, mas com um pouco de luz para enxergar o chão perto (pede uma tocha).
+            RenderSettings.ambientSkyColor = Color.Lerp(Hex("#232B40"), Hex("#9DB8D8"), day);
+            RenderSettings.ambientEquatorColor = Color.Lerp(Hex("#171C2A"), Color.Lerp(Hex("#A9B2B6"), sunsetHor, golden * 0.4f), day);
+            RenderSettings.ambientGroundColor = Color.Lerp(Hex("#0F1218"), Hex("#6B5E4C"), day);
 
             Shader.SetGlobalColor(skyTopId, top);
             Shader.SetGlobalColor(skyHorId, hor);
@@ -127,8 +129,9 @@ namespace MarAberto
             {
                 RenderSettings.fogColor = hor;
                 // Névoa atmosférica: montanhas distantes ficam azuladas (dá profundidade).
-                RenderSettings.fogStartDistance = 90f;
-                RenderSettings.fogEndDistance = 1500f;
+                // À noite a visão encurta: o horizonte some no escuro.
+                RenderSettings.fogStartDistance = Mathf.Lerp(4f, 90f, day);
+                RenderSettings.fogEndDistance = Mathf.Lerp(110f, 1500f, day);
             }
             if (cam != null) cam.clearFlags = CameraUnderwater ? CameraClearFlags.SolidColor : CameraClearFlags.Skybox;
         }

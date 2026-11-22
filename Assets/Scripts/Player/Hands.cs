@@ -20,6 +20,7 @@ namespace MarAberto
         Transform held;          // item na mão
         MeshFilter heldFilter;
         MeshRenderer heldRenderer;
+        TorchLight torch;
         ItemType shownType = (ItemType)(-1);
         float swingT = -1f;
         bool impactDone;
@@ -56,10 +57,11 @@ namespace MarAberto
         public static GameObject BuildArm()
         {
             var mb = new MeshBuilder();
-            Color skin = C(0.90f, 0.68f, 0.52f);
-            Color skinDark = C(0.80f, 0.58f, 0.43f);
-            Color sleeve = C(0.30f, 0.52f, 0.68f);
-            Color cuff = C(0.95f, 0.93f, 0.88f);
+            // Luva de couro gasto e manga de casaco de marinheiro (fica mais natural que a mão lisa).
+            Color skin = C(0.40f, 0.27f, 0.17f);
+            Color skinDark = C(0.32f, 0.21f, 0.13f);
+            Color sleeve = C(0.20f, 0.24f, 0.31f);
+            Color cuff = C(0.30f, 0.22f, 0.14f);
             // Antebraço vindo de baixo/trás até a mão
             Vector3 hand = Vector3.zero;
             Vector3 elbow = new Vector3(0.16f, -0.26f, -0.14f);
@@ -95,12 +97,15 @@ namespace MarAberto
             if (t == ItemType.Nada)
             {
                 heldRenderer.enabled = false;
+                if (torch != null) torch.gameObject.SetActive(false);
                 return;
             }
             heldRenderer.enabled = true;
             heldFilter.sharedMesh = ItemModels.Get(t);
             heldRenderer.sharedMaterial = ItemModels.Material(t);
-            if (Items.Get(t).IsTool)
+            if (torch == null && t == ItemType.Tocha) torch = TorchLight.Attach(held, new Vector3(0, 0.33f, 0));
+            if (torch != null) torch.gameObject.SetActive(t == ItemType.Tocha);
+            if (Items.Get(t).IsTool || t == ItemType.Tocha)
             {
                 held.localPosition = new Vector3(0, -0.02f, 0);
                 held.localRotation = Quaternion.identity;

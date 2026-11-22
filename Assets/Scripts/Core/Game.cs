@@ -56,7 +56,7 @@ namespace MarAberto
         public void Setup(bool preview)
         {
             Instance = this;
-            Application.targetFrameRate = 144;
+            Application.targetFrameRate = 240; // sem limite prático (VSync desligado)
             Inventory = new Inventory(Inventory.HotbarSize + 12);
 
             if (!preview)
@@ -107,8 +107,22 @@ namespace MarAberto
         }
 
         /// <summary>Atalhos de teste (F1–F6) para testar rápido sem precisar farmar.</summary>
+        // Contador de FPS (F7)
+        bool showFps;
+        float fpsSmooth = 60f;
+        GUIStyle fpsStyle;
+
+        void OnGUI()
+        {
+            if (!showFps) return;
+            if (fpsStyle == null) fpsStyle = new GUIStyle { fontSize = 22, normal = { textColor = Color.white } };
+            fpsSmooth = Mathf.Lerp(fpsSmooth, 1f / Mathf.Max(Time.unscaledDeltaTime, 0.0001f), 0.05f);
+            GUI.Label(new Rect(12, Screen.height * 0.5f, 200, 30), Mathf.RoundToInt(fpsSmooth) + " FPS", fpsStyle);
+        }
+
         void TestShortcuts()
         {
+            if (Input.GetKeyDown(KeyCode.F7)) showFps = !showFps;
             if (Player == null || Hud.AnyPanelOpen) return;
             if (Input.GetKeyDown(KeyCode.F1)) { AddCoins(500); Hud.Toast("Teste: +500 moedas", Hud.Gold); }
             if (Input.GetKeyDown(KeyCode.F2))
@@ -306,6 +320,14 @@ namespace MarAberto
                             Boat.MoveTo(StartIsland.BoatSpawn, StartIsland.BoatSpawnRot);
                             Hud.Toast("Barco de volta ao píer.", Hud.Good);
                         },
+                    },
+                    new Offer
+                    {
+                        Name = "Tocha", Price = 8,
+                        Description = "Ilumina o caminho à noite. Segure na mão ou largue no chão.",
+                        Available = () => Inventory.SpaceFor(ItemType.Tocha) > 0,
+                        Unavailable = () => "Mochila cheia",
+                        Buy = () => Inventory.Add(ItemType.Tocha, 1),
                     },
                     new Offer
                     {

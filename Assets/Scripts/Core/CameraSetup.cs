@@ -17,6 +17,8 @@ namespace MarAberto
             var dists = new float[32];
             dists[Layers.Grass] = 75f;
             dists[Layers.Items] = 120f;
+            dists[Layers.Detail] = 70f;
+            dists[Layers.Props] = 300f;
             cam.layerCullDistances = dists;
             cam.layerCullSpherical = true;
             if (cam.GetComponent<PostFX>() == null) cam.gameObject.AddComponent<PostFX>();

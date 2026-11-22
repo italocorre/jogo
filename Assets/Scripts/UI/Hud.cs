@@ -498,7 +498,7 @@ namespace MarAberto
             musicSlider = MakeSlider(col, "Música", -290, 0f, 0.6f, game.MusicVolume, v => game.MusicVolume = v);
             var quit = UIKit.Btn(col, "Sair", "SAIR DO JOGO", () => Application.Quit(), 26);
             ((RectTransform)quit.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -380), new Vector2(420, 60));
-            var cheats = UIKit.Txt(col, "Atalhos", "Teste:  <color=#FFD27A>F1</color> +500 moedas  ·  <color=#FFD27A>F2</color> barco  ·  <color=#FFD27A>F3</color> ir ao recife\n<color=#FFD27A>F4</color> avançar hora  ·  <color=#FFD27A>F5</color> itens  ·  <color=#FFD27A>F6</color> curar",
+            var cheats = UIKit.Txt(col, "Atalhos", "Teste:  <color=#FFD27A>F1</color> +500 moedas  ·  <color=#FFD27A>F2</color> barco  ·  <color=#FFD27A>F3</color> ir ao recife\n<color=#FFD27A>F4</color> avançar hora  ·  <color=#FFD27A>F5</color> itens  ·  <color=#FFD27A>F6</color> curar  ·  <color=#FFD27A>F7</color> FPS",
                 UIKit.Body, 17, UIKit.Muted, TextAnchor.MiddleCenter);
             cheats.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(500, 50));
         }

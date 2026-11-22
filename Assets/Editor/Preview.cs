@@ -133,6 +133,11 @@ namespace MarAberto.EditorTools
             game.Hud.PreviewPanel(3);
             Shot("13_pausa", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
             game.Hud.PreviewPanel(0);
+            // Noite com a tocha na mão
+            inv.Add(ItemType.Tocha, 1, false);
+            for (int i = 0; i < inv.Size; i++) if (inv.Slots[i].Type == ItemType.Tocha) { inv.Selected = i; break; }
+            game.Hands.ShowSelectedNow();
+            Shot("17_tocha_noite", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.down * 2f, 0.95f, true);
 
             // Folha com os ícones dos itens
             try

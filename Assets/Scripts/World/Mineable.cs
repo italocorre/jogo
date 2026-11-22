@@ -96,7 +96,7 @@ namespace MarAberto
             Color tint = Color.white;
             switch (Type)
             {
-                case ItemType.Carvao: tint = new Color(0.45f, 0.43f, 0.42f); break;
+                case ItemType.Carvao: tint = new Color(0.62f, 0.60f, 0.58f); break;
                 case ItemType.Cobre: tint = new Color(0.92f, 0.82f, 0.74f); break;
                 case ItemType.Ferro: tint = new Color(0.85f, 0.70f, 0.62f); break;
             }
@@ -112,19 +112,47 @@ namespace MarAberto
             {
                 // Aglomerados de cristais saindo da rocha: dá para saber de longe que é minério.
                 Color cc = oreColor;
+                // Pontos da superfície da rocha (virados para cima/lado): os cristais nascem DENTRO da pedra.
+                var surf = new System.Collections.Generic.List<(Vector3 p, Vector3 n)>();
+                if (rock != null)
+                {
+                    foreach (var mf in rock.GetComponentsInChildren<MeshFilter>())
+                    {
+                        if (!mf.gameObject.activeInHierarchy || mf.sharedMesh == null || !mf.sharedMesh.isReadable) continue;
+                        var vs = mf.sharedMesh.vertices; var ns = mf.sharedMesh.normals;
+                        int step = Mathf.Max(1, vs.Length / 400);
+                        for (int i = 0; i < vs.Length; i += step)
+                        {
+                            Vector3 wp = mf.transform.TransformPoint(vs[i]);
+                            Vector3 wn = ns.Length == vs.Length ? mf.transform.TransformDirection(ns[i]).normalized : Vector3.up;
+                            if (wn.y < 0.15f) continue;
+                            surf.Add((transform.InverseTransformPoint(wp), transform.InverseTransformDirection(wn)));
+                        }
+                    }
+                }
                 int clusters = 3 + rng.Next(3);
                 for (int k = 0; k < clusters; k++)
                 {
-                    float a = (float)rng.NextDouble() * Mathf.PI * 2f;
-                    Vector3 cpos = new Vector3(Mathf.Cos(a) * radius * 0.7f, radius * (0.35f + (float)rng.NextDouble() * 0.45f), Mathf.Sin(a) * radius * 0.7f);
-                    Vector3 outward = new Vector3(cpos.x, radius * 0.6f, cpos.z).normalized;
+                    Vector3 cpos, outward;
+                    if (surf.Count > 0)
+                    {
+                        var sp = surf[rng.Next(surf.Count)];
+                        outward = (sp.n + Vector3.up * 0.5f).normalized;
+                        cpos = sp.p - sp.n * radius * 0.06f; // afunda um pouco na pedra
+                    }
+                    else
+                    {
+                        float a = (float)rng.NextDouble() * Mathf.PI * 2f;
+                        cpos = new Vector3(Mathf.Cos(a) * radius * 0.5f, radius * 0.5f, Mathf.Sin(a) * radius * 0.5f);
+                        outward = new Vector3(cpos.x, radius * 0.6f, cpos.z).normalized;
+                    }
                     int n = 3 + rng.Next(4);
                     for (int i = 0; i < n; i++)
                     {
-                        Vector3 d = (outward + new Vector3((float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() * 0.6f, (float)rng.NextDouble() - 0.5f) * 0.9f).normalized;
-                        float len = radius * (0.25f + (float)rng.NextDouble() * 0.35f);
-                        float w = radius * (0.07f + (float)rng.NextDouble() * 0.06f);
-                        Vector3 b = cpos - d * w;
+                        Vector3 d = (outward + new Vector3((float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() * 0.4f, (float)rng.NextDouble() - 0.5f) * 0.7f).normalized;
+                        float len = radius * (0.18f + (float)rng.NextDouble() * 0.22f);
+                        float w = radius * (0.05f + (float)rng.NextDouble() * 0.04f);
+                        Vector3 b = cpos + new Vector3((float)rng.NextDouble() - 0.5f, 0, (float)rng.NextDouble() - 0.5f) * radius * 0.12f - d * len * 0.35f;
                         mb.AddCylinder(b, b + d * len * 0.8f, w, w * 0.9f, 6, Color.Lerp(cc * 0.8f, cc, (float)rng.NextDouble()));
                         mb.AddCylinder(b + d * len * 0.8f, b + d * len, w * 0.9f, 0.005f, 6, Color.Lerp(cc, Color.white, 0.3f));
                     }
@@ -138,6 +166,7 @@ namespace MarAberto
                 var cr = cgo.AddComponent<MeshRenderer>();
                 cr.sharedMaterial = rock == null ? Mats.Ore : Mats.ForItem(Type);
             }
+            foreach (var t in visual.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layers.Props;
             var sc = gameObject.AddComponent<SphereCollider>();
             sc.center = Vector3.up * radius * 0.4f;
             sc.radius = radius * 0.95f;

@@ -16,6 +16,7 @@ namespace MarAberto
         Coco,
         PicaretaPedra,
         Perola,
+        Tocha,
     }
 
     public class ItemDef
@@ -53,6 +54,7 @@ namespace MarAberto
             SetRarity(ItemType.Perola, 2);
             SetRarity(ItemType.Ferro, 1);
             SetRarity(ItemType.FragmentoMapa, 2);
+            Def(ItemType.Tocha, "Tocha", "Ilumina à noite quando está na mão (ou largada no chão).", new Color(1f, 0.6f, 0.2f), 0, 10);
             Def(ItemType.PicaretaPedra, "Picareta de Pedra", "Quebra rochas, carvão e cobre (nível 1).", new Color(0.6f, 0.6f, 0.58f), 0, 1, true, 1);
         }
 

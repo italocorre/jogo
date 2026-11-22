@@ -90,6 +90,16 @@ namespace MarAberto
             RenderTexture.active = rt;
             var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, false, false);
             tex.ReadPixels(new Rect(0, 0, Size, Size), 0, 0);
+            // Alguns shaders (modelos realistas) não gravam a transparência: o fundo é preto puro,
+            // então qualquer pixel com cor é do objeto.
+            var px = tex.GetPixels32();
+            for (int i = 0; i < px.Length; i++)
+            {
+                int m = Mathf.Max(px[i].r, Mathf.Max(px[i].g, px[i].b));
+                int a = Mathf.Min(255, m * 12);
+                if (a > px[i].a) px[i].a = (byte)a;
+            }
+            tex.SetPixels32(px);
             tex.Apply();
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(rt);

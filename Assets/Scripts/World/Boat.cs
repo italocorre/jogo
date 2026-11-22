@@ -259,7 +259,7 @@ namespace MarAberto
 
             Seat = new GameObject("Assento").transform;
             Seat.SetParent(transform, false);
-            Seat.localPosition = new Vector3(0, -0.38f, -1.8f);
+            Seat.localPosition = new Vector3(-0.5f, -0.38f, -1.75f); // ao lado da caldeira: a chaminé não tapa a visão
 
             void Box(string n, Vector3 c, Vector3 s, Quaternion r)
             {
@@ -281,7 +281,7 @@ namespace MarAberto
             rb = gameObject.AddComponent<Rigidbody>();
             rb.mass = 450f;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.centerOfMass = new Vector3(0, -0.35f, -0.2f);
+            rb.centerOfMass = new Vector3(0, -0.5f, -0.2f);
             rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
             for (int iz = 0; iz < 4; iz++)
@@ -331,14 +331,23 @@ namespace MarAberto
                 float wantThrottle = Driven && !anchored ? Throttle : 0f;
                 smoothThrottle = Mathf.MoveTowards(smoothThrottle, wantThrottle, Time.fixedDeltaTime * 1.5f);
                 float thr = smoothThrottle < 0 ? smoothThrottle * MaxReverse : smoothThrottle;
-                Vector3 thrustPoint = transform.TransformPoint(new Vector3(0, -0.4f, -2.6f));
+                Vector3 thrustPoint = transform.TransformPoint(new Vector3(0, 0f, -2.2f)); // empuxo na altura do centro: não levanta a proa
                 Vector3 fwd = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
                 rb.AddForceAtPosition(fwd * thr * EnginePower * wet, thrustPoint);
 
                 float steer = Driven ? Steer : 0f;
                 float speedFactor = Mathf.Clamp(Mathf.Abs(local.z) / 4f, 0.25f, 1.2f) * Mathf.Sign(local.z + 0.01f);
                 rb.AddTorque(Vector3.up * steer * TurnPower * speedFactor * wet);
-                rb.AddTorque(transform.forward * -steer * Mathf.Abs(local.z) * 60f * wet);
+                // Inclina só um pouco nas curvas (antes tombava em alta velocidade).
+                rb.AddTorque(transform.forward * -steer * Mathf.Min(Mathf.Abs(local.z), 6f) * 12f * wet);
+                // Força que endireita o barco (quilha), mais forte quanto mais inclinado.
+                Vector3 upright = Vector3.Cross(transform.up, Vector3.up);
+                rb.AddTorque(upright * rb.mass * 26f * wet);
+                // Limita o giro de lado/frente (não deixa capotar).
+                Vector3 av = transform.InverseTransformDirection(rb.angularVelocity);
+                av.x = Mathf.Clamp(av.x, -0.6f, 0.6f);
+                av.z = Mathf.Clamp(av.z, -0.6f, 0.6f);
+                rb.angularVelocity = transform.TransformDirection(av);
 
                 // Âncora presa: segura o barco perto do ponto (com folga).
                 if (anchored)

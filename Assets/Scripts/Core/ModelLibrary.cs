@@ -15,6 +15,13 @@ namespace MarAberto
         static Shader pbr;
 
         public enum Fit { Height, Max, Length }
+
+        /// <summary>Modelos escaneados muito pesados: simplificados ao carregar (resolução da simplificação).</summary>
+        static readonly Dictionary<string, int> simplify = new Dictionary<string, int>
+        {
+            { "boulder_01", 30 }, { "namaqualand_boulder_02", 30 }, { "rock_moss_set_01", 22 }, { "stone_01", 12 },
+            { "treasure_chest", 40 },
+        };
         public enum Col { None, Mesh, Box }
 
         static GameObject Prefab(string id)
@@ -67,7 +74,7 @@ namespace MarAberto
             string key = id + "/" + matName;
             if (materials.TryGetValue(key, out var m)) return m;
             if (pbr == null) pbr = Shader.Find("MarAberto/PBR");
-            m = new Material(pbr) { name = key };
+            m = new Material(pbr) { name = key, enableInstancing = true };
             var diff = FindTex(id, matName, "_diff");
             var nor = FindTex(id, matName, "_nor");
             var alpha = FindTex(id, matName, "_alpha");
@@ -97,7 +104,7 @@ namespace MarAberto
         {
             if (materials.TryGetValue(key, out var m)) return m;
             if (pbr == null) pbr = Shader.Find("MarAberto/PBR");
-            m = new Material(pbr) { name = key };
+            m = new Material(pbr) { name = key, enableInstancing = true };
             if (diff != null) m.SetTexture("_MainTex", diff);
             if (nor != null) m.SetTexture("_BumpMap", nor);
             m.SetFloat("_Glossiness", gloss);
@@ -129,6 +136,14 @@ namespace MarAberto
                 for (int i = 0; i < renderers.Count; i++)
                     if (i != keep) renderers[i].gameObject.SetActive(false);
                 renderers = new List<MeshRenderer> { renderers[keep] };
+            }
+            if (simplify.TryGetValue(id, out int res))
+            {
+                foreach (var r in renderers)
+                {
+                    var mf = r.GetComponent<MeshFilter>();
+                    if (mf != null) mf.sharedMesh = MeshSimplify.Cluster(mf.sharedMesh, res);
+                }
             }
             foreach (var r in renderers)
             {
@@ -229,6 +244,7 @@ namespace MarAberto
             var m = new Mesh { name = id + "_item", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
             m.CombineMeshes(combine.ToArray(), true, true);
             m.RecalculateBounds();
+            if (simplify.TryGetValue(id, out int res)) m = MeshSimplify.Cluster(m, Mathf.Max(10, res));
             return m;
         }
 

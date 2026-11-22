@@ -350,6 +350,12 @@ namespace MarAberto
             return false;
         }
 
+        static void SetLayer(GameObject go, int layer)
+        {
+            if (go == null) return;
+            foreach (var t in go.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = layer;
+        }
+
         GameObject Attach(string name, MeshBuilder mb, Material mat, bool shadows = true, int layer = 0)
         {
             if (mb.VertexCount == 0) return null;
@@ -464,7 +470,7 @@ namespace MarAberto
             bool hasTree = ModelLibrary.Has("pachira_aquatica_01");
             int parts = hasTree ? Mathf.Max(1, ModelLibrary.PartCount("pachira_aquatica_01")) : 1;
             int trees = 0;
-            for (int i = 0; i < 2500 && trees < 140 && hasTree; i++)
+            for (int i = 0; i < 2500 && trees < 70 && hasTree; i++)
             {
                 if (!RandomLandPoint(6f, 75f, 0.78f, out var p)) continue;
                 // Árvores em bosques, não espalhadas por igual.
@@ -474,6 +480,7 @@ namespace MarAberto
                 var t = ModelLibrary.Spawn("pachira_aquatica_01", p - Vector3.up * 0.2f, Quaternion.Euler(0, R(0, 360), 0), R(5f, 9f), ModelLibrary.Fit.Height, rng.Next(parts), ModelLibrary.Col.None, parent);
                 if (t != null)
                 {
+                    SetLayer(t, Layers.Props);
                     var cap = t.AddComponent<CapsuleCollider>();
                     cap.radius = 0.35f; cap.height = 4f; cap.center = new Vector3(0, 2f, 0);
                 }
@@ -494,7 +501,12 @@ namespace MarAberto
                     }
                     else if (!RandomLandPoint(3f, 60f, 0.8f, out p)) continue;
                     ferns++;
-                    ModelLibrary.Spawn("fern_02", p - Vector3.up * 0.05f, Quaternion.Euler(0, R(0, 360), 0), R(0.7f, 1.4f), ModelLibrary.Fit.Height, rng.Next(fparts), ModelLibrary.Col.None, parent);
+                    var fern = ModelLibrary.Spawn("fern_02", p - Vector3.up * 0.05f, Quaternion.Euler(0, R(0, 360), 0), R(0.7f, 1.4f), ModelLibrary.Fit.Height, rng.Next(fparts), ModelLibrary.Col.None, parent);
+                    if (fern != null)
+                    {
+                        SetLayer(fern, Layers.Detail);
+                        foreach (var r in fern.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.Off;
+                    }
                 }
             }
         }
@@ -519,14 +531,14 @@ namespace MarAberto
             {
                 if (!RandomLandPoint(-25f, 80f, 0.6f, out var p)) continue;
                 n++;
-                ModelLibrary.Spawn("rock_moss_set_01", p - Vector3.up * 0.25f, Quaternion.Euler(0, R(0, 360), 0), R(0.8f, 2.6f), ModelLibrary.Fit.Max, rng.Next(setParts), ModelLibrary.Col.Mesh, parent);
+                SetLayer(ModelLibrary.Spawn("rock_moss_set_01", p - Vector3.up * 0.25f, Quaternion.Euler(0, R(0, 360), 0), R(0.8f, 2.6f), ModelLibrary.Fit.Max, rng.Next(setParts), ModelLibrary.Col.Mesh, parent), Layers.Props);
             }
             n = 0;
             for (int i = 0; i < 800 && n < 60; i++)
             {
                 if (!RandomLandPoint(0.4f, 40f, 0.75f, out var p)) continue;
                 n++;
-                ModelLibrary.Spawn("stone_01", p - Vector3.up * 0.04f, Quaternion.Euler(0, R(0, 360), 0), R(0.2f, 0.5f), ModelLibrary.Fit.Max, -1, ModelLibrary.Col.None, parent);
+                SetLayer(ModelLibrary.Spawn("stone_01", p - Vector3.up * 0.04f, Quaternion.Euler(0, R(0, 360), 0), R(0.2f, 0.5f), ModelLibrary.Fit.Max, -1, ModelLibrary.Col.None, parent), Layers.Detail);
             }
         }
 
@@ -559,11 +571,44 @@ namespace MarAberto
                             if (NormalAt(x, z).y < 0.84f) continue;
                             if (NearClear(x, z, 3.5f)) continue;
                             AddTuft(mb, new Vector3(x, y - 0.05f, z), density);
+                            // Flores em canteiros (manchas), para dar cor à ilha.
+                            float fl = Noise.Fbm(x * 0.05f + 31f, z * 0.05f + 3f, 2);
+                            if (fl > 0.58f && Noise.Hash(x * 1.7f, z * 2.3f) > 0.55f)
+                                AddFlower(mb, new Vector3(x + 0.3f, y - 0.03f, z - 0.2f), Mathf.FloorToInt(Noise.Hash(Mathf.Floor(x / 9f), Mathf.Floor(z / 9f)) * 5f));
                         }
                     }
                     var go = Attach("Grama", mb, Mats.Foliage, false, Layers.Grass);
                     if (go != null) go.transform.SetParent(parent, true);
                 }
+            }
+        }
+
+        static readonly Color[] flowerCols =
+        {
+            new Color(0.97f, 0.95f, 0.90f), new Color(1f, 0.82f, 0.18f), new Color(0.92f, 0.30f, 0.36f),
+            new Color(0.62f, 0.40f, 0.86f), new Color(1f, 0.55f, 0.20f),
+        };
+
+        void AddFlower(MeshBuilder mb, Vector3 p, int kind)
+        {
+            Color petal = flowerCols[Mathf.Clamp(kind, 0, flowerCols.Length - 1)];
+            Color stem = C(0.22f, 0.38f, 0.12f);
+            float h = R(0.25f, 0.45f);
+            Vector3 top = p + new Vector3(R(-0.05f, 0.05f), h, R(-0.05f, 0.05f));
+            Vector3 sd = new Vector3(0.012f, 0, 0);
+            Color s0 = stem; s0.a = 0; Color s1 = stem; s1.a = 1;
+            mb.AddTri(p - sd, top, p + sd, s0, s1, s0, Vector3.up);
+            float r = R(0.05f, 0.08f);
+            Color pc = petal; pc.a = 1f;
+            Color center = kind == 1 ? C(0.55f, 0.32f, 0.08f) : C(1f, 0.85f, 0.25f); center.a = 1f;
+            int petals = 5;
+            float a0 = R(0, 6.28f);
+            for (int i = 0; i < petals; i++)
+            {
+                float a = a0 + i * Mathf.PI * 2f / petals;
+                Vector3 d1 = new Vector3(Mathf.Cos(a - 0.35f), 0.15f, Mathf.Sin(a - 0.35f)) * r;
+                Vector3 d2 = new Vector3(Mathf.Cos(a + 0.35f), 0.15f, Mathf.Sin(a + 0.35f)) * r;
+                mb.AddTri(top, top + d1, top + d2, center, pc, pc, Vector3.up);
             }
         }
 

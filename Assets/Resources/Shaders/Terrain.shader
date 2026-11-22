@@ -52,14 +52,30 @@ Shader "MarAberto/Terrain"
             w /= (w.r + w.g + w.b + w.a);
             float2 top = IN.worldPos.xz * _Scale;
 
+            const float3 LUM = float3(0.3, 0.59, 0.11);
+            // Variação de cor em manchas grandes (o chão não fica de uma cor só).
+            float patch = MA_ValueNoise(IN.worldPos.xz * 0.012);
+            float patch2 = MA_ValueNoise(IN.worldPos.xz * 0.045 + 7.0);
+
             float3 sand = Tile(_Sand, top);
-            float3 grass = Tile(_Grass, top * 1.3) * float3(0.78, 1.0, 0.6); // grama mais verde e viva
+            sand = lerp(sand, dot(sand, LUM).xxx * float3(1.02, 0.98, 0.9), 0.35) * 1.12; // areia clara, menos amarela
+
+            // Grama: verde vivo, com manchas de verde-escuro e verde-claro.
+            float3 g = Tile(_Grass, top * 1.3);
+            float gl = dot(g, LUM);
+            float3 greenA = float3(0.30, 0.52, 0.16), greenB = float3(0.20, 0.40, 0.14), greenC = float3(0.46, 0.60, 0.22);
+            float3 tint = lerp(lerp(greenB, greenA, patch), greenC, smoothstep(0.55, 0.8, patch2) * 0.6);
+            float3 grass = lerp(g * float3(0.7, 1.0, 0.5), gl * tint * 2.6, 0.7);
+
             float3 ground = Tile(_Ground, top);
+            ground = lerp(ground, dot(ground, LUM).xxx * float3(1.0, 0.9, 0.78), 0.3);
 
             // Rocha triplanar
             float3 bw = pow(abs(wn), 4.0); bw /= (bw.x + bw.y + bw.z);
             float3 p = IN.worldPos * _RockScale;
             float3 rock = tex2D(_Rock, p.zy).rgb * bw.x + tex2D(_Rock, p.xz).rgb * bw.y + tex2D(_Rock, p.xy).rgb * bw.z;
+            rock = lerp(rock, dot(rock, LUM).xxx * float3(0.92, 0.94, 0.98), 0.7); // rocha cinza (não laranja)
+            rock *= lerp(0.8, 1.1, patch2);
 
             float3 albedo = sand * w.r + grass * w.g + ground * w.b + rock * w.a;
 

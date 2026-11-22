@@ -9,6 +9,8 @@ namespace MarAberto
         public const int Items = 9;
         public const int Player = 10;
         public const int Grass = 11;
+        public const int Detail = 12;  // objetos pequenos: somem de longe (desempenho)
+        public const int Props = 13;   // árvores e pedras médias: somem bem mais longe
         public const int UI = 5;
         public const int Icons = 31;
 
@@ -61,6 +63,7 @@ namespace MarAberto
                 grip = new PhysicsMaterial("Agarra") { dynamicFriction = 0.95f, staticFriction = 1f, bounciness = 0.05f,
                     frictionCombine = PhysicsMaterialCombine.Maximum, bounceCombine = PhysicsMaterialCombine.Minimum };
             col.sharedMaterial = grip;
+            if (stack.Type == ItemType.Tocha) TorchLight.Attach(go.transform, new Vector3(0, 0.33f, 0), 9f);
             var wi = go.AddComponent<WorldItem>();
             wi.Stack = stack;
             wi.spawnTime = Time.time;
