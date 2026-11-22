@@ -24,6 +24,8 @@ namespace MarAberto
         int rotSteps;
         Vector3 placePos;
         Quaternion placeRot;
+        Transform placeParent;   // jangada onde a peça vai (null = terra)
+        bool newRaft;            // piso na água: começa uma jangada nova
         static readonly Collider[] overlap = new Collider[16];
 
         public void Init(Game g)
@@ -72,9 +74,31 @@ namespace MarAberto
 
             var recipe = RecipeFor(Selected);
             ShowGhost(Selected);
-            if (!hasHit) { ghost.SetActive(false); CanPlace = false; Reason = "Mire num lugar perto"; return; }
 
-            ComputePlacement(hit, cam);
+            // Piso na água: começa uma jangada nova (se não estiver mirando outra peça antes da água).
+            newRaft = false;
+            bool waterMode = false;
+            if (Selected == PieceKind.Piso && cam.forward.y < -0.05f && (Aimed == null || !Aimed.IsFloorLike))
+            {
+                float t = (Ocean.SeaLevel - cam.position.y) / cam.forward.y;
+                if (t > 0 && t < Range && (!hasHit || t < hit.distance - 0.05f || hit.point.y < Ocean.SeaLevel - 0.2f) && Aimed == null)
+                    waterMode = true;
+                if (waterMode)
+                {
+                    Vector3 wp = cam.position + cam.forward * t;
+                    float yaw = Mathf.Round(cam.eulerAngles.y / 90f) * 90f;
+                    placeRot = Quaternion.Euler(0, yaw, 0);
+                    placePos = new Vector3(wp.x, Ocean.SeaLevel - 0.08f, wp.z);
+                    placeParent = null;
+                    newRaft = true;
+                    Reason = null;
+                    if (Physics.Raycast(wp + Vector3.up * 0.5f, Vector3.down, out var ground, 2.2f, ~((1 << Layers.Build) | (1 << Layers.Player) | (1 << Layers.Items)), QueryTriggerInteraction.Ignore))
+                        Reason = "Raso demais para uma jangada";
+                }
+            }
+            if (!hasHit && !waterMode) { ghost.SetActive(false); CanPlace = false; Reason = "Mire num lugar perto"; return; }
+
+            if (!waterMode) ComputePlacement(hit, cam);
             ghost.SetActive(true);
             ghost.transform.SetPositionAndRotation(placePos, placeRot);
 
@@ -113,6 +137,8 @@ namespace MarAberto
         {
             Reason = null;
             var piece = hit.collider.GetComponentInParent<BuildPiece>();
+            var raft = hit.collider.GetComponentInParent<Raft>();
+            placeParent = raft != null ? raft.transform : null;
             float yaw = Mathf.Round(cam.eulerAngles.y / 90f) * 90f;
             Quaternion freeRot = Quaternion.Euler(0, yaw + rotSteps * 45f, 0);
             float h = Building.Cell * 0.5f;
@@ -159,7 +185,7 @@ namespace MarAberto
                         placeRot = Quaternion.identity;
                         placePos = new Vector3(gx, hit.point.y + 0.05f, gz);
                         if (roof) Reason = "O telhado vai em cima de paredes ou pilares";
-                        if (placePos.y < Ocean.SeaLevel - 0.1f) Reason = "Na água só com jangada (próxima etapa)";
+                        if (placePos.y < Ocean.SeaLevel - 0.1f) Reason = "Mire na água para começar uma jangada";
                     }
                     break;
                 }
@@ -222,9 +248,19 @@ namespace MarAberto
         void Place(Recipe r)
         {
             foreach (var (t, n) in r.Cost) game.Inventory.Remove(t, n);
-            var go = Building.Create(Selected, placePos, placeRot, root);
+            Raft raft = null;
+            Transform parent = root;
+            if (newRaft)
+            {
+                raft = Raft.Create(placePos, placeRot);
+                parent = raft.transform;
+                game.Hud.Toast("Jangada nova! Aumente com mais pisos e ponha leme, motor e âncora.", Hud.Good);
+            }
+            else if (placeParent != null) { parent = placeParent; raft = placeParent.GetComponent<Raft>(); }
+            var go = Building.Create(Selected, placePos, placeRot, parent);
             var bp = go.GetComponent<BuildPiece>();
             bp.Recipe = r;
+            if (raft != null) raft.Recompute();
             Sfx.Play(Sfx.Hit, placePos, 0.8f);
             Debris.Burst(placePos + Vector3.up * 0.3f, Vector3.up, 6, new Color(0.6f, 0.45f, 0.3f));
             if (Selected == PieceKind.Cama && Bed.Current == null)
@@ -247,8 +283,25 @@ namespace MarAberto
                 }
             Sfx.Play(Sfx.Break, bp.transform.position, 0.8f);
             game.Hud.Toast(Building.Name(bp.Kind) + " desmontado: materiais devolvidos.", Hud.Info);
+            var raft = bp.GetComponentInParent<Raft>();
+            bp.transform.SetParent(null, true);
             Destroy(bp.gameObject);
             Aimed = null;
+            if (raft != null)
+            {
+                raft.Recompute();
+                if (raft.FloorCount == 0)
+                {
+                    // Sem pisos não flutua: desmonta o resto e devolve tudo.
+                    foreach (var other in raft.GetComponentsInChildren<BuildPiece>())
+                    {
+                        var rr = other.Recipe ?? RecipeFor(other.Kind);
+                        if (rr != null) foreach (var (t, n) in rr.Cost) { int left = game.Inventory.Add(t, n, false); if (left > 0) WorldItem.Spawn(new ItemStack(t, left), other.transform.position + Vector3.up, Vector3.up); }
+                    }
+                    if (game.Player != null && game.Player.Driving == raft) game.Player.StopDriving();
+                    Destroy(raft.gameObject);
+                }
+            }
         }
 
         void ShowGhost(PieceKind k)

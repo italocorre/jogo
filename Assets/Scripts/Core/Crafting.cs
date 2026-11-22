@@ -146,7 +146,7 @@ namespace MarAberto
 
             // ---- Construção (peças: pesquisa aqui, constrói com o martelo) ----
             Add(new Recipe { Id = "piso", Name = "Piso de madeira", Category = CraftCategory.Construcao, Piece = PieceKind.Piso, StartUnlocked = true,
-                IconOverride = Mad, Description = "Base das construções (e da jangada, na próxima etapa).", Cost = L((Mad, 3), (Cor, 1)) });
+                IconOverride = Mad, Description = "Base das construções. Na água, vira uma jangada!", Cost = L((Mad, 3), (Cor, 1)) });
             Add(new Recipe { Id = "pilar", Name = "Pilar", Category = CraftCategory.Construcao, Piece = PieceKind.Pilar, IconOverride = Gra,
                 Description = "Coluna nos cantos do piso.", Cost = L((Mad, 2)), Research = L((Mad, 3)) });
             Add(new Recipe { Id = "parede", Name = "Parede de madeira", Category = CraftCategory.Construcao, Piece = PieceKind.Parede, IconOverride = Mad,
@@ -161,19 +161,14 @@ namespace MarAberto
                 Description = "Marque a cama (E) e você renasce nela ao desmaiar.", Cost = L((Mad, 6), (Fol, 8), (Cor, 3)), Research = L((Fol, 8), (Cor, 4)) });
             Add(new Recipe { Id = "bandeira", Name = "Bandeira de território", Category = CraftCategory.Construcao, ComingIn = "Etapa 6", Description = "Domina uma ilha." });
 
-            // ---- Jangada (melhorias do bote por enquanto) ----
-            Add(new Recipe { Id = "motor2", Name = "Motor a vapor nível 2", Category = CraftCategory.Jangada,
-                Description = "Caldeira maior: 45% mais rápido.", Cost = L((Cob, 6), (Car, 4)), Research = L((Cob, 8)),
-                Blocked = () => game.Boat == null ? "Precisa de um bote" : game.Boat.MotorLevel != 1 ? "Já instalado" : null,
-                OnCraft = () => { game.Boat.MotorLevel = 2; game.Hud.Toast("Motor nível 2 instalado!", Hud.Good); } });
-            Add(new Recipe { Id = "motor3", Name = "Motor a vapor nível 3", Category = CraftCategory.Jangada,
-                Description = "Caldeira reforçada: quase o dobro da velocidade.", Cost = L((Fer, 6), (Cob, 6)), Research = L((Fer, 6)),
-                Blocked = () => game.Boat == null ? "Precisa de um bote" : game.Boat.MotorLevel < 2 ? "Precisa do nível 2" : game.Boat.MotorLevel >= 3 ? "Já instalado" : null,
-                OnCraft = () => { game.Boat.MotorLevel = 3; game.Hud.Toast("Motor nível 3 instalado!", Hud.Good); } });
-            Add(new Recipe { Id = "corda_longa", Name = "Corda longa da âncora", Category = CraftCategory.Jangada,
-                Description = "A âncora alcança 36 m de fundo.", Cost = L((Cor, 6)), Research = L((Cor, 4)),
-                Blocked = () => game.Boat == null ? "Precisa de um bote" : game.Boat.RopeLength >= 30f ? "Já instalada" : null,
-                OnCraft = () => { game.Boat.RopeLength = 36f; game.Hud.Toast("Corda nova: 36 m!", Hud.Good); } });
+            // ---- Jangada (peças: constrói com o martelo em cima de um piso na água) ----
+            Add(new Recipe { Id = "leme", Name = "Leme", Category = CraftCategory.Jangada, Piece = PieceKind.Leme, IconOverride = Mad,
+                Description = "Ponha num piso da jangada e aperte E para pilotar.", Cost = L((Mad, 4), (Cor, 2)), Research = L((Mad, 4), (Cor, 2)) });
+            Add(new Recipe { Id = "motor", Name = "Motor a vapor", Category = CraftCategory.Jangada, Piece = PieceKind.Motor, IconOverride = ItemType.LingoteCobre,
+                Description = "Empurra a jangada queimando carvão (E abastece). Mais motores = mais rápido.",
+                Cost = L((ItemType.LingoteCobre, 4), (Ped, 6), (Mad, 2)), Research = L((ItemType.LingoteCobre, 3), (Car, 4)) });
+            Add(new Recipe { Id = "ancora", Name = "Âncora", Category = CraftCategory.Jangada, Piece = PieceKind.Ancora, IconOverride = Cor,
+                Description = "Segura a jangada parada (até 40 m de fundo). R ou E solta/recolhe.", Cost = L((Ped, 6), (Cor, 6), (Mad, 2)), Research = L((Cor, 4), (Ped, 4)) });
             Add(new Recipe { Id = "jangada_motor_gas", Name = "Motor a gasolina", Category = CraftCategory.Jangada, ComingIn = "Etapa 7", Description = "Bem mais rápido. Usa gasolina." });
 
             // ---- Máquinas ----
@@ -188,11 +183,6 @@ namespace MarAberto
             Add(new Recipe { Id = "refinaria", Name = "Refinaria de gasolina", Category = CraftCategory.Maquinas, ComingIn = "Etapa 7", Description = "Produz gasolina." });
 
             // ---- Veículos ----
-            Add(new Recipe { Id = "bote", Name = "Bote a vapor", Category = CraftCategory.Veiculos,
-                Description = "Barco pronto, aparece no fim do píer. (Na Etapa 3 vira jangada montável.)",
-                Cost = L((Mad, 20), (Cor, 6), (Cob, 6), (Car, 4)), Research = L((Mad, 10), (Cob, 4)),
-                Blocked = () => game.Boat != null ? "Você já tem um bote" : null,
-                OnCraft = () => { game.GiveBoat(); game.Hud.Toast("Seu bote está no fim do píer!", Hud.Good); } });
             Add(new Recipe { Id = "helicoptero", Name = "Helicóptero", Category = CraftCategory.Veiculos, ComingIn = "Etapa 8", Description = "Voa! Usa gasolina e aceita arma montada." });
 
             // ---- Navegação ----

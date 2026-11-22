@@ -197,7 +197,7 @@ namespace MarAberto
 
             // Barco
             driveBox = UIKit.Panel(root, "Pilotando").rectTransform;
-            driveBox.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 176), new Vector2(520, 92));
+            driveBox.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 176), new Vector2(620, 116));
             speedText = UIKit.Txt(driveBox, "Velocidade", "", UIKit.Title, 30, UIKit.Gold, TextAnchor.UpperCenter);
             speedText.rectTransform.Fill(16, 0, 16, 10);
             anchorText = UIKit.Txt(driveBox, "Ancora", "", UIKit.Body, 19, UIKit.Muted, TextAnchor.LowerCenter);
@@ -769,7 +769,8 @@ namespace MarAberto
                     case Boat.AnchorState.Hanging: anchor = "Âncora solta (não alcança o fundo)"; break;
                     default: anchor = "Âncora recolhida"; break;
                 }
-                anchorText.text = anchor + "   ·   <color=#FFD27A>R</color> âncora" + (p.Driving != null ? "  ·  <color=#FFD27A>E</color> sair" : "");
+                anchorText.text = (boat.HasAnchor ? anchor + "   ·   <color=#FFD27A>R</color> âncora" : "Sem âncora") + (p.Driving != null ? "  ·  <color=#FFD27A>E</color> sair" : "") +
+                    (boat.Extra != null ? "\n<color=#CDB98D>" + boat.Extra + "</color>" : "");
             }
 
             UpdateMarker(p);
@@ -844,7 +845,9 @@ namespace MarAberto
 
             var boat = game.Boat;
             if (boat == null)
-                bpBoatText.text = "<color=#FFD27A>Sem barco</color>\n\nPesquise e fabrique o bote a vapor na aba FABRICAR (categoria Veículos).";
+                bpBoatText.text = "<color=#FFD27A>JANGADAS</color>\n\nVocê tem " + Raft.All.Count + " jangada" + (Raft.All.Count == 1 ? "" : "s") + ".\n\n" +
+                    "Como montar:\n1. Martelo na mão, escolha o Piso e mire na água: nasce uma jangada.\n2. Mire na borda de um piso para aumentar.\n" +
+                    "3. Ponha um Leme (E pilota), um Motor a vapor (E abastece com carvão) e uma Âncora.\n\n<color=#A9B8BF>Peças na aba FABRICAR, categoria Jangada.</color>";
             else
             {
                 float maxKnots = boat.MotorLevel == 1 ? 11 : boat.MotorLevel == 2 ? 15 : 19;

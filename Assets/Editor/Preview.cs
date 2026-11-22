@@ -24,7 +24,7 @@ namespace MarAberto.EditorTools
             var island = game.StartIsland;
             var env = game.Environment;
             var cam = game.Player.Cam;
-            var boat = game.GiveBoat();
+            var boat = Raft.SpawnTest(island.BoatSpawn + Vector3.up * 0.05f, island.BoatSpawnRot, 5);
             Icons.RenderAll();
 
             var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 1 };
@@ -126,7 +126,7 @@ namespace MarAberto.EditorTools
             }
             Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 35f, 0.62f);
             Vector3 dockEye = island.DockEnd + Vector3.up * 1.65f - dockDir * 4f - side * 0.6f;
-            Shot("04_barco", dockEye, boat.transform.position + Vector3.up * 0.2f, 0.45f);
+            Shot("04_jangada", dockEye + Vector3.up * 1.5f, boat.transform.TransformPoint(new Vector3(0, 0.6f, 1f)), 0.45f);
             var reef = island.Reefs[0];
             Vector3 rc = reef.transform.position;
             Vector3 reefEye = rc + new Vector3(12f, 0, 8f); reefEye.y = reef.Height(reefEye.x, reefEye.z) + 3.5f;

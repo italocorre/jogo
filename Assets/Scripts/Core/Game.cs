@@ -137,20 +137,18 @@ namespace MarAberto
             }
             if (Input.GetKeyDown(KeyCode.F2))
             {
-                GiveBoat();
-                if (Player.Driving == null) Boat.MoveTo(StartIsland.BoatSpawn, StartIsland.BoatSpawnRot);
-                Hud.Toast("Teste: barco no fim do píer", Hud.Gold);
+                Vector3 p = StartIsland.BoatSpawn + Vector3.up * 0.1f;
+                Raft.SpawnTest(p, StartIsland.BoatSpawnRot, 10);
+                Hud.Toast("Teste: jangada com leme, motor e âncora no fim do píer", Hud.Gold);
             }
             if (Input.GetKeyDown(KeyCode.F3) && StartIsland.Reefs != null && StartIsland.Reefs.Count > 0)
             {
-                GiveBoat();
                 if (Player.Driving != null) Player.StopDriving();
                 Vector3 reef = StartIsland.Reefs[0].transform.position;
                 Vector3 dir = (StartIsland.transform.position - reef); dir.y = 0; dir.Normalize();
-                Vector3 pos = reef + dir * 14f + Vector3.up * 0.3f;
-                Boat.MoveTo(pos, Quaternion.LookRotation(-dir));
-                Player.BoardBoat(Boat);
-                Hud.Toast("Teste: no recife da boia. Aperte R para ancorar.", Hud.Gold);
+                var raft = Raft.SpawnTest(reef + dir * 14f, Quaternion.LookRotation(-dir), 10);
+                Player.Teleport(raft.transform.TransformPoint(new Vector3(0, 0.5f, 1.2f)), -dir);
+                Hud.Toast("Teste: jangada no recife da boia. R ancora.", Hud.Gold);
             }
             if (Input.GetKeyDown(KeyCode.F4))
             {

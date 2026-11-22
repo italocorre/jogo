@@ -7,9 +7,8 @@ namespace MarAberto
     /// Barco: flutua nas ondas, tem motor a vapor, leme e âncora.
     /// E no leme para pilotar · R para soltar/recolher a âncora · E na água para subir a bordo.
     /// </summary>
-    public class Boat : MonoBehaviour, IInteractable
+    public class Boat : Vessel, IInteractable
     {
-        public string BoatName = "Bote a vapor";
         public float BaseEnginePower = 5200f;
         public float TurnPower = 2600f;
         public float MaxReverse = 0.4f;
@@ -17,15 +16,7 @@ namespace MarAberto
         public int MotorLevel = 1;            // 1..3
         public float RopeLength = 16f;        // alcance da âncora (m)
 
-        public float Throttle { get; set; }
-        public float Steer { get; set; }
-        public bool Driven { get; set; }
-        public Transform Seat { get; private set; }
-        public float Speed { get; private set; }
 
-        public enum AnchorState { Up, Dropping, Set, Hanging, Raising }
-        public AnchorState Anchor { get; private set; } = AnchorState.Up;
-        public float AnchorDepth { get; private set; }
 
         Rigidbody rb;
         readonly List<Vector3> floatPoints = new List<Vector3>();
@@ -48,6 +39,7 @@ namespace MarAberto
             go.transform.position = pos;
             go.transform.rotation = rot;
             var b = go.AddComponent<Boat>();
+            b.BoatName = "Bote a vapor";
             b.Build();
             return b;
         }
@@ -399,7 +391,7 @@ namespace MarAberto
 
         // ---------- Âncora ----------
 
-        public void ToggleAnchor()
+        public override void ToggleAnchor()
         {
             var hud = Game.Instance != null ? Game.Instance.Hud : null;
             if (Anchor == AnchorState.Up)

@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora }
     public enum Station { Nenhuma, Bancada, Fundicao }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -45,11 +45,15 @@ namespace MarAberto
                 case PieceKind.Bau: return "Baú";
                 case PieceKind.Cama: return "Cama";
                 case PieceKind.Fundicao: return "Fundição";
+                case PieceKind.Leme: return "Leme";
+                case PieceKind.Motor: return "Motor a vapor";
+                case PieceKind.Ancora: return "Âncora";
                 default: return "Bancada";
             }
         }
 
-        public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada;
+        public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
+            || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -64,6 +68,9 @@ namespace MarAberto
                 case PieceKind.Bau: return new Vector3(0.9f, 0.65f, 0.6f);
                 case PieceKind.Cama: return new Vector3(1.1f, 0.6f, 2.1f);
                 case PieceKind.Fundicao: return new Vector3(1.4f, 1.9f, 1.4f);
+                case PieceKind.Leme: return new Vector3(0.9f, 1.4f, 0.4f);
+                case PieceKind.Motor: return new Vector3(0.9f, 1.3f, 0.9f);
+                case PieceKind.Ancora: return new Vector3(1.0f, 0.8f, 0.7f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -252,6 +259,77 @@ namespace MarAberto
                     l.type = LightType.Point; l.color = new Color(1f, 0.5f, 0.2f); l.range = 4f; l.intensity = 1.2f; l.shadows = LightShadows.None;
                     Box(root, new Vector3(0, 0.6f, 0), new Vector3(1.4f, 1.2f, 1.4f));
                     root.AddComponent<CraftStation>().Kind = Station.Fundicao;
+                    break;
+                }
+                case PieceKind.Leme:
+                {
+                    // Coluna com timão (roda de madeira) virado para quem pilota.
+                    poles.AddTube(new[] { Vector3.zero, new Vector3(0, 1.0f, 0) }, new[] { 0.09f, 0.08f }, 10, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    Vector3 hub = new Vector3(0, 1.05f, -0.12f);
+                    int seg = 20; float R = 0.42f;
+                    for (int i = 0; i < seg; i++)
+                    {
+                        float a0 = i * Mathf.PI * 2f / seg, a1 = (i + 1) * Mathf.PI * 2f / seg;
+                        poles.AddTube(new[] { hub + new Vector3(Mathf.Cos(a0) * R, Mathf.Sin(a0) * R, 0), hub + new Vector3(Mathf.Cos(a1) * R, Mathf.Sin(a1) * R, 0) },
+                            new[] { 0.035f, 0.035f }, 6, (j, t) => Color.white, null, false, false, null, 0.6f, 1f);
+                    }
+                    for (int i = 0; i < 8; i++)
+                    {
+                        float a = i * Mathf.PI / 4f;
+                        Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0);
+                        poles.AddTube(new[] { hub, hub + d * (R + 0.14f) }, new[] { 0.025f, 0.02f }, 6, (j, t) => Color.white, null, false, true, null, 0.6f, 1f);
+                    }
+                    other.AddCylinder(hub + Vector3.forward * 0.05f, hub - Vector3.forward * 0.06f, 0.07f, 0.07f, 12, C(0.85f, 0.65f, 0.3f)); // eixo de latão
+                    var seat = new GameObject("Assento");
+                    seat.transform.SetParent(root.transform, false);
+                    seat.transform.localPosition = new Vector3(0, 0, -0.85f);
+                    Box(root, new Vector3(0, 0.7f, 0), new Vector3(0.9f, 1.4f, 0.4f));
+                    root.AddComponent<RaftHelm>();
+                    break;
+                }
+                case PieceKind.Motor:
+                {
+                    // Caldeira de ferro, chaminé de latão e hélice atrás.
+                    Color iron = C(0.2f, 0.2f, 0.22f), brass = C(0.85f, 0.65f, 0.3f);
+                    planks.AddBoxUV(new Vector3(0, 0.05f, 0), new Vector3(0.9f, 0.1f, 0.9f), Quaternion.identity, W(0.7f), 0.5f);
+                    other.AddCylinder(new Vector3(0, 0.1f, 0), new Vector3(0, 0.75f, 0), 0.32f, 0.32f, 18, iron);
+                    other.AddSphere(new Vector3(0, 0.75f, 0), new Vector3(0.32f, 0.14f, 0.32f), iron);
+                    other.AddCylinder(new Vector3(0, 0.4f, 0), new Vector3(0, 0.46f, 0), 0.335f, 0.335f, 18, brass, false);
+                    other.AddCylinder(new Vector3(0, 0.8f, 0), new Vector3(0, 1.25f, 0), 0.07f, 0.06f, 12, brass);
+                    other.AddCylinder(new Vector3(0, 0.25f, -0.3f), new Vector3(0, 0.0f, -0.75f), 0.03f, 0.03f, 8, iron); // eixo
+                    var helice = new GameObject("Helice");
+                    helice.transform.SetParent(root.transform, false);
+                    helice.transform.localPosition = new Vector3(0, -0.05f, -0.8f);
+                    var pm = new MeshBuilder();
+                    for (int i = 0; i < 3; i++)
+                    {
+                        Quaternion q = Quaternion.Euler(0, 0, i * 120f);
+                        pm.AddBox(q * new Vector3(0, 0.12f, 0), new Vector3(0.08f, 0.22f, 0.02f), q * Quaternion.Euler(0, 25, 0), brass);
+                    }
+                    helice.AddComponent<MeshFilter>().sharedMesh = pm.Build("Helice");
+                    helice.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    Box(root, new Vector3(0, 0.6f, 0), new Vector3(0.8f, 1.2f, 0.8f));
+                    root.AddComponent<RaftMotor>();
+                    break;
+                }
+                case PieceKind.Ancora:
+                {
+                    // Guincho com corda enrolada e a âncora de ferro pendurada na borda.
+                    Color iron = C(0.25f, 0.25f, 0.27f), rope = C(0.75f, 0.63f, 0.42f);
+                    foreach (float x in new[] { -0.42f, 0.42f })
+                        planks.AddBoxUV(new Vector3(x, 0.3f, 0), new Vector3(0.08f, 0.6f, 0.35f), Quaternion.identity, W(0.75f), 0.5f);
+                    other.AddCylinder(new Vector3(-0.38f, 0.45f, 0), new Vector3(0.38f, 0.45f, 0), 0.13f, 0.13f, 14, rope);
+                    other.AddCylinder(new Vector3(-0.46f, 0.45f, 0), new Vector3(-0.6f, 0.45f, 0), 0.03f, 0.03f, 8, iron);
+                    other.AddCylinder(new Vector3(-0.6f, 0.45f, 0), new Vector3(-0.6f, 0.65f, 0), 0.025f, 0.025f, 8, iron); // manivela
+                    // âncora
+                    Vector3 top = new Vector3(0, 0.4f, 0.5f);
+                    other.AddCylinder(top, top + Vector3.down * 0.55f, 0.035f, 0.035f, 8, iron);
+                    other.AddCylinder(top + Vector3.down * 0.1f + Vector3.left * 0.15f, top + Vector3.down * 0.1f + Vector3.right * 0.15f, 0.025f, 0.025f, 8, iron);
+                    Vector3 b = top + Vector3.down * 0.55f;
+                    other.AddCylinder(b, b + new Vector3(-0.22f, 0.18f, 0), 0.03f, 0.02f, 8, iron);
+                    other.AddCylinder(b, b + new Vector3(0.22f, 0.18f, 0), 0.03f, 0.02f, 8, iron);
+                    Box(root, new Vector3(0, 0.4f, 0), new Vector3(1.0f, 0.8f, 0.5f));
+                    root.AddComponent<RaftAnchorPiece>();
                     break;
                 }
                 case PieceKind.Bancada:

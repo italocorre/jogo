@@ -24,12 +24,12 @@ namespace MarAberto
         public bool Swimming { get; private set; }
         public bool InWater { get; private set; }
         /// <summary>Barco em que o jogador está em pé (ou pilotando).</summary>
-        public Boat CurrentBoat => Driving != null ? Driving : (platform != null ? platform.GetComponent<Boat>() : null);
+        public Vessel CurrentBoat => Driving != null ? Driving : (platform != null ? platform.GetComponentInParent<Vessel>() : null);
         public bool HeadUnderwater { get; private set; }
         public bool InputLocked { get; set; }
         public bool Moving { get; private set; }
         public bool Running { get; private set; }
-        public Boat Driving { get; private set; }
+        public Vessel Driving { get; private set; }
         public IInteractable LookTarget { get; private set; }
         public float DamageFlash => damageFlash;
 
@@ -217,7 +217,7 @@ namespace MarAberto
             platform = null;
             if (Physics.Raycast(transform.position + Vector3.up * 0.4f, Vector3.down, out var hit, 0.8f, interactMask, QueryTriggerInteraction.Ignore))
             {
-                var boat = hit.collider.GetComponentInParent<Boat>();
+                var boat = hit.collider.GetComponentInParent<Vessel>();
                 if (boat != null)
                 {
                     platform = boat.transform;
@@ -295,7 +295,7 @@ namespace MarAberto
 
         // ---------- Pilotar ----------
 
-        public void StartDriving(Boat boat)
+        public void StartDriving(Vessel boat)
         {
             Driving = boat;
             boat.Driven = true;
