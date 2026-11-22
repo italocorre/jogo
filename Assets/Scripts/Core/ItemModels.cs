@@ -104,6 +104,8 @@ namespace MarAberto
                 case ItemType.PicaretaPedra: return 0.35f;
                 case ItemType.Tocha: return 0.3f;
                 case ItemType.MachadoPedra: return 0.35f;
+                case ItemType.Martelo: return 0.3f;
+                case ItemType.PicaretaCobre: return 0.35f;
                 case ItemType.Lanca: return 0.5f;
                 case ItemType.Madeira: return 0.2f;
                 case ItemType.Graveto: return 0.2f;
@@ -266,6 +268,33 @@ namespace MarAberto
                 case ItemType.PicaretaPedra:
                     Tools.AddPickaxe(mb, 1, -0.25f);
                     break;
+                case ItemType.PicaretaCobre:
+                    Tools.AddPickaxe(mb, 2, -0.25f);
+                    break;
+                case ItemType.Martelo:
+                {
+                    Color wood = C(0.55f, 0.38f, 0.22f), stone = C(0.48f, 0.47f, 0.45f), rope = C(0.72f, 0.60f, 0.40f);
+                    mb.AddCylinder(new Vector3(0, -0.24f, 0), new Vector3(0, 0.22f, 0), 0.02f, 0.018f, 8, wood);
+                    mb.AddRock(new Vector3(0, 0.25f, 0), 0.06f, 41, _ => stone, 0.12f, new Vector3(0.9f, 0.9f, 1.9f));
+                    mb.AddCylinder(new Vector3(0, 0.19f, 0), new Vector3(0, 0.215f, 0), 0.028f, 0.028f, 8, rope);
+                    break;
+                }
+                case ItemType.LingoteCobre:
+                case ItemType.LingoteFerro:
+                {
+                    Color c = t == ItemType.LingoteCobre ? C(0.85f, 0.48f, 0.25f) : C(0.66f, 0.67f, 0.70f);
+                    // Barra trapezoidal (topo menor).
+                    Vector3[] b = { new Vector3(-0.12f, 0, -0.05f), new Vector3(0.12f, 0, -0.05f), new Vector3(0.12f, 0, 0.05f), new Vector3(-0.12f, 0, 0.05f) };
+                    Vector3[] tp = { new Vector3(-0.1f, 0.06f, -0.035f), new Vector3(0.1f, 0.06f, -0.035f), new Vector3(0.1f, 0.06f, 0.035f), new Vector3(-0.1f, 0.06f, 0.035f) };
+                    mb.AddQuad(tp[0], tp[3], tp[2], tp[1], c * 1.1f);
+                    mb.AddQuad(b[0], b[1], b[2], b[3], c * 0.6f);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        int j = (i + 1) % 4;
+                        mb.AddQuad(b[i], tp[i], tp[j], b[j], c * (i % 2 == 0 ? 0.9f : 0.8f));
+                    }
+                    break;
+                }
                 case ItemType.Madeira:
                 {
                     // Tora com casca e anéis no corte.
@@ -369,7 +398,7 @@ namespace MarAberto
             Color wood = new Color(0.62f, 0.42f, 0.24f);
             Color woodDark = new Color(0.45f, 0.30f, 0.17f);
             Color wrap = new Color(0.40f, 0.30f, 0.20f);
-            Color head = tier <= 1 ? new Color(0.58f, 0.57f, 0.54f) : new Color(0.78f, 0.78f, 0.80f);
+            Color head = tier <= 1 ? new Color(0.58f, 0.57f, 0.54f) : tier == 2 ? new Color(0.85f, 0.50f, 0.28f) : new Color(0.78f, 0.78f, 0.80f);
             Color headDark = head * 0.75f;
             // Cabo levemente afinado
             mb.AddCylinder(o + new Vector3(0, -0.02f, 0), o + new Vector3(0, 0.62f, 0), 0.026f, 0.022f, 7, wood);

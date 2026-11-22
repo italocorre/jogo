@@ -92,6 +92,38 @@ namespace MarAberto.EditorTools
             Vector3 toSpawn = island.SpawnPoint - m; toSpawn.y = 0; toSpawn.Normalize();
             Shot("02_kit_inicial", spawnEye, spawnEye + island.SpawnLook * 4f + Vector3.down * 1.4f, 0.42f);
             Vector3 sea = c + dockDir * 430f + side * 90f; sea.y = 3f;
+            // Casinha de exemplo: pisos, paredes, pilares, telhado, baú, cama, bancada e fundição.
+            {
+                Vector3 b0 = island.SpawnPoint + island.SpawnLook * 9f - side * 3f;
+                b0.y = island.Height(b0.x, b0.z) + 0.05f;
+                var parent = new GameObject("CasaExemplo").transform;
+                Quaternion r0 = Quaternion.LookRotation(island.SpawnLook);
+                Vector3 X = r0 * Vector3.right * Building.Cell, Z = r0 * Vector3.forward * Building.Cell;
+                for (int ix = 0; ix < 2; ix++)
+                    for (int iz = 0; iz < 2; iz++)
+                        Building.Create(PieceKind.Piso, b0 + X * ix + Z * iz, r0, parent);
+                float wy = Building.FloorH;
+                // paredes do fundo e laterais
+                for (int ix = 0; ix < 2; ix++) Building.Create(PieceKind.Parede, b0 + X * ix + Z * 1.5f + Vector3.up * wy, r0, parent);
+                for (int iz = 0; iz < 2; iz++)
+                {
+                    Building.Create(PieceKind.Parede, b0 - X * 0.5f + Z * iz + Vector3.up * wy, r0 * Quaternion.Euler(0, 90, 0), parent);
+                    Building.Create(PieceKind.Parede, b0 + X * 1.5f + Z * iz + Vector3.up * wy, r0 * Quaternion.Euler(0, 90, 0), parent);
+                }
+                Building.Create(PieceKind.Pilar, b0 - X * 0.5f - Z * 0.5f + Vector3.up * wy, r0, parent);
+                Building.Create(PieceKind.Pilar, b0 + X * 1.5f - Z * 0.5f + Vector3.up * wy, r0, parent);
+                for (int ix = 0; ix < 2; ix++)
+                    for (int iz = 0; iz < 2; iz++)
+                        Building.Create(PieceKind.Telhado, b0 + X * ix + Z * iz + Vector3.up * (Building.WallH + Building.FloorH), r0, parent);
+                Building.Create(PieceKind.Cama, b0 + X * 1.1f + Z * 1.0f + Vector3.up * wy, r0, parent);
+                Building.Create(PieceKind.Bau, b0 - X * 0.15f + Z * 1.2f + Vector3.up * wy, r0, parent);
+                Vector3 bench = b0 + X * 2.2f - Z * 0.4f; bench.y = island.Height(bench.x, bench.z);
+                Building.Create(PieceKind.Bancada, bench, r0 * Quaternion.Euler(0, -90, 0), parent);
+                Vector3 furn = b0 - X * 1.6f - Z * 0.2f; furn.y = island.Height(furn.x, furn.z);
+                Building.Create(PieceKind.Fundicao, furn, r0, parent);
+                Vector3 eye = b0 + X * 0.5f - Z * 4.2f + Vector3.up * 2.2f;
+                Shot("05_construcao", eye, b0 + X * 0.5f + Z * 0.6f + Vector3.up * 1.0f, 0.42f);
+            }
             Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 35f, 0.62f);
             Vector3 dockEye = island.DockEnd + Vector3.up * 1.65f - dockDir * 4f - side * 0.6f;
             Shot("04_barco", dockEye, boat.transform.position + Vector3.up * 0.2f, 0.45f);

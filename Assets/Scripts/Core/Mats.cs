@@ -127,6 +127,9 @@ namespace MarAberto
             switch (t)
             {
                 case ItemType.Cobre: return Variant("ItemCobre", 0.62f, 0.75f, 2.5f);
+                case ItemType.LingoteCobre: return Variant("ItemCobre", 0.62f, 0.75f, 2.5f);
+                case ItemType.LingoteFerro: return Variant("ItemFerro", 0.5f, 0.45f, 2.5f);
+                case ItemType.PicaretaCobre: return Variant("ItemCobre", 0.62f, 0.75f, 2.5f);
                 case ItemType.Ferro: return Variant("ItemFerro", 0.5f, 0.45f, 2.5f);
                 case ItemType.Carvao: return Variant("ItemCarvao", 0.62f, 0.05f, 2.5f);
                 case ItemType.Perola: return Variant("ItemPerola", 0.92f, 0.1f, 2.5f);

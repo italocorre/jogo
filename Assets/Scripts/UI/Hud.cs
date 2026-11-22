@@ -14,7 +14,7 @@ namespace MarAberto
         public static readonly Color Info = UIKit.Hex("#E8EEF0");
         public static readonly Color Gold = UIKit.Hex("#FFD27A");
 
-        enum Panel { None, Backpack, Shop, Pause }
+        enum Panel { None, Backpack, Shop, Pause, Chest, Build }
         enum Tab { Bag, Craft, Boat, Map }
 
         Game game;
@@ -72,6 +72,7 @@ namespace MarAberto
             BuildBackpack();
             BuildShop();
             BuildPause();
+            BuildExtraPanels();
             game.Inventory.OnAdded += (t, n) => Toast(Items.Get(t).Name, Info, t, n);
             game.Inventory.OnChanged += () => invVersion++;
             helpUntil = Time.time + 35f;
@@ -526,7 +527,10 @@ namespace MarAberto
                 Cursor.visible = !locked;
                 if (UIKit.CursorTex != null) Cursor.SetCursor(locked ? null : UIKit.CursorTex, new Vector2(4, 4), CursorMode.Auto);
             }
-            dim.gameObject.SetActive(p == Panel.Backpack || p == Panel.Shop);
+            dim.gameObject.SetActive(p == Panel.Backpack || p == Panel.Shop || p == Panel.Chest || p == Panel.Build);
+            if (pickerWin != null) pickerWin.gameObject.SetActive(p == Panel.Build);
+            if (chestWin != null) chestWin.gameObject.SetActive(p == Panel.Chest);
+            if (p != Panel.Chest) openChest = null;
             backpackWin.gameObject.SetActive(p == Panel.Backpack);
             shopWin.gameObject.SetActive(p == Panel.Shop);
             pauseWin.gameObject.SetActive(p == Panel.Pause);
@@ -644,9 +648,10 @@ namespace MarAberto
             else if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.I))
             {
                 if (panel == Panel.None) SetPanel(Panel.Backpack);
-                else if (panel == Panel.Backpack || panel == Panel.Shop) SetPanel(Panel.None);
+                else SetPanel(Panel.None);
             }
-            else if (panel == Panel.Shop && Input.GetKeyDown(KeyCode.E) && Time.frameCount != PanelChangedFrame) SetPanel(Panel.None);
+            else if ((panel == Panel.Shop || panel == Panel.Chest || panel == Panel.Build) && Input.GetKeyDown(KeyCode.E) && Time.frameCount != PanelChangedFrame) SetPanel(Panel.None);
+            else if (panel == Panel.Build && Input.GetMouseButtonDown(1) && Time.frameCount != PanelChangedFrame) SetPanel(Panel.None);
             if (Input.GetKeyDown(KeyCode.H)) helpUntil = helpUntil > Time.time ? 0 : float.MaxValue;
             if (panel == Panel.None && Cursor.lockState != CursorLockMode.Locked && Input.GetMouseButtonDown(0))
             {
@@ -788,6 +793,8 @@ namespace MarAberto
 
             if (panel == Panel.Backpack) RefreshBackpack(inv);
             if (panel == Panel.Backpack && tab == Tab.Craft) RefreshCraft();
+            if (panel == Panel.Chest) RefreshChest();
+            RefreshBuildHint(hudOn);
             if (panel == Panel.Shop && shopVersion != invVersion + game.Coins * 7919)
             {
                 shopVersion = invVersion + game.Coins * 7919;

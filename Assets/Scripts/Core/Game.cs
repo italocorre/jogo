@@ -38,6 +38,7 @@ namespace MarAberto
         public Boat Boat { get; private set; }
         public int Coins { get; private set; }
         public int BackpackLevel { get; set; }
+        public BuildSystem Build { get; private set; }
         public int OxygenLevel { get; set; }
 
         AudioSource oceanAudio, underAudio, music;
@@ -93,6 +94,9 @@ namespace MarAberto
             // Começa de mãos vazias: coleta pedras, gravetos e folhas e fabrica as ferramentas no Tab.
             Inventory.Selected = 0;
             Crafting.Init(this);
+
+            Build = gameObject.AddComponent<BuildSystem>();
+            Build.Init(this);
 
             Hud = gameObject.AddComponent<Hud>();
             Hud.Init(this);

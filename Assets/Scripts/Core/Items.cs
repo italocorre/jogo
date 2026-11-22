@@ -23,9 +23,13 @@ namespace MarAberto
         Corda,
         MachadoPedra,
         Lanca,
+        Martelo,
+        LingoteCobre,
+        LingoteFerro,
+        PicaretaCobre,
     }
 
-    public enum ToolKind { Nenhuma, Picareta, Machado, Arma }
+    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo }
 
     public class ItemDef
     {
@@ -70,6 +74,13 @@ namespace MarAberto
             defs[ItemType.MachadoPedra].Kind = ToolKind.Machado;
             Def(ItemType.Lanca, "Lança", "Arma simples para se defender de peixes e de outros jogadores.", new Color(0.6f, 0.5f, 0.4f), 0, 1, true, 1);
             defs[ItemType.Lanca].Kind = ToolKind.Arma;
+            Def(ItemType.Martelo, "Martelo", "Constrói. Botão direito escolhe a peça, clique constrói, R gira, X desmonta.", new Color(0.55f, 0.45f, 0.35f), 0, 1, true, 0);
+            defs[ItemType.Martelo].Kind = ToolKind.Martelo;
+            Def(ItemType.PicaretaCobre, "Picareta de Cobre", "Nível 2: minera ferro.", new Color(0.85f, 0.5f, 0.3f), 0, 1, true, 2);
+            defs[ItemType.PicaretaCobre].Kind = ToolKind.Picareta;
+            Def(ItemType.LingoteCobre, "Lingote de Cobre", "Cobre derretido na fundição.", new Color(0.88f, 0.5f, 0.26f), 4, 30);
+            Def(ItemType.LingoteFerro, "Lingote de Ferro", "Ferro derretido na fundição.", new Color(0.7f, 0.7f, 0.72f), 8, 30);
+            SetRarity(ItemType.LingoteFerro, 1);
             Def(ItemType.Madeira, "Madeira", "Toras de árvore. Base de quase toda construção.", new Color(0.55f, 0.38f, 0.22f), 1, 30);
             Def(ItemType.Graveto, "Graveto", "Galho seco. Cabos de ferramentas e tochas.", new Color(0.6f, 0.45f, 0.28f), 1, 40);
             Def(ItemType.Folha, "Folha", "Folha de coqueiro. Vira corda e telhado.", new Color(0.35f, 0.6f, 0.2f), 1, 40);
@@ -101,6 +112,8 @@ namespace MarAberto
         public int Selected;
         public event Action<ItemType, int> OnAdded;
         public event Action OnChanged;
+        public int Version { get; private set; }
+        void Changed() { Version++; OnChanged?.Invoke(); }
 
         public Inventory(int size)
         {
@@ -117,7 +130,7 @@ namespace MarAberto
                 if (!Slots[i].IsEmpty) list.Add(Slots[i]);
                 Slots[i] = ItemStack.Empty;
             }
-            OnChanged?.Invoke();
+            Changed();
             return list;
         }
 
@@ -129,7 +142,7 @@ namespace MarAberto
             var n = new ItemStack[size];
             for (int i = 0; i < size; i++) n[i] = i < Slots.Length ? Slots[i] : ItemStack.Empty;
             Slots = n;
-            OnChanged?.Invoke();
+            Changed();
         }
 
         public ItemStack SelectedStack => Slots[Selected];
@@ -181,7 +194,7 @@ namespace MarAberto
             if (added > 0)
             {
                 if (notify) OnAdded?.Invoke(t, added);
-                OnChanged?.Invoke();
+                Changed();
             }
             return left;
         }
@@ -197,7 +210,7 @@ namespace MarAberto
                 amount -= take;
                 if (Slots[i].Count <= 0) Slots[i] = ItemStack.Empty;
             }
-            OnChanged?.Invoke();
+            Changed();
             return true;
         }
 
@@ -208,7 +221,7 @@ namespace MarAberto
             int take = Mathf.Min(amount, s.Count);
             Slots[i].Count -= take;
             if (Slots[i].Count <= 0) Slots[i] = ItemStack.Empty;
-            OnChanged?.Invoke();
+            Changed();
             return new ItemStack(s.Type, take);
         }
 
@@ -231,7 +244,7 @@ namespace MarAberto
                 Slots[from] = b;
                 Slots[to] = a;
             }
-            OnChanged?.Invoke();
+            Changed();
         }
     }
 }

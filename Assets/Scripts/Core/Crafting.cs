@@ -22,7 +22,10 @@ namespace MarAberto
         public string ComingIn;                   // "Etapa 2" = ainda não disponível no jogo
         public Func<string> Blocked;              // motivo para não poder fabricar agora (ou null)
         public Action OnCraft;                    // ação especial (melhorias, barco...)
-        public ItemType IconItem => Output != ItemType.Nada ? Output : (Cost.Length > 0 ? Cost[0].type : ItemType.Nada);
+        public PieceKind? Piece;                  // peça de construção: o custo é pago ao construir com o martelo
+        public Station Station;                   // precisa estar perto desta máquina para fabricar
+        public ItemType IconOverride = ItemType.Nada;
+        public ItemType IconItem => Output != ItemType.Nada ? Output : IconOverride != ItemType.Nada ? IconOverride : (Cost.Length > 0 ? Cost[0].type : ItemType.Nada);
     }
 
     /// <summary>
@@ -72,7 +75,11 @@ namespace MarAberto
             why = null;
             if (IsComing(r)) { why = "Chega na " + r.ComingIn; return false; }
             if (!IsUnlocked(r)) { why = "Pesquise primeiro"; return false; }
+            if (r.Piece.HasValue) { why = "Construa com o martelo"; return false; }
             if (r.Blocked != null) { why = r.Blocked(); if (why != null) return false; }
+            var pl = Game.Instance != null ? Game.Instance.Player : null;
+            if (r.Station != Station.Nenhuma && (pl == null || !CraftStation.Near(r.Station, pl.transform.position)))
+            { why = "Perto de uma " + CraftStation.Name(r.Station); return false; }
             if (!Has(inv, r.Cost)) { why = "Faltam materiais"; return false; }
             if (r.Output != ItemType.Nada && inv.SpaceFor(r.Output) < r.OutputCount) { why = "Mochila cheia"; return false; }
             return true;
@@ -126,8 +133,10 @@ namespace MarAberto
                 Description = "Quebra rochas e veios de carvão e cobre.", Cost = L((Gra, 2), (Ped, 3), (Cor, 1)) });
             Add(new Recipe { Id = "tocha", Name = "Tocha", Category = CraftCategory.Ferramentas, Output = ItemType.Tocha,
                 Description = "Ilumina à noite. Segure na mão ou largue no chão.", Cost = L((Gra, 1), (Fol, 1), (Car, 1)), Research = L((Car, 3), (Gra, 2)) });
-            Add(new Recipe { Id = "picareta_ferro", Name = "Picareta de Ferro", Category = CraftCategory.Ferramentas, ComingIn = "Etapa 2",
-                Description = "Minera ferro e minérios raros. Precisa da fundição." });
+            Add(new Recipe { Id = "martelo", Name = "Martelo", Category = CraftCategory.Ferramentas, Output = ItemType.Martelo, StartUnlocked = true,
+                Description = "Constrói pisos, paredes, baús, cama e máquinas. Botão direito escolhe a peça.", Cost = L((Mad, 1), (Ped, 1), (Cor, 1)) });
+            Add(new Recipe { Id = "picareta_cobre", Name = "Picareta de Cobre", Category = CraftCategory.Ferramentas, Output = ItemType.PicaretaCobre, Station = Station.Bancada,
+                Description = "Nível 2: minera ferro. Feita na bancada.", Cost = L((ItemType.LingoteCobre, 3), (Gra, 2), (Cor, 1)), Research = L((ItemType.LingoteCobre, 2)) });
 
             // ---- Armas ----
             Add(new Recipe { Id = "lanca", Name = "Lança", Category = CraftCategory.Armas, Output = ItemType.Lanca,
@@ -135,11 +144,21 @@ namespace MarAberto
             Add(new Recipe { Id = "arco", Name = "Arco e flechas", Category = CraftCategory.Armas, ComingIn = "Etapa 6", Description = "Ataque à distância." });
             Add(new Recipe { Id = "canhao", Name = "Canhão de jangada", Category = CraftCategory.Armas, ComingIn = "Etapa 6", Description = "Montado na jangada." });
 
-            // ---- Construção ----
-            Add(new Recipe { Id = "piso", Name = "Piso de madeira", Category = CraftCategory.Construcao, ComingIn = "Etapa 2", Description = "Base da jangada e das construções." });
-            Add(new Recipe { Id = "parede", Name = "Parede de madeira", Category = CraftCategory.Construcao, ComingIn = "Etapa 2", Description = "Parede, pilar, escada e telhado." });
-            Add(new Recipe { Id = "bau", Name = "Baú", Category = CraftCategory.Construcao, ComingIn = "Etapa 2", Description = "Guarda itens. Outros jogadores podem roubar!" });
-            Add(new Recipe { Id = "cama", Name = "Cama", Category = CraftCategory.Construcao, ComingIn = "Etapa 2", Description = "Marca onde você renasce." });
+            // ---- Construção (peças: pesquisa aqui, constrói com o martelo) ----
+            Add(new Recipe { Id = "piso", Name = "Piso de madeira", Category = CraftCategory.Construcao, Piece = PieceKind.Piso, StartUnlocked = true,
+                IconOverride = Mad, Description = "Base das construções (e da jangada, na próxima etapa).", Cost = L((Mad, 3), (Cor, 1)) });
+            Add(new Recipe { Id = "pilar", Name = "Pilar", Category = CraftCategory.Construcao, Piece = PieceKind.Pilar, IconOverride = Gra,
+                Description = "Coluna nos cantos do piso.", Cost = L((Mad, 2)), Research = L((Mad, 3)) });
+            Add(new Recipe { Id = "parede", Name = "Parede de madeira", Category = CraftCategory.Construcao, Piece = PieceKind.Parede, IconOverride = Mad,
+                Description = "Encaixa na borda do piso. Dá para empilhar.", Cost = L((Mad, 4)), Research = L((Mad, 6)) });
+            Add(new Recipe { Id = "escada", Name = "Escada", Category = CraftCategory.Construcao, Piece = PieceKind.Escada, IconOverride = Mad,
+                Description = "Sobe um andar. Vai em cima de um piso.", Cost = L((Mad, 4), (Cor, 1)), Research = L((Mad, 6), (Cor, 2)) });
+            Add(new Recipe { Id = "telhado", Name = "Telhado de folhas", Category = CraftCategory.Construcao, Piece = PieceKind.Telhado, IconOverride = Fol,
+                Description = "Vai em cima das paredes. Também serve de piso do andar de cima.", Cost = L((Mad, 2), (Fol, 4)), Research = L((Fol, 6), (Mad, 3)) });
+            Add(new Recipe { Id = "bau", Name = "Baú", Category = CraftCategory.Construcao, Piece = PieceKind.Bau, IconOverride = Mad,
+                Description = "Guarda 18 espaços de itens. Cuidado: outros jogadores podem abrir!", Cost = L((Mad, 6), (Cor, 2)), Research = L((Mad, 6), (Cor, 2)) });
+            Add(new Recipe { Id = "cama", Name = "Cama", Category = CraftCategory.Construcao, Piece = PieceKind.Cama, IconOverride = Fol,
+                Description = "Marque a cama (E) e você renasce nela ao desmaiar.", Cost = L((Mad, 6), (Fol, 8), (Cor, 3)), Research = L((Fol, 8), (Cor, 4)) });
             Add(new Recipe { Id = "bandeira", Name = "Bandeira de território", Category = CraftCategory.Construcao, ComingIn = "Etapa 6", Description = "Domina uma ilha." });
 
             // ---- Jangada (melhorias do bote por enquanto) ----
@@ -158,8 +177,14 @@ namespace MarAberto
             Add(new Recipe { Id = "jangada_motor_gas", Name = "Motor a gasolina", Category = CraftCategory.Jangada, ComingIn = "Etapa 7", Description = "Bem mais rápido. Usa gasolina." });
 
             // ---- Máquinas ----
-            Add(new Recipe { Id = "fundicao", Name = "Fundição", Category = CraftCategory.Maquinas, ComingIn = "Etapa 2", Description = "Derrete minério em lingotes." });
-            Add(new Recipe { Id = "bancada", Name = "Bancada", Category = CraftCategory.Maquinas, ComingIn = "Etapa 2", Description = "Receitas avançadas." });
+            Add(new Recipe { Id = "bancada", Name = "Bancada", Category = CraftCategory.Maquinas, Piece = PieceKind.Bancada, IconOverride = Mad,
+                Description = "Fabrica ferramentas melhores. Fique perto dela.", Cost = L((Mad, 8), (Ped, 4), (Cor, 2)), Research = L((Mad, 6), (Ped, 4)) });
+            Add(new Recipe { Id = "fundicao", Name = "Fundição", Category = CraftCategory.Maquinas, Piece = PieceKind.Fundicao, IconOverride = Ped,
+                Description = "Derrete minério em lingotes. Fique perto dela.", Cost = L((Ped, 12), (Mad, 2), (Car, 2)), Research = L((Ped, 10), (Car, 3)) });
+            Add(new Recipe { Id = "lingote_cobre", Name = "Lingote de cobre", Category = CraftCategory.Maquinas, Output = ItemType.LingoteCobre, Station = Station.Fundicao,
+                Description = "Feito na fundição.", Cost = L((Cob, 2), (Car, 1)), Research = L((Cob, 3)) });
+            Add(new Recipe { Id = "lingote_ferro", Name = "Lingote de ferro", Category = CraftCategory.Maquinas, Output = ItemType.LingoteFerro, Station = Station.Fundicao,
+                Description = "Feito na fundição.", Cost = L((Fer, 2), (Car, 2)), Research = L((Fer, 3)) });
             Add(new Recipe { Id = "refinaria", Name = "Refinaria de gasolina", Category = CraftCategory.Maquinas, ComingIn = "Etapa 7", Description = "Produz gasolina." });
 
             // ---- Veículos ----

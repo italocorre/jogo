@@ -262,7 +262,8 @@ namespace MarAberto
                     if (wi != null && wi.CanInteract) { LookTarget = wi; break; }
                 }
             }
-            if (Input.GetKeyDown(KeyCode.R) && CurrentBoat != null) CurrentBoat.ToggleAnchor();
+            bool hammer = Game.Instance.Inventory.SelectedStack.Type == ItemType.Martelo;
+            if (Input.GetKeyDown(KeyCode.R) && CurrentBoat != null && (!hammer || Driving != null)) CurrentBoat.ToggleAnchor();
             if (Input.GetKeyDown(KeyCode.E) && Time.frameCount - Game.Instance.Hud.PanelChangedFrame > 1)
             {
                 if (Driving != null) StopDriving();
@@ -357,6 +358,25 @@ namespace MarAberto
             Cam.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
         }
 
+        Vector3 firstSpawn, firstLook;
+        bool firstSaved;
+
+        /// <summary>Cama marcada: renasce aqui.</summary>
+        public void SetRespawn(Vector3 pos, Vector3 look)
+        {
+            if (!firstSaved) { firstSpawn = spawnPos; firstLook = spawnLook; firstSaved = true; }
+            spawnPos = pos;
+            spawnLook = look;
+        }
+
+        /// <summary>Cama desmontada: volta a renascer na praia inicial.</summary>
+        public void ResetRespawn()
+        {
+            if (!firstSaved) return;
+            spawnPos = firstSpawn;
+            spawnLook = firstLook;
+        }
+
         public void Heal()
         {
             Health = MaxHealth;
@@ -386,8 +406,6 @@ namespace MarAberto
                 game.Hud.Toast("Você desmaiou e perdeu tudo! Sua mochila ficou onde você caiu.", Hud.Bad);
             }
             else game.Hud.Toast("Você desmaiou e acordou na praia...", Hud.Bad);
-            // Garante uma picareta para não travar.
-            if (game.Inventory.Count(ItemType.PicaretaPedra) == 0) game.Inventory.Add(ItemType.PicaretaPedra, 1, false);
             Health = MaxHealth;
             Oxygen = MaxOxygen;
             Teleport(spawnPos, spawnLook);
