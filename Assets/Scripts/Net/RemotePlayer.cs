@@ -72,18 +72,29 @@ namespace MarAberto
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
                 if (r is SkinnedMeshRenderer smr) smr.updateWhenOffscreen = true;
             }
-            // Altura de ~1,75 m e pé no chão.
-            if (rends.Length > 0)
+            // Altura de ~1,75 m e pé no chão. (Malha com esqueleto: mede pela malha original,
+            // porque os "bounds" do renderer ainda não valem logo depois de criar.)
+            float h = 0f, minY = 0f;
+            foreach (var r in rends)
             {
-                Bounds b = rends[0].bounds;
-                foreach (var r in rends) b.Encapsulate(r.bounds);
-                model.localScale *= 1.75f / Mathf.Max(0.01f, b.size.y);
-                b = rends[0].bounds; foreach (var r in rends) b.Encapsulate(r.bounds);
-                model.position += Vector3.up * (transform.position.y - b.min.y);
+                var smr = r as SkinnedMeshRenderer;
+                Mesh m = smr != null ? smr.sharedMesh : r.GetComponent<MeshFilter>()?.sharedMesh;
+                if (m == null) continue;
+                var mb = m.bounds;
+                Vector3 lo = r.transform.TransformPoint(mb.min), hi = r.transform.TransformPoint(mb.max);
+                float hh = Mathf.Abs(hi.y - lo.y);
+                if (hh > h) { h = hh; minY = Mathf.Min(lo.y, hi.y); }
+            }
+            if (h > 0.01f)
+            {
+                float k = 1.75f / h;
+                model.localScale *= k;
+                model.localPosition += Vector3.up * (transform.position.y - minY) * k;
             }
             // Animações (arquivos separados, mesmo esqueleto).
             anim = inst.GetComponent<Animation>();
             if (anim == null) anim = inst.AddComponent<Animation>();
+            anim.cullingType = AnimationCullingType.AlwaysAnimate;
             AnimationClip Clip(string file, string ends)
             {
                 foreach (var c in Resources.LoadAll<AnimationClip>("Characters/Kenney/" + file))

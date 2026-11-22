@@ -48,7 +48,7 @@ namespace MarAberto
 
         static readonly Vector3 restPos = new Vector3(0.3f, -0.34f, 0.52f);
         static readonly Quaternion restRot = Quaternion.Euler(18f, -22f, 4f);
-        static readonly int mask = ~((1 << Layers.IgnoreRaycast) | (1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass));
+        static readonly int mask = ~((1 << Layers.IgnoreRaycast) | Layers.PlayerMask | (1 << Layers.Items) | (1 << Layers.Grass));
 
         static Color C(float r, float g, float b) => new Color(r, g, b, 1f);
 
@@ -282,7 +282,7 @@ namespace MarAberto
             // Joga a linha onde a mira encontra a água (até 16 m).
             if (cam.forward.y > -0.05f) { g.Hud.Toast("Mire na água para pescar.", Hud.Info); return; }
             float t = (Ocean.SeaLevel - cam.position.y) / cam.forward.y;
-            int m = ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.Remote));
+            int m = ~(Layers.PlayerMask | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.Remote));
             if (t <= 0 || t > 16f || Physics.Raycast(cam.position, cam.forward, t, m, QueryTriggerInteraction.Ignore))
             { g.Hud.Toast("Mire na água (até 16 m).", Hud.Info); return; }
             Vector3 p = cam.position + cam.forward * t;
@@ -331,7 +331,7 @@ namespace MarAberto
         void Plant(ItemType type, PieceKind kind, Transform cam)
         {
             var g = Game.Instance;
-            int m = ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.Remote));
+            int m = ~(Layers.PlayerMask | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.Remote));
             if (!Physics.Raycast(cam.position, cam.forward, out var hit, 5f, m, QueryTriggerInteraction.Ignore)) { g.Hud.Toast("Mire no chão perto para plantar.", Hud.Bad); return; }
             if (hit.collider.GetComponentInParent<BuildPiece>() != null || hit.collider.GetComponentInParent<Raft>() != null || hit.normal.y < 0.7f)
             { g.Hud.Toast("Plante em terra firme e plana.", Hud.Bad); return; }

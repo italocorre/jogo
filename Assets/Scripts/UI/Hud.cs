@@ -21,6 +21,7 @@ namespace MarAberto
         Panel panel = Panel.None;
         Tab tab = Tab.Bag;
         Tab lastBagTab = Tab.Bag;
+        int lastHealth = -1, lastOxy = -1, lastMinute = -1, lastHunger = -1, lastThirst = -1;
         public bool AnyPanelOpen => panel != Panel.None;
         public int PanelChangedFrame { get; private set; } = -10;
 
@@ -335,7 +336,7 @@ namespace MarAberto
             if (tab != Tab.Craft) lastBagTab = tab;
             // Fabricar fica no canto direito (dá para ver o mundo); a mochila fica no meio.
             if (tab == Tab.Craft) backpackWin.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-24, 20), new Vector2(1400, 760));
-            else backpackWin.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 24), new Vector2(1400, 760));
+            else backpackWin.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 24), new Vector2(1090, 640)); // mochila: janela menor, no meio
             if (bpHint != null) bpHint.gameObject.SetActive(tab == Tab.Bag);
             craftVersion = -1;
             bpBoatView.gameObject.SetActive(tab == Tab.Boat);
@@ -697,7 +698,8 @@ namespace MarAberto
             if (p != null)
             {
                 UIKit.SetFill(healthFill, p.Health / p.MaxHealth);
-                healthText.text = Mathf.CeilToInt(p.Health).ToString();
+                int hv = Mathf.CeilToInt(p.Health);
+                if (hv != lastHealth) { lastHealth = hv; healthText.text = hv.ToString(); }
                 bool showOxy = p.HeadUnderwater || p.Oxygen < p.MaxOxygen - 0.5f;
                 oxyRow.gameObject.SetActive(showOxy);
                 vitals.sizeDelta = new Vector2(380, showOxy ? 108 : 62);
@@ -705,16 +707,18 @@ namespace MarAberto
                 healthText.rectTransform.anchoredPosition = new Vector2(-20, showOxy ? 74 : 28);
                 healthLabel.rectTransform.anchoredPosition = new Vector2(20, showOxy ? 74 : 28);
                 UIKit.SetFill(oxyFill, p.Oxygen / p.MaxOxygen);
-                oxyText.text = Mathf.RoundToInt(100f * p.Oxygen / p.MaxOxygen) + "%";
+                int ov = Mathf.RoundToInt(100f * p.Oxygen / p.MaxOxygen);
+                if (ov != lastOxy) { lastOxy = ov; oxyText.text = ov + "%"; }
             }
 
-            coinsText.text = game.Coins.ToString();
+
             if (shopCoins != null) shopCoins.text = game.Coins.ToString();
             if (env != null)
             {
                 float h = env.TimeOfDay * 24f;
                 string part = h < 5 ? "MADRUGADA" : h < 12 ? "MANHÃ" : h < 18 ? "TARDE" : "NOITE";
-                clockText.text = env.ClockText + "  ·  " + part;
+                int minute = Mathf.FloorToInt(env.TimeOfDay * 24f * 60f);
+                if (minute != lastMinute) { lastMinute = minute; clockText.text = env.ClockText + "  ·  " + part; }
             }
 
             // Bússola em faixa

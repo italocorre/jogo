@@ -398,7 +398,7 @@ namespace MarAberto
             {
                 Vector3 bow = transform.TransformPoint(anchorBowLocal);
                 float bottom = -9999f;
-                if (Physics.Raycast(bow + Vector3.down * 1.2f, Vector3.down, out var hit, 200f, ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass)), QueryTriggerInteraction.Ignore))
+                if (Physics.Raycast(bow + Vector3.down * 1.2f, Vector3.down, out var hit, 200f, ~(Layers.PlayerMask | (1 << Layers.Items) | (1 << Layers.Grass)), QueryTriggerInteraction.Ignore))
                     bottom = hit.point.y;
                 AnchorDepth = Ocean.SeaLevel - bottom;
                 anchorY = anchorObj.position.y;

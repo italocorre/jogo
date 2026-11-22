@@ -60,7 +60,7 @@ namespace MarAberto
         public void Setup(bool preview)
         {
             Instance = this;
-            Application.targetFrameRate = 240; // sem limite prático (VSync desligado)
+            Application.targetFrameRate = -1; // quem manda é o VSync (ritmo do monitor)
             Inventory = new Inventory(Inventory.HotbarSize + 12);
 
             if (!preview)

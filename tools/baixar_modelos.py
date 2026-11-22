@@ -10,7 +10,7 @@ MODELS = [
     'picke_dirty_01', 'lambis_shell', 'stone_01', 'boulder_01', 'rock_moss_set_01', 'namaqualand_boulder_02',
     'modular_wooden_pier', 'treasure_chest', 'wooden_crate_01', 'wooden_lantern_01', 'wooden_barrels_01',
     'lateral_sea_marker', 'fern_02', 'pachira_aquatica_01',
-    'wooden_axe_02', 'hatchet', 'wooden_hammer_01', 'metal_jerrycan', 'cannon_01', 'stone_fire_pit', 'wooden_bucket_01',
+    'wooden_axe_02', 'hatchet', 'wooden_hammer_01', 'metal_jerrycan', 'cannon_01', 'stone_fire_pit', 'wooden_bucket_01', 'dead_quiver_branch_01',
 ]
 # Texturas de chão (terreno): cor + relevo
 TEXTURES = ['coast_sand_01', 'aerial_grass_rock', 'rock_06', 'forrest_ground_01', 'bark_brown_02']
@@ -38,6 +38,12 @@ def model(mid):
         name = os.path.basename(rel)
         if not any(k in name for k in KEEP):
             continue
+        if name.endswith('.exr'):
+            # Relevo em EXR: baixa a versão PNG (a Unity lida melhor).
+            alt = files.get('nor_gl', {}).get('1k', {}).get('png')
+            if alt:
+                save(os.path.join(base, rel[:-4] + '.png'), get(alt['url']))
+                continue
         save(os.path.join(base, rel), get(info['url']))
     print('modelo', mid)
 

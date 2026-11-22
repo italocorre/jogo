@@ -13,12 +13,16 @@ namespace MarAberto
         public const int Props = 13;   // árvores e pedras médias: somem bem mais longe
         public const int Build = 14;   // construções do jogador
         public const int Remote = 15;  // outros jogadores (dá para acertar)
+        public const int PlayerSwim = 16; // jogador nadando: atravessa a jangada (não empurra), sobe com Espaço
+        public const int PlayerMask = (1 << Player) | (1 << PlayerSwim);
         public const int UI = 5;
         public const int Icons = 31;
 
         public static void Setup()
         {
             Physics.IgnoreLayerCollision(Items, Player, true);
+            Physics.IgnoreLayerCollision(Items, PlayerSwim, true);
+            Physics.IgnoreLayerCollision(PlayerSwim, Build, true);
             Physics.IgnoreLayerCollision(Items, Items, false);
         }
     }
@@ -53,6 +57,8 @@ namespace MarAberto
             go.layer = Layers.Items;
             go.transform.position = pos;
             go.transform.rotation = Quaternion.Euler(Random.Range(-20f, 20f), Random.Range(0f, 360f), Random.Range(-20f, 20f));
+            // No chão os itens ficam maiores, para dar para ver de longe.
+            go.transform.localScale = Vector3.one * (Items.Get(stack.Type).IsTool ? 1.3f : 1.9f);
             go.AddComponent<MeshFilter>().sharedMesh = ItemModels.Get(stack.Type);
             var mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterial = ItemModels.Material(stack.Type);

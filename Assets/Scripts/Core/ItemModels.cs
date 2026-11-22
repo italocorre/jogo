@@ -15,6 +15,16 @@ namespace MarAberto
             if (cache.TryGetValue(t, out var m) && m != null) return m;
             m = FromModel(t, out var mat);
             if (m != null) mats[t] = mat;
+            else if (t == ItemType.Madeira)
+            {
+                // Tora com textura de casca de verdade (malha com UV).
+                var lb = new MeshBuilder();
+                lb.AddTube(new[] { new Vector3(-0.22f, 0, 0), new Vector3(0, 0.005f, 0), new Vector3(0.22f, 0, 0) }, new[] { 0.075f, 0.072f, 0.068f }, 14,
+                    (i, k) => Color.white, null, true, true, null, 3f, 1f);
+                lb.AddTube(new[] { new Vector3(0.02f, 0.05f, 0.03f), new Vector3(0.05f, 0.11f, 0.07f) }, new[] { 0.016f, 0.007f }, 6, (i, k) => Color.white, null, false, true, null, 3f, 1f);
+                m = lb.Build("Item_Madeira");
+                mats[t] = Mats.Bark;
+            }
             else m = Build(t);
             cache[t] = m;
             return m;
@@ -42,6 +52,7 @@ namespace MarAberto
                 case ItemType.Martelo: id = "wooden_hammer_01"; size = 0.5f; tool = true; break;
                 case ItemType.Gasolina: id = "metal_jerrycan"; size = 0.34f; break;
                 case ItemType.AguaLimpa: id = "wooden_bucket_01"; size = 0.3f; break;
+                case ItemType.Graveto: id = "dead_quiver_branch_01"; size = 0.45f; break;
                 case ItemType.Concha: id = "lambis_shell"; size = 0.2f; break;
                 case ItemType.Pedra: id = "stone_01"; size = 0.24f; break;
                 default: return null;

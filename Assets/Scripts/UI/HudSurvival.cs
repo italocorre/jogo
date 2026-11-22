@@ -33,8 +33,9 @@ namespace MarAberto
             survival.anchoredPosition = new Vector2(30, 28 + vitals.sizeDelta.y + 10);
             UIKit.SetFill(hungerFill, p.Hunger / 100f);
             UIKit.SetFill(thirstFill, p.Thirst / 100f);
-            hungerText.text = Mathf.CeilToInt(p.Hunger).ToString();
-            thirstText.text = Mathf.CeilToInt(p.Thirst).ToString();
+            int hu = Mathf.CeilToInt(p.Hunger), th = Mathf.CeilToInt(p.Thirst);
+            if (hu != lastHunger) { lastHunger = hu; hungerText.text = hu.ToString(); }
+            if (th != lastThirst) { lastThirst = th; thirstText.text = th.ToString(); }
             float blink = 0.6f + 0.4f * Mathf.Sin(Time.time * 6f);
             hungerText.color = p.Hunger < 20f ? new Color(1f, 0.55f, 0.45f, blink) : Color.white;
             thirstText.color = p.Thirst < 20f ? new Color(1f, 0.55f, 0.45f, blink) : Color.white;

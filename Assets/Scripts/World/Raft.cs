@@ -57,10 +57,6 @@ namespace MarAberto
             r.rb = go.AddComponent<Rigidbody>();
             r.rb.interpolation = RigidbodyInterpolation.Interpolate;
             r.rb.mass = 150f;
-#if UNITY_2022_2_OR_NEWER
-            // O jogador encostando não empurra a jangada (mas continua andando em cima dela).
-            r.rb.excludeLayers = 1 << Layers.Player;
-#endif
             return r;
         }
 
@@ -141,7 +137,7 @@ namespace MarAberto
             }
             Vector3 p = transform.position;
             float ground = Ocean.SeaLevel - 999f;
-            if (Physics.Raycast(p + Vector3.down * 1f, Vector3.down, out var hit, 60f, ~((1 << Layers.Build) | (1 << Layers.Player)), QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(p + Vector3.down * 1f, Vector3.down, out var hit, 60f, ~((1 << Layers.Build) | Layers.PlayerMask), QueryTriggerInteraction.Ignore))
                 ground = hit.point.y;
             AnchorDepth = Ocean.SeaLevel - ground;
             if (AnchorDepth > 40f) { Anchor = AnchorState.Hanging; Game.Instance.Hud.Toast("Fundo longe demais para a âncora (máx. 40 m).", Hud.Bad); return; }

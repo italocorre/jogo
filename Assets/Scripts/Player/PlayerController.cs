@@ -47,7 +47,7 @@ namespace MarAberto
         Quaternion platLastRot;
 
         const float EyeHeight = 1.62f;
-        static readonly int interactMask = ~((1 << Layers.IgnoreRaycast) | (1 << Layers.Player) | (1 << Layers.Grass));
+        static readonly int interactMask = ~((1 << Layers.IgnoreRaycast) | Layers.PlayerMask | (1 << Layers.Grass));
 
         public void Init(Vector3 spawn, Vector3 lookDir)
         {
@@ -118,6 +118,9 @@ namespace MarAberto
             float water = Ocean.HeightAt(pos.x, pos.z);
             HeadUnderwater = pos.y + EyeHeight < water - 0.05f;
             Swimming = pos.y + 1.15f < water && platform == null;
+            // Nadando: atravessa a jangada (assim não a empurra). Para subir, Espaço perto da borda.
+            int wantLayer = Swimming ? Layers.PlayerSwim : Layers.Player;
+            if (gameObject.layer != wantLayer) gameObject.layer = wantLayer;
 
             Vector3 input = Vector3.zero;
             bool jump = false, dive = false, run = false;
@@ -148,6 +151,7 @@ namespace MarAberto
                 if (pos.y + 1.45f > water && velocity.y > 0 && !jump) velocity.y *= 0.5f;
                 if (jump && pos.y + 1.2f > water - 0.4f && (cc.collisionFlags & CollisionFlags.Sides) != 0)
                     velocity.y = 5f; // subir na margem, no píer ou no barco
+                if (jump && TryClimbRaft()) return;
             }
             else
             {
@@ -267,9 +271,10 @@ namespace MarAberto
             // Pegar item perto dos pés com facilidade (debaixo d'água a mira é difícil).
             if (LookTarget == null)
             {
-                var cols = Physics.OverlapSphere(Cam.transform.position + Cam.transform.forward * 1.2f, 0.6f, 1 << Layers.Items, QueryTriggerInteraction.Collide);
-                foreach (var c in cols)
+                int nc = Physics.OverlapSphereNonAlloc(Cam.transform.position + Cam.transform.forward * 1.2f, 0.6f, nearBuf, 1 << Layers.Items, QueryTriggerInteraction.Collide);
+                for (int ci = 0; ci < nc; ci++)
                 {
+                    var c = nearBuf[ci];
                     var wi = c.GetComponent<WorldItem>();
                     if (wi != null && wi.CanInteract) { LookTarget = wi; break; }
                 }
@@ -354,6 +359,28 @@ namespace MarAberto
             HeadUnderwater = false;
             Cam.transform.localPosition = new Vector3(0, EyeHeight - 0.35f, 0);
         }
+
+        /// <summary>Nadando ao lado da jangada + Espaço: sobe em cima dela.</summary>
+        bool TryClimbRaft()
+        {
+            Vector3 eye = Cam.transform.position;
+            Vector3 fwd = Vector3.ProjectOnPlane(Cam.transform.forward, Vector3.up).normalized;
+            foreach (var c in Physics.OverlapSphere(transform.position + Vector3.up * 0.8f + fwd * 0.8f, 1.1f, 1 << Layers.Build, QueryTriggerInteraction.Ignore))
+            {
+                if (c.GetComponentInParent<Raft>() == null) continue;
+                Vector3 probe = c.ClosestPoint(transform.position + Vector3.up * 0.8f) + fwd * 0.6f + Vector3.up * 3f;
+                if (Physics.Raycast(probe, Vector3.down, out var hit, 5f, 1 << Layers.Build, QueryTriggerInteraction.Ignore) && hit.normal.y > 0.7f)
+                {
+                    Teleport(hit.point + Vector3.up * 0.1f, fwd);
+                    Sfx.Play(Sfx.SmallSplash, transform.position, 0.6f);
+                    UpdatePlatform();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        static readonly Collider[] nearBuf = new Collider[16];
 
         public bool LookFrozen { get; set; }   // girando peça com R: a câmera não mexe
 

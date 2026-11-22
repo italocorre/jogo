@@ -51,6 +51,7 @@ namespace MarAberto.EditorTools
             PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
             PlayerSettings.defaultIsNativeResolution = true;
             PlayerSettings.runInBackground = true;
+            PlayerSettings.gcIncremental = true; // coleta de lixo em pedacinhos: sem travadinhas
             PlayerSettings.resizableWindow = true;
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
 

@@ -200,7 +200,7 @@ namespace MarAberto
             g.Inventory.Remove(ItemType.Municao, 1);
             var cam = g.Player.Cam.transform;
             Vector3 from = gunTip != null ? gunTip.position : transform.position + transform.forward * 3f;
-            int mask = ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast));
+            int mask = ~(Layers.PlayerMask | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast));
             Vector3 aim = cam.position + cam.forward * 250f;
             if (Physics.Raycast(cam.position + cam.forward * 4f, cam.forward, out var ah, 250f, mask, QueryTriggerInteraction.Ignore)) aim = ah.point;
             Vector3 dir = (aim - from).normalized;

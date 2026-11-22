@@ -56,6 +56,7 @@ namespace MarAberto
             Active = hammer && !p.InputLocked;
             if (!hammer)
             {
+                if (p != null) p.LookFrozen = false;
                 HideGhost();
                 Aimed = null;
                 return;
@@ -70,7 +71,7 @@ namespace MarAberto
             p.LookFrozen = rotating;
             if (rotating) rotOffset += Input.GetAxisRaw("Mouse X") * 4f;
 
-            int mask = ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.UI));
+            int mask = ~(Layers.PlayerMask | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.UI));
             bool hasHit = Physics.Raycast(cam.position, cam.forward, out var hit, Range, mask, QueryTriggerInteraction.Ignore);
             Aimed = hasHit ? hit.collider.GetComponentInParent<BuildPiece>() : null;
 
@@ -91,12 +92,12 @@ namespace MarAberto
                 {
                     Vector3 wp = cam.position + cam.forward * t;
                     float yaw = Mathf.Round(cam.eulerAngles.y / 90f) * 90f;
-                    placeRot = Quaternion.Euler(0, yaw, 0);
+                    placeRot = Quaternion.Euler(0, yaw + Mathf.Round(rotOffset / 15f) * 15f, 0);
                     placePos = new Vector3(wp.x, Ocean.SeaLevel - 0.08f, wp.z);
                     placeParent = null;
                     newRaft = true;
                     Reason = null;
-                    if (Physics.Raycast(wp + Vector3.up * 0.5f, Vector3.down, out var ground, 2.2f, ~((1 << Layers.Build) | (1 << Layers.Player) | (1 << Layers.Items)), QueryTriggerInteraction.Ignore))
+                    if (Physics.Raycast(wp + Vector3.up * 0.5f, Vector3.down, out var ground, 2.2f, ~((1 << Layers.Build) | Layers.PlayerMask | (1 << Layers.Items)), QueryTriggerInteraction.Ignore))
                         Reason = "Raso demais para uma jangada";
                 }
             }
@@ -200,7 +201,7 @@ namespace MarAberto
                         // Grade do mundo, rente ao chão.
                         float gx = Mathf.Round(hit.point.x / Building.Cell) * Building.Cell;
                         float gz = Mathf.Round(hit.point.z / Building.Cell) * Building.Cell;
-                        placeRot = Quaternion.identity;
+                        placeRot = Quaternion.Euler(0, Mathf.Round(rotOffset / 15f) * 15f, 0);  // segure R + mouse para girar
                         placePos = new Vector3(gx, hit.point.y + 0.05f, gz);
                         if (roof) Reason = "O telhado vai em cima de paredes ou pilares";
                         if (placePos.y < Ocean.SeaLevel - 0.1f) Reason = "Mire na água para começar uma jangada";

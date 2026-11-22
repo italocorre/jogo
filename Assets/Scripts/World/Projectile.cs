@@ -13,7 +13,7 @@ namespace MarAberto
         float life;
         bool stuck;
         static Mesh arrowMesh, ballMesh;
-        static readonly int mask = ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.UI));
+        static readonly int mask = ~(Layers.PlayerMask | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.UI));
 
         public static Projectile Fire(Kind k, Vector3 from, Vector3 velocity, bool visualOnly)
         {

@@ -178,8 +178,27 @@ namespace MarAberto
         /// <summary>Gera tudo de uma vez (ilha inicial e prints).</summary>
         public void Generate()
         {
-            var it = GenerateRoutine();
-            while (it.MoveNext()) { }
+            syncMode = true;
+            var stack = new Stack<System.Collections.IEnumerator>();
+            stack.Push(GenerateRoutine());
+            while (stack.Count > 0)
+            {
+                var it = stack.Peek();
+                if (!it.MoveNext()) { stack.Pop(); continue; }
+                if (it.Current is System.Collections.IEnumerator inner) stack.Push(inner);
+            }
+            syncMode = false;
+        }
+
+        // Gera aos poucos: no máximo ~3 ms por quadro (o jogo não trava ao chegar perto de uma ilha).
+        bool syncMode;
+        readonly System.Diagnostics.Stopwatch sliceWatch = new System.Diagnostics.Stopwatch();
+        int sliceFrame = -1;
+        bool Slice()
+        {
+            if (syncMode) return false;
+            if (Time.frameCount != sliceFrame) { sliceFrame = Time.frameCount; sliceWatch.Restart(); return false; }
+            return sliceWatch.Elapsed.TotalMilliseconds >= 3.0;
         }
 
         /// <summary>Gera aos poucos (um passo por quadro) para não travar o jogo ao chegar perto.</summary>
@@ -194,21 +213,18 @@ namespace MarAberto
                 Detail.SetParent(transform, false);
             }
             flats.Clear(); keepClear.Clear(); palmBases.Clear(); treeSpots.Clear();
+            sliceWatch.Restart();
             PlanLayout();
             yield return null;
-            BuildTerrain();
-            yield return null;
+            yield return BuildTerrain();
             if (IsStart) BuildDock();
-            BuildPalms();
+            yield return BuildPalms();
+            yield return BuildForest();
+            yield return BuildRocks();
+            if (Type != IslandType.Vulcanica) yield return BuildGrass();
+            yield return BuildSeabedLife();
+            yield return PlaceOres();
             yield return null;
-            BuildForest();
-            yield return null;
-            BuildRocks();
-            yield return null;
-            if (Type != IslandType.Vulcanica) BuildGrass();
-            yield return null;
-            BuildSeabedLife();
-            PlaceOres();
             PlaceLoot();
             BuildWrecks();
             if (IsStart) Reefs = Reef.CreateAll(transform.parent, transform.position, Seed);
@@ -300,13 +316,16 @@ namespace MarAberto
             return along > -8f && along < 40f && across < 5f;
         }
 
-        void BuildTerrain()
+        System.Collections.IEnumerator BuildTerrain()
         {
             int n = Mathf.RoundToInt(HalfSize * 2f / Cell);
             var h = new float[n + 1, n + 1];
             for (int z = 0; z <= n; z++)
+            {
+                if (Slice()) yield return null;
                 for (int x = 0; x <= n; x++)
                     h[x, z] = Height(-HalfSize + x * Cell + transform.position.x, -HalfSize + z * Cell + transform.position.z);
+            }
 
             var mat = Mats.Terrain;
             int step = n / Chunks;
@@ -314,6 +333,7 @@ namespace MarAberto
             {
                 for (int cx = 0; cx < Chunks; cx++)
                 {
+                    if (Slice()) yield return null;
                     int x0 = cx * step, z0 = cz * step;
                     int x1 = (cx == Chunks - 1) ? n : x0 + step;
                     int z1 = (cz == Chunks - 1) ? n : z0 + step;
@@ -324,6 +344,7 @@ namespace MarAberto
                     var uvs = new Vector2[w * d];
                     for (int z = 0; z < d; z++)
                     {
+                        if (Slice()) yield return null;
                         for (int x = 0; x < w; x++)
                         {
                             int gx = x0 + x, gz = z0 + z, i = z * w + x;
@@ -341,6 +362,7 @@ namespace MarAberto
                     var tris = new List<int>((w - 1) * (d - 1) * 6);
                     for (int z = 0; z < d - 1; z++)
                     {
+                        if (Slice()) yield return null;
                         for (int x = 0; x < w - 1; x++)
                         {
                             int i00 = z * w + x, i10 = i00 + 1, i01 = i00 + w, i11 = i01 + 1;
@@ -488,7 +510,7 @@ namespace MarAberto
 
         // ---------- Coqueiros (tronco com casca + folhas texturizadas) ----------
 
-        void BuildPalms()
+        System.Collections.IEnumerator BuildPalms()
         {
             // Cada coqueiro é um objeto próprio (pode ser cortado com o machado).
             var parent = new GameObject("Coqueiros").transform;
@@ -496,6 +518,7 @@ namespace MarAberto
             int count = 0;
             for (int i = 0; i < 1400 && count < N(110, PalmMul); i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(1.6f, 14f, 0.8f, out var p, HalfSize * 0.95f, 6f)) continue;
                 count++;
                 palmBases.Add(p);
@@ -596,7 +619,7 @@ namespace MarAberto
 
         // ---------- Floresta (árvores e samambaias) ----------
 
-        void BuildForest()
+        System.Collections.IEnumerator BuildForest()
         {
             var parent = new GameObject("Floresta").transform;
             parent.SetParent(Detail, false);
@@ -605,6 +628,7 @@ namespace MarAberto
             int trees = 0;
             for (int i = 0; i < 2500 && trees < N(70, TreeMul) && hasTree; i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(6f, 75f, 0.78f, out var p)) continue;
                 // Árvores em bosques, não espalhadas por igual.
                 if (Noise.Fbm(p.x * 0.01f + 7f, p.z * 0.01f, 2) < 0.48f) continue;
@@ -628,6 +652,7 @@ namespace MarAberto
                 int ferns = 0;
                 for (int i = 0; i < 3000 && ferns < N(220, TreeMul * 1.2f); i++)
                 {
+                    if (Slice()) yield return null;
                     Vector3 p;
                     if (treeSpots.Count > 0 && rng.NextDouble() < 0.7)
                     {
@@ -650,7 +675,7 @@ namespace MarAberto
 
         // ---------- Rochas ----------
 
-        void BuildRocks()
+        System.Collections.IEnumerator BuildRocks()
         {
             var parent = new GameObject("Rochas").transform;
             parent.SetParent(Detail, false);
@@ -658,6 +683,7 @@ namespace MarAberto
             int n = 0;
             for (int i = 0; i < 800 && n < N(26, RockMul); i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(3f, 90f, 0.55f, out var p)) continue;
                 n++;
                 ModelLibrary.Spawn(big[rng.Next(big.Length)], p - Vector3.up * R(0.4f, 1.2f), Quaternion.Euler(R(-8, 8), R(0, 360), R(-8, 8)), R(2.5f, 6f), ModelLibrary.Fit.Max, -1, ModelLibrary.Col.Mesh, parent);
@@ -666,6 +692,7 @@ namespace MarAberto
             n = 0;
             for (int i = 0; i < 1500 && n < N(70, RockMul); i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(-25f, 80f, 0.6f, out var p)) continue;
                 n++;
                 SetLayer(ModelLibrary.Spawn("rock_moss_set_01", p - Vector3.up * 0.25f, Quaternion.Euler(0, R(0, 360), 0), R(0.8f, 2.6f), ModelLibrary.Fit.Max, rng.Next(setParts), ModelLibrary.Col.Mesh, parent), Layers.Props);
@@ -673,6 +700,7 @@ namespace MarAberto
             n = 0;
             for (int i = 0; i < 800 && n < N(60, 1f); i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(0.4f, 40f, 0.75f, out var p)) continue;
                 n++;
                 SetLayer(ModelLibrary.Spawn("stone_01", p - Vector3.up * 0.04f, Quaternion.Euler(0, R(0, 360), 0), R(0.2f, 0.5f), ModelLibrary.Fit.Max, -1, ModelLibrary.Col.None, parent), Layers.Detail);
@@ -681,7 +709,7 @@ namespace MarAberto
 
         // ---------- Grama ----------
 
-        void BuildGrass()
+        System.Collections.IEnumerator BuildGrass()
         {
             float chunk = 32f;
             int nChunks = Mathf.CeilToInt(Radius * 2.5f / chunk);
@@ -692,6 +720,7 @@ namespace MarAberto
             {
                 for (int cx = 0; cx < nChunks; cx++)
                 {
+                    if (Slice()) yield return null;
                     var mb = new MeshBuilder();
                     float ox = transform.position.x + start + cx * chunk;
                     float oz = transform.position.z + start + cz * chunk;
@@ -776,13 +805,14 @@ namespace MarAberto
 
         // ---------- Fundo do mar ----------
 
-        void BuildSeabedLife()
+        System.Collections.IEnumerator BuildSeabedLife()
         {
             var weeds = new MeshBuilder();
             var coral = new MeshBuilder();
             int w = 0;
             for (int i = 0; i < 4000 && w < N(520, 1f); i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(-28f, -2.5f, 0.6f, out var p)) continue;
                 w++;
                 float hgt = R(1.2f, Mathf.Min(5.5f, -p.y - 0.8f));
@@ -807,6 +837,7 @@ namespace MarAberto
             int c = 0;
             for (int i = 0; i < 1500 && c < N(110, 1f); i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(-16f, -2.2f, 0.7f, out var p)) continue;
                 c++;
                 Color col = coralCols[rng.Next(coralCols.Length)];
@@ -826,13 +857,14 @@ namespace MarAberto
 
         // ---------- Minérios e itens soltos ----------
 
-        void PlaceOres()
+        System.Collections.IEnumerator PlaceOres()
         {
             var parent = new GameObject("Minerios").transform;
             parent.SetParent(Detail, false);
             int land = 0;
             for (int i = 0; i < 900 && land < N(60, OreMul); i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(2.5f, 70f, 0.65f, out var p)) continue;
                 land++;
                 double roll = rng.NextDouble();
@@ -848,6 +880,7 @@ namespace MarAberto
             int sea = 0;
             for (int i = 0; i < 1200 && sea < N(45, 1f); i++)
             {
+                if (Slice()) yield return null;
                 if (!RandomLandPoint(-30f, -4f, 0.55f, out var p)) continue;
                 sea++;
                 double roll = rng.NextDouble();

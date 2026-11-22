@@ -50,8 +50,8 @@ namespace MarAberto
             QualitySettings.shadows = ShadowQuality.All;
             QualitySettings.shadowResolution = ShadowResolution.High;
             QualitySettings.antiAliasing = 4;
-            // Sem VSync: com VSync, quando o quadro passa de 16 ms o jogo cai direto para 30 fps.
-            QualitySettings.vSyncCount = 0;
+            // VSync ligado: os quadros saem no ritmo do monitor (liso, sem tranco nem rasgo na imagem).
+            QualitySettings.vSyncCount = 1;
             Tick(0f);
         }
 

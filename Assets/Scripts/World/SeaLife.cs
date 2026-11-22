@@ -15,6 +15,7 @@ namespace MarAberto
         public float Health = 60f, MaxHealth = 60f;
         public bool Dead { get; private set; }
         public static readonly List<SeaCreature> All = new List<SeaCreature>();
+        static readonly Dictionary<CreatureKind, Mesh> bodyCache = new Dictionary<CreatureKind, Mesh>();
 
         enum State { Circle, Attack, BiteRaft, Flee, Dying }
         State state = State.Circle;
@@ -122,11 +123,18 @@ namespace MarAberto
             bool shark = Kind == CreatureKind.Tubarao;
             float L = shark ? 3.2f : 1.1f;
             Color top = shark ? C(0.33f, 0.38f, 0.43f) : C(0.52f, 0.58f, 0.6f), belly = C(0.9f, 0.9f, 0.88f);
+            // Malhas feitas uma vez só por tipo (criar peixe novo não trava o jogo).
+            if (!bodyCache.TryGetValue(Kind, out var bodyMesh))
+            {
+                var bmb = new MeshBuilder();
+                BuildBody(bmb, L, shark, top, belly);
+                bodyMesh = bmb.Build("Peixe");
+                bodyCache[Kind] = bodyMesh;
+            }
             var mb = new MeshBuilder();
-            BuildBody(mb, L, shark, top, belly);
             var body = new GameObject("Corpo");
             body.transform.SetParent(transform, false);
-            body.AddComponent<MeshFilter>().sharedMesh = mb.Build("Peixe");
+            body.AddComponent<MeshFilter>().sharedMesh = bodyMesh;
             body.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
 
             var tb = new MeshBuilder();

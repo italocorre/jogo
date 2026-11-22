@@ -68,14 +68,19 @@ namespace MarAberto
             {
                 foreach (var rp in RemotePlayer.All)
                 {
-                    float dist = Vector3.Distance(cam.transform.position, rp.transform.position);
-                    if (dist > 150f) continue;
-                    Vector3 sp = cam.WorldToScreenPoint(rp.transform.position + Vector3.up * 2.1f);
+                    // Só de perto, sem distância e sem bolinha; o nome diminui com a distância.
+                    Vector3 head = rp.transform.position + Vector3.up * 2.0f;
+                    float dist = Vector3.Distance(cam.transform.position, head);
+                    if (dist > 22f) continue;
+                    if (Physics.Linecast(cam.transform.position, head, ~(Layers.PlayerMask | (1 << Layers.Remote) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast)), QueryTriggerInteraction.Ignore)) continue;
+                    Vector3 sp = cam.WorldToScreenPoint(head);
                     if (sp.z < 0) continue;
                     var m = GetNav(used++);
                     m.Rt.gameObject.SetActive(true);
-                    m.Text.text = rp.PlayerName + "\n<size=14>" + Km(dist) + "</size>";
-                    m.Dot.color = new Color(1, 1, 1, 0.8f);
+                    m.Text.text = rp.PlayerName;
+                    m.Text.fontSize = Mathf.RoundToInt(Mathf.Lerp(26f, 11f, Mathf.InverseLerp(2f, 22f, dist)));
+                    m.Text.color = new Color(1f, 0.97f, 0.9f, Mathf.Clamp01((22f - dist) / 4f));
+                    m.Dot.enabled = false;
                     RectTransformUtility.ScreenPointToLocalPointInRectangle(root, sp, canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : cam, out var lp);
                     m.Rt.anchoredPosition = lp;
                 }
@@ -87,6 +92,9 @@ namespace MarAberto
         {
             m.Rt.gameObject.SetActive(true);
             m.Text.text = text;
+            m.Text.fontSize = 18;
+            m.Text.color = UIKit.Cream;
+            m.Dot.enabled = true;
             m.Dot.color = c;
             Vector3 sp = cam.WorldToScreenPoint(world);
             // Atrás da câmera ou fora da tela: prende na borda (para saber para que lado ir).
