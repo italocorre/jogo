@@ -98,6 +98,7 @@ namespace MarAberto
                 UpdateDriving();
                 UpdateInteraction();
                 UpdateOxygen(dt);
+            UpdateSurvival(dt);
                 return;
             }
 
@@ -189,6 +190,7 @@ namespace MarAberto
             wasHeadUnder = HeadUnderwater;
 
             UpdateOxygen(dt);
+            UpdateSurvival(dt);
             UpdateInteraction();
             UpdateHotbar();
 
@@ -415,7 +417,42 @@ namespace MarAberto
             else game.Hud.Toast("Você desmaiou e acordou na praia...", Hud.Bad);
             Health = MaxHealth;
             Oxygen = MaxOxygen;
+            Hunger = Mathf.Max(Hunger, 60f);
+            Thirst = Mathf.Max(Thirst, 60f);
             Teleport(spawnPos, spawnLook);
+        }
+
+        // ---------- Fome e sede ----------
+
+        public float Hunger { get; set; } = 100f;   // 100 = satisfeito
+        public float Thirst { get; set; } = 100f;
+        public const float HungerSeconds = 2400f;   // 40 min do cheio ao zero
+        public const float ThirstSeconds = 1500f;   // 25 min
+        float starveTick;
+
+        void UpdateSurvival(float dt)
+        {
+            float effort = (Running ? 1.6f : 1f) * (Swimming ? 1.4f : 1f);
+            Hunger = Mathf.Max(0, Hunger - 100f / HungerSeconds * dt * effort);
+            Thirst = Mathf.Max(0, Thirst - 100f / ThirstSeconds * dt * effort);
+            if (Hunger <= 0 || Thirst <= 0)
+            {
+                starveTick -= dt;
+                if (starveTick <= 0)
+                {
+                    starveTick = 4f;
+                    Damage((Hunger <= 0 ? 2f : 0f) + (Thirst <= 0 ? 3f : 0f), false);
+                    Game.Instance.Hud.Toast(Thirst <= 0 ? "Você está morrendo de sede!" : "Você está morrendo de fome!", Hud.Bad);
+                }
+            }
+        }
+
+        /// <summary>Comer/beber: enche a fome/sede e cura um pouco.</summary>
+        public void Consume(float food, float drink, float heal)
+        {
+            Hunger = Mathf.Min(100f, Hunger + food);
+            Thirst = Mathf.Min(100f, Thirst + drink);
+            Heal(heal);
         }
     }
 }

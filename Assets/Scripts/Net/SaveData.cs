@@ -44,6 +44,7 @@ namespace MarAberto
         public List<string> unlocked = new List<string>();
         public int backpack, oxygen;
         public float health = 100f;
+        public float hunger = 100f, thirst = 100f;
     }
 
     [Serializable]

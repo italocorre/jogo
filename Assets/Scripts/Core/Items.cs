@@ -38,9 +38,14 @@ namespace MarAberto
         Flecha,
         BalaCanhao,
         CarneTubarao,
+        CarneAssada,
+        PeixeCru,
+        PeixeAssado,
+        AguaLimpa,
+        VaraPescar,
     }
 
-    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco }
+    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca }
 
     public class ItemDef
     {
@@ -54,7 +59,9 @@ namespace MarAberto
         public int ToolTier;
         public int Rarity; // 0 comum, 1 incomum, 2 rara
         public ToolKind Kind;
-        public float Food;     // vida que recupera ao comer (clique com o item na mão)
+        public float Food;     // fome que mata ao comer (clique com o item na mão)
+        public float Drink;    // sede que mata
+        public float HealAmount; // vida que recupera
         public PieceKind? Plant; // muda: clique no chão para plantar
     }
 
@@ -75,8 +82,8 @@ namespace MarAberto
             Def(ItemType.Ferro, "Ferro", "Minério de ferro. Fica no fundo do mar.", new Color(0.74f, 0.70f, 0.66f), 14);
             Def(ItemType.FragmentoMapa, "Fragmento de Mapa", "Junte vários para achar uma ilha nova.", new Color(0.93f, 0.85f, 0.60f), 0, 10);
             Def(ItemType.Concha, "Concha", "Achada na praia. Bonita e vendável.", new Color(0.98f, 0.82f, 0.78f), 2);
-            Def(ItemType.Coco, "Coco", "Comida: clique com ele na mão para comer (+15 de vida). Também vira muda e óleo.", new Color(0.45f, 0.32f, 0.18f), 3, 20);
-            defs[ItemType.Coco].Food = 15f;
+            Def(ItemType.Coco, "Coco", "Clique com ele na mão: mata um pouco a fome e a sede (água de coco). Também vira muda e óleo.", new Color(0.45f, 0.32f, 0.18f), 3, 20);
+            SetFood(ItemType.Coco, 10f, 20f, 5f);
             Def(ItemType.Perola, "Pérola", "Achada em ostras dos recifes. Vale muito!", new Color(0.96f, 0.94f, 0.98f), 25, 20);
             SetRarity(ItemType.Perola, 2);
             SetRarity(ItemType.Ferro, 1);
@@ -112,8 +119,18 @@ namespace MarAberto
             defs[ItemType.Arco].Kind = ToolKind.Arco;
             Def(ItemType.Flecha, "Flecha", "Munição do arco.", new Color(0.7f, 0.6f, 0.45f), 1, 50);
             Def(ItemType.BalaCanhao, "Bala de Canhão", "Munição do canhão da jangada.", new Color(0.15f, 0.15f, 0.16f), 2, 30);
-            Def(ItemType.CarneTubarao, "Carne de Tubarão", "Comida: clique para comer (+30 de vida).", new Color(0.85f, 0.5f, 0.5f), 4, 20);
-            defs[ItemType.CarneTubarao].Food = 30f;
+            Def(ItemType.CarneTubarao, "Carne de Tubarão (crua)", "Dá para comer crua, mas assada na fogueira mata muito mais a fome.", new Color(0.85f, 0.5f, 0.5f), 4, 20);
+            SetFood(ItemType.CarneTubarao, 15f, 0f, 0f);
+            Def(ItemType.CarneAssada, "Carne Assada", "Assada na fogueira: mata bem a fome e cura.", new Color(0.55f, 0.3f, 0.18f), 6, 20);
+            SetFood(ItemType.CarneAssada, 45f, 0f, 15f);
+            Def(ItemType.PeixeCru, "Peixe (cru)", "Pescado com a vara. Melhor assar na fogueira.", new Color(0.6f, 0.7f, 0.8f), 2, 20);
+            SetFood(ItemType.PeixeCru, 10f, 0f, 0f);
+            Def(ItemType.PeixeAssado, "Peixe Assado", "Mata a fome e cura um pouco.", new Color(0.7f, 0.5f, 0.3f), 4, 20);
+            SetFood(ItemType.PeixeAssado, 35f, 0f, 10f);
+            Def(ItemType.AguaLimpa, "Água Limpa", "Clique para beber: mata a sede.", new Color(0.6f, 0.85f, 1f), 1, 10);
+            SetFood(ItemType.AguaLimpa, 0f, 45f, 0f);
+            Def(ItemType.VaraPescar, "Vara de Pescar", "Clique mirando na água para jogar a linha. Quando a boia afundar, clique de novo!", new Color(0.55f, 0.4f, 0.25f), 0, 1, true, 0);
+            defs[ItemType.VaraPescar].Kind = ToolKind.Pesca;
             Def(ItemType.Madeira, "Madeira", "Toras de árvore. Base de quase toda construção.", new Color(0.55f, 0.38f, 0.22f), 1, 30);
             Def(ItemType.Graveto, "Graveto", "Galho seco. Cabos de ferramentas e tochas.", new Color(0.6f, 0.45f, 0.28f), 1, 40);
             Def(ItemType.Folha, "Folha", "Folha de coqueiro. Vira corda e telhado.", new Color(0.35f, 0.6f, 0.2f), 1, 40);
@@ -123,6 +140,7 @@ namespace MarAberto
         public static ItemDef Get(ItemType t) => defs[t];
 
         static void SetRarity(ItemType t, int r) => defs[t].Rarity = r;
+        static void SetFood(ItemType t, float food, float drink, float heal) { defs[t].Food = food; defs[t].Drink = drink; defs[t].HealAmount = heal; }
 
         public static IEnumerable<ItemDef> All => defs.Values;
     }

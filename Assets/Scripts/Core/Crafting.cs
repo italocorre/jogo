@@ -225,6 +225,17 @@ namespace MarAberto
                 Cost = L((ItemType.LingoteCobre, 3), (Mad, 3)), Research = L((ItemType.LingoteCobre, 2), (Cor, 2)) });
 
             // ---- Comida ----
+            Add(new Recipe { Id = "fogueira", Name = "Fogueira", Category = CraftCategory.Comida, Piece = PieceKind.Fogueira, IconOverride = Gra, StartUnlocked = true,
+                Description = "Construa com o martelo. Perto dela você assa peixe e carne (matam muito mais a fome).", Cost = L((Ped, 4), (Gra, 3), (Mad, 1)) });
+            Add(new Recipe { Id = "purificador", Name = "Purificador de água", Category = CraftCategory.Comida, Piece = PieceKind.Purificador, IconOverride = ItemType.AguaLimpa,
+                Description = "Ferve a água do mar: junta 1 água limpa a cada ~1 minuto (até 4). E para pegar.",
+                Cost = L((Ped, 6), (Mad, 4), (Fol, 2), (Cor, 1)), Research = L((Ped, 4), (Mad, 3)) });
+            Add(new Recipe { Id = "vara", Name = "Vara de pescar", Category = CraftCategory.Comida, Output = ItemType.VaraPescar, StartUnlocked = true,
+                Description = "Clique mirando na água; quando a boia afundar, clique de novo para pegar o peixe.", Cost = L((Gra, 3), (Cor, 2)) });
+            Add(new Recipe { Id = "peixe_assado", Name = "Peixe assado", Category = CraftCategory.Comida, Output = ItemType.PeixeAssado, Station = Station.Fogueira, StartUnlocked = true,
+                Description = "Assado na fogueira.", Cost = L((ItemType.PeixeCru, 1)) });
+            Add(new Recipe { Id = "carne_assada", Name = "Carne assada", Category = CraftCategory.Comida, Output = ItemType.CarneAssada, Station = Station.Fogueira, StartUnlocked = true,
+                Description = "Carne de tubarão assada na fogueira.", Cost = L((ItemType.CarneTubarao, 1)) });
             Add(new Recipe { Id = "muda", Name = "Muda de coqueiro", Category = CraftCategory.Comida, Output = ItemType.MudaCoqueiro, StartUnlocked = true,
                 Description = "Plante (clique no chão com ela na mão). Em ~6 min vira um coqueiro que dá madeira, folhas e cocos.", Cost = L((ItemType.Coco, 1), (Fol, 2)) });
             Add(new Recipe { Id = "muda_arvore", Name = "Muda de árvore", Category = CraftCategory.Comida, Output = ItemType.MudaArvore,

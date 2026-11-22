@@ -73,6 +73,7 @@ namespace MarAberto
             BuildShop();
             BuildPause();
             BuildExtraPanels();
+            BuildSurvival();
             game.Inventory.OnAdded += (t, n) => Toast(Items.Get(t).Name, Info, t, n);
             game.Inventory.OnChanged += () => invVersion++;
             helpUntil = Time.time + 35f;
@@ -797,6 +798,7 @@ namespace MarAberto
             if (panel == Panel.Backpack && tab == Tab.Craft) RefreshCraft();
             if (panel == Panel.Chest) RefreshChest();
             RefreshBuildHint(hudOn);
+            RefreshSurvival(hudOn);
             if (panel == Panel.Shop && shopVersion != invVersion + game.Coins * 7919)
             {
                 shopVersion = invVersion + game.Coins * 7919;

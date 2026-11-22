@@ -173,7 +173,7 @@ namespace MarAberto
                 Inventory.Add(ItemType.Cobre, 10); Inventory.Add(ItemType.Carvao, 6); Inventory.Add(ItemType.Ferro, 4);
                 Inventory.Add(ItemType.Perola, 2); Inventory.Add(ItemType.Concha, 5); Inventory.Add(ItemType.FragmentoMapa, 1);
             }
-            if (Input.GetKeyDown(KeyCode.F6)) { Player.Heal(); Hud.Toast("Teste: vida e fôlego cheios", Hud.Gold); }
+            if (Input.GetKeyDown(KeyCode.F6)) { Player.Heal(); Player.Consume(100f, 100f, 0f); Hud.Toast("Teste: vida, fôlego, fome e sede cheios", Hud.Gold); }
         }
 
         void Update()

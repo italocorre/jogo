@@ -364,6 +364,37 @@ namespace MarAberto
                 case ItemType.CarneTubarao:
                     mb.AddRock(Vector3.zero, 0.12f, 71, n => n.y > 0.3f ? C(0.9f, 0.55f, 0.55f) : C(0.75f, 0.35f, 0.35f), 0.15f, new Vector3(1.4f, 0.5f, 0.9f));
                     break;
+                case ItemType.CarneAssada:
+                    mb.AddRock(Vector3.zero, 0.12f, 72, n => n.y > 0.3f ? C(0.5f, 0.28f, 0.15f) : C(0.38f, 0.2f, 0.1f), 0.15f, new Vector3(1.4f, 0.5f, 0.9f));
+                    break;
+                case ItemType.PeixeCru:
+                case ItemType.PeixeAssado:
+                {
+                    bool cooked = t == ItemType.PeixeAssado;
+                    Color top = cooked ? C(0.62f, 0.4f, 0.2f) : C(0.45f, 0.6f, 0.72f), belly = cooked ? C(0.8f, 0.6f, 0.35f) : C(0.9f, 0.92f, 0.95f);
+                    mb.AddRock(Vector3.zero, 0.12f, 33, n => n.y > -0.1f ? top : belly, 0.03f, new Vector3(0.35f, 0.55f, 1f), 2);
+                    mb.AddTri(new Vector3(0, 0, -0.1f), new Vector3(0, 0.07f, -0.19f), new Vector3(0, -0.07f, -0.19f), top);
+                    mb.AddTri(new Vector3(0, 0, -0.1f), new Vector3(0, -0.07f, -0.19f), new Vector3(0, 0.07f, -0.19f), top);
+                    mb.AddSphere(new Vector3(0.03f, 0.02f, 0.08f), Vector3.one * 0.01f, C(0.05f, 0.05f, 0.05f), 1);
+                    break;
+                }
+                case ItemType.AguaLimpa:
+                {
+                    // Cabaça/garrafa com água.
+                    Color glass = C(0.65f, 0.85f, 0.95f), cork = C(0.6f, 0.45f, 0.3f);
+                    mb.AddSphere(new Vector3(0, -0.02f, 0), new Vector3(0.08f, 0.09f, 0.08f), glass, 3);
+                    mb.AddCylinder(new Vector3(0, 0.05f, 0), new Vector3(0, 0.13f, 0), 0.03f, 0.025f, 10, glass);
+                    mb.AddCylinder(new Vector3(0, 0.13f, 0), new Vector3(0, 0.16f, 0), 0.026f, 0.026f, 10, cork);
+                    break;
+                }
+                case ItemType.VaraPescar:
+                {
+                    Color wood = C(0.55f, 0.4f, 0.25f), line = C(0.9f, 0.9f, 0.88f);
+                    mb.AddCylinder(new Vector3(0, -0.27f, 0), new Vector3(0, 0.6f, 0), 0.015f, 0.006f, 6, wood);
+                    mb.AddCylinder(new Vector3(0, -0.1f, 0.02f), new Vector3(0, -0.1f, 0.06f), 0.03f, 0.03f, 10, C(0.3f, 0.3f, 0.32f)); // carretilha
+                    mb.AddCylinder(new Vector3(0, 0.6f, 0), new Vector3(0, 0.3f, 0.04f), 0.002f, 0.002f, 4, line, false);
+                    break;
+                }
                 case ItemType.Madeira:
                 {
                     // Tora com casca e anéis no corte.

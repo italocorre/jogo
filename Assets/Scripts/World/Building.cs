@@ -4,8 +4,8 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao }
-    public enum Station { Nenhuma, Bancada, Fundicao, Refinaria }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador }
+    public enum Station { Nenhuma, Bancada, Fundicao, Refinaria, Fogueira }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
     public class BuildPiece : MonoBehaviour
@@ -57,13 +57,15 @@ namespace MarAberto
                 case PieceKind.MotorGas: return "Motor a gasolina";
                 case PieceKind.Helicoptero: return "Helicóptero";
                 case PieceKind.Canhao: return "Canhão";
+                case PieceKind.Fogueira: return "Fogueira";
+                case PieceKind.Purificador: return "Purificador de água";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
             || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
-            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao;
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -89,6 +91,8 @@ namespace MarAberto
                 case PieceKind.MotorGas: return new Vector3(0.9f, 1.1f, 0.9f);
                 case PieceKind.Helicoptero: return new Vector3(2.4f, 2.6f, 7.5f);
                 case PieceKind.Canhao: return new Vector3(1.0f, 1.0f, 1.4f);
+                case PieceKind.Fogueira: return new Vector3(1.0f, 0.6f, 1.0f);
+                case PieceKind.Purificador: return new Vector3(0.9f, 1.3f, 0.9f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -298,6 +302,48 @@ namespace MarAberto
                     seat.transform.localPosition = new Vector3(0, 0, -0.85f);
                     Box(root, new Vector3(0, 0.7f, 0), new Vector3(0.9f, 1.4f, 0.4f));
                     root.AddComponent<RaftHelm>();
+                    break;
+                }
+                case PieceKind.Fogueira:
+                {
+                    // Roda de pedras, lenha cruzada, grelha e fogo aceso.
+                    var rng = new System.Random(8);
+                    for (int i = 0; i < 9; i++)
+                    {
+                        float a = i * Mathf.PI * 2f / 9f;
+                        other.AddRock(new Vector3(Mathf.Cos(a) * 0.42f, 0.07f, Mathf.Sin(a) * 0.42f), 0.1f, rng.Next(), _ => C(0.45f, 0.44f, 0.42f), 0.2f);
+                    }
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float a = i * Mathf.PI / 2f + 0.3f;
+                        Vector3 d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                        poles.AddTube(new[] { d * 0.32f + Vector3.up * 0.03f, Vector3.up * 0.25f - d * 0.02f }, new[] { 0.045f, 0.035f }, 7, (j, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    }
+                    other.AddSphere(new Vector3(0, 0.06f, 0), new Vector3(0.22f, 0.05f, 0.22f), C(0.15f, 0.1f, 0.08f), 2); // brasas
+                    foreach (float x in new[] { -0.4f, 0.4f })
+                        poles.AddTube(new[] { new Vector3(x, 0, 0), new Vector3(x, 0.55f, 0) }, new[] { 0.025f, 0.02f }, 6, (j, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    other.AddCylinder(new Vector3(-0.42f, 0.55f, 0), new Vector3(0.42f, 0.55f, 0), 0.012f, 0.012f, 6, C(0.3f, 0.3f, 0.32f));
+                    Box(root, new Vector3(0, 0.15f, 0), new Vector3(1.0f, 0.3f, 1.0f));
+                    root.AddComponent<CraftStation>().Kind = Station.Fogueira;
+                    root.AddComponent<CampfireFx>();
+                    break;
+                }
+                case PieceKind.Purificador:
+                {
+                    // Panela de metal sobre fogo, tubo de cobre e jarro coletando a água limpa.
+                    Color metal = C(0.55f, 0.56f, 0.58f), copper = C(0.85f, 0.5f, 0.28f), glass = C(0.65f, 0.85f, 0.95f);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i * Mathf.PI / 3f;
+                        other.AddRock(new Vector3(Mathf.Cos(a) * 0.3f, 0.08f, Mathf.Sin(a) * 0.3f), 0.1f, i + 3, _ => C(0.45f, 0.44f, 0.42f), 0.2f);
+                    }
+                    other.AddCylinder(new Vector3(0, 0.25f, 0), new Vector3(0, 0.6f, 0), 0.3f, 0.32f, 16, metal);
+                    other.AddSphere(new Vector3(0, 0.62f, 0), new Vector3(0.3f, 0.12f, 0.3f), metal, 2);
+                    other.AddCylinder(new Vector3(0, 0.72f, 0), new Vector3(0.35f, 1.15f, 0), 0.03f, 0.03f, 8, copper);
+                    other.AddCylinder(new Vector3(0.35f, 1.15f, 0), new Vector3(0.55f, 0.55f, 0), 0.03f, 0.03f, 8, copper);
+                    other.AddCylinder(new Vector3(0.55f, 0.05f, 0), new Vector3(0.55f, 0.45f, 0), 0.12f, 0.1f, 12, glass);
+                    Box(root, new Vector3(0, 0.5f, 0), new Vector3(0.9f, 1.0f, 0.7f));
+                    root.AddComponent<WaterPurifier>();
                     break;
                 }
                 case PieceKind.Canhao:

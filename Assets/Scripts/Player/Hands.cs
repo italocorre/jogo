@@ -164,7 +164,10 @@ namespace MarAberto
             // Comer e plantar com o item na mão (clique).
             bool click = !driving && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButtonDown(0);
             if (click && def != null && def.Kind == ToolKind.Arco) ShootBow(cam);
-            else if (click && def != null && def.Food > 0) Eat(type, def);
+            else if (click && def != null && def.Kind == ToolKind.Pesca) FishClick(cam);
+            else if (click && def != null && (def.Food > 0 || def.Drink > 0)) Eat(type, def);
+            if (bobber != null && (def == null || def.Kind != ToolKind.Pesca || driving)) StopFishing(false);
+            if (bobber != null) UpdateFishing(dt);
             else if (click && def != null && def.Plant.HasValue) Plant(type, def.Plant.Value, cam);
 
             bool wantSwing = ToolTier > 0 && !driving && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButton(0);
@@ -236,12 +239,76 @@ namespace MarAberto
 
         void Eat(ItemType type, ItemDef def)
         {
-            if (player.Health >= player.MaxHealth - 0.5f) { Game.Instance.Hud.Toast("Você está sem fome (vida cheia).", Hud.Info); return; }
+            bool needFood = def.Food > 0 && player.Hunger < 99f, needDrink = def.Drink > 0 && player.Thirst < 99f, needHeal = def.HealAmount > 0 && player.Health < player.MaxHealth - 0.5f;
+            if (!needFood && !needDrink && !needHeal) { Game.Instance.Hud.Toast("Você está satisfeito.", Hud.Info); return; }
             Game.Instance.Inventory.Remove(type, 1);
-            player.Heal(def.Food);
+            player.Consume(def.Food, def.Drink, def.HealAmount);
             Sfx.Play(Sfx.Pickup, player.transform.position, 0.5f);
-            Game.Instance.Hud.Toast("Comeu " + def.Name.ToLowerInvariant() + ": +" + Mathf.RoundToInt(def.Food) + " de vida", Hud.Good);
+            string what = (def.Drink > 0 && def.Food <= 0 ? "Bebeu " : "Comeu ") + def.Name.ToLowerInvariant();
+            Game.Instance.Hud.Toast(what, Hud.Good);
             switchAnim = 0.6f;
+        }
+
+        // ---------- Pesca ----------
+        GameObject bobber;
+        float biteAt, biteUntil, fishWait;
+
+        void FishClick(Transform cam)
+        {
+            var g = Game.Instance;
+            if (bobber != null)
+            {
+                bool caught = Time.time >= biteAt && Time.time <= biteUntil;
+                StopFishing(caught);
+                return;
+            }
+            // Joga a linha onde a mira encontra a água (até 16 m).
+            if (cam.forward.y > -0.05f) { g.Hud.Toast("Mire na água para pescar.", Hud.Info); return; }
+            float t = (Ocean.SeaLevel - cam.position.y) / cam.forward.y;
+            int m = ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.Remote));
+            if (t <= 0 || t > 16f || Physics.Raycast(cam.position, cam.forward, t, m, QueryTriggerInteraction.Ignore))
+            { g.Hud.Toast("Mire na água (até 16 m).", Hud.Info); return; }
+            Vector3 p = cam.position + cam.forward * t;
+            bobber = new GameObject("Boia");
+            var mb = new MeshBuilder();
+            mb.AddSphere(Vector3.zero, Vector3.one * 0.07f, new Color(0.95f, 0.2f, 0.15f), 2);
+            mb.AddSphere(Vector3.up * 0.05f, Vector3.one * 0.05f, Color.white, 2);
+            bobber.AddComponent<MeshFilter>().sharedMesh = mb.Build("Boia");
+            bobber.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            bobber.transform.position = p;
+            var lr = bobber.AddComponent<LineRenderer>();
+            lr.positionCount = 2; lr.widthMultiplier = 0.006f;
+            lr.material = Mats.LowPoly;
+            fishWait = Random.Range(5f, 14f);
+            biteAt = Time.time + fishWait;
+            biteUntil = biteAt + 1.4f;
+            Sfx.Play(Sfx.SmallSplash, p, 0.5f);
+            g.Hud.Toast("Linha na água... espere a boia afundar e clique!", Hud.Info);
+        }
+
+        void UpdateFishing(float dt)
+        {
+            Vector3 p = bobber.transform.position;
+            float water = Ocean.HeightAt(p.x, p.z);
+            bool biting = Time.time >= biteAt && Time.time <= biteUntil;
+            float y = biting ? water - 0.12f + Mathf.Sin(Time.time * 30f) * 0.03f : water + 0.02f;
+            bobber.transform.position = new Vector3(p.x, y, p.z);
+            var lr = bobber.GetComponent<LineRenderer>();
+            if (lr != null) { lr.SetPosition(0, held.position + held.up * 0.5f); lr.SetPosition(1, bobber.transform.position + Vector3.up * 0.05f); }
+            if (biting && Time.time - biteAt < dt * 1.5f) { Sfx.Play(Sfx.SmallSplash, p, 0.7f); Game.Instance.Hud.Toast("Mordeu! CLIQUE!", Hud.Gold); }
+            if (Time.time > biteUntil) { biteAt = Time.time + Random.Range(5f, 14f); biteUntil = biteAt + 1.4f; } // escapou: espera outro
+            if ((p - player.transform.position).sqrMagnitude > 20f * 20f) StopFishing(false);
+        }
+
+        void StopFishing(bool caught)
+        {
+            if (bobber != null) Destroy(bobber);
+            bobber = null;
+            var g = Game.Instance;
+            if (!caught) return;
+            int left = g.Inventory.Add(ItemType.PeixeCru, 1);
+            if (left > 0) g.Hud.Toast("Mochila cheia!", Hud.Bad);
+            Sfx.Play(Sfx.Splash, player.transform.position + player.transform.forward * 3f, 0.6f);
         }
 
         void Plant(ItemType type, PieceKind kind, Transform cam)

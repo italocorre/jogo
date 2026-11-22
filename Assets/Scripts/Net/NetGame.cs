@@ -144,6 +144,8 @@ namespace MarAberto
                 backpack = game.BackpackLevel,
                 oxygen = game.OxygenLevel,
                 health = p.Health,
+                hunger = p.Hunger,
+                thirst = p.Thirst,
             };
             if (p.Driving != null) d.pos = p.Driving.transform.position + Vector3.up * 1.5f;
             return d;
@@ -158,6 +160,7 @@ namespace MarAberto
             Crafting.SetUnlocked(d.unlocked);
             if (d.oxygen > 0 && game.OxygenLevel == 0) { game.OxygenLevel = d.oxygen; game.Player.OxygenSeconds *= 1.6f; }
             if (d.hasBed) game.Player.SetRespawn(d.bedPos, d.bedLook);
+            if (d.hasPos) { game.Player.Hunger = Mathf.Clamp(d.hunger, 30f, 100f); game.Player.Thirst = Mathf.Clamp(d.thirst, 30f, 100f); }
             if (d.hasPos) game.Player.Teleport(d.pos + Vector3.up * 0.3f, d.look);
         }
 

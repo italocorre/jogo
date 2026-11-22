@@ -66,10 +66,10 @@ namespace MarAberto
         void OnEnable() => All.Add(this);
         void OnDisable() => All.Remove(this);
 
-        public string Prompt => "Usar " + (Kind == Station.Fundicao ? "fundição" : Kind == Station.Refinaria ? "refinaria" : "bancada");
+        public string Prompt => "Usar " + (Kind == Station.Fundicao ? "fundição" : Kind == Station.Refinaria ? "refinaria" : Kind == Station.Fogueira ? "fogueira (assar)" : "bancada");
         public bool CanInteract => true;
         public void Interact(PlayerController player) =>
-            Game.Instance.Hud.OpenCraft(Kind == Station.Bancada ? CraftCategory.Ferramentas : CraftCategory.Maquinas);
+            Game.Instance.Hud.OpenCraft(Kind == Station.Bancada ? CraftCategory.Ferramentas : Kind == Station.Fogueira ? CraftCategory.Comida : CraftCategory.Maquinas);
 
         public static bool Near(Station s, Vector3 pos, float range = 5f)
         {
@@ -79,7 +79,7 @@ namespace MarAberto
             return false;
         }
 
-        public static string Name(Station s) => s == Station.Fundicao ? "Fundição" : s == Station.Bancada ? "Bancada" : s == Station.Refinaria ? "Refinaria" : "";
+        public static string Name(Station s) => s == Station.Fundicao ? "Fundição" : s == Station.Bancada ? "Bancada" : s == Station.Refinaria ? "Refinaria" : s == Station.Fogueira ? "Fogueira" : "";
     }
 
     /// <summary>Antena receptora: emite o sinal da jangada/base e funciona como receptor para quem está perto.</summary>
@@ -132,5 +132,42 @@ namespace MarAberto
         }
         public bool CanInteract => true;
         public void Interact(PlayerController player) => Game.Instance.Hud.Toast("Só o time dono constrói nesta ilha. Os baús podem ser abertos por qualquer um!", Hud.Info);
+    }
+
+    /// <summary>Fogo aceso da fogueira (luz e chama).</summary>
+    public class CampfireFx : MonoBehaviour
+    {
+        void Start()
+        {
+            var t = TorchLight.Attach(transform, new Vector3(0, 0.12f, 0), 9f);
+            t.transform.localScale = Vector3.one * 2.2f;
+        }
+    }
+
+    /// <summary>Purificador: ferve a água do mar e junta água limpa com o tempo (E para pegar).</summary>
+    public class WaterPurifier : MonoBehaviour, IInteractable
+    {
+        public const int Max = 4;
+        public const float Seconds = 75f;
+        int stored;
+        float t;
+
+        public string Prompt => stored > 0 ? "Pegar água limpa (" + stored + ")" : "Purificador: fervendo água (" + Mathf.RoundToInt(100f * t / Seconds) + "%)";
+        public bool CanInteract => true;
+
+        public void Interact(PlayerController player)
+        {
+            if (stored <= 0) { Game.Instance.Hud.Toast("Ainda fervendo... volte daqui a pouco.", Hud.Info); return; }
+            int left = Game.Instance.Inventory.Add(ItemType.AguaLimpa, stored);
+            stored = left;
+            Sfx.Play(Sfx.SmallSplash, transform.position, 0.5f);
+        }
+
+        void Update()
+        {
+            if (stored >= Max) return;
+            t += Time.deltaTime;
+            if (t >= Seconds) { t = 0; stored++; }
+        }
     }
 }
