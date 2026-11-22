@@ -278,6 +278,9 @@ namespace MarAberto
                 Cost = L((Ped, 6), (Mad, 4), (Fol, 2), (Cor, 1)), Research = L((Ped, 4), (Mad, 3)) });
             Add(new Recipe { Id = "coletor", Name = "Coletor de chuva", Category = CraftCategory.Comida, Piece = PieceKind.ColetorChuva, IconOverride = ItemType.AguaLimpa, StartUnlocked = true,
                 Description = "Junta água limpa: rápido quando chove, devagar no tempo bom. E para pegar.", Cost = L((Gra, 4), (Fol, 6), (Cor, 2)) });
+            Add(new Recipe { Id = "vela", Name = "Vela", Category = CraftCategory.Jangada, Piece = PieceKind.Vela, IconOverride = ItemType.Folha, StartUnlocked = true,
+                Description = "Construa no piso da jangada. E abre: o vento leva a jangada sem gastar combustível (vento forte na tempestade). Use o leme para guiar.",
+                Cost = L((Mad, 4), (Cor, 4), (Fol, 8)) });
             Add(new Recipe { Id = "rede", Name = "Rede coletora", Category = CraftCategory.Jangada, Piece = PieceKind.Rede, IconOverride = Cor, StartUnlocked = true,
                 Description = "Na borda da jangada: pega sozinha os destroços que passam. E para pegar o que juntou.", Cost = L((Cor, 4), (Gra, 4), (Mad, 1)) });
             Add(new Recipe { Id = "nadadeiras", Name = "Nadadeiras", Category = CraftCategory.Itens, Output = ItemType.Nadadeiras, Station = Station.Bancada,

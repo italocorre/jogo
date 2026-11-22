@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva, Porta, Janela, Cerca, Lampiao, Rede, Canteiro, PlantaBatata, PlantaMelancia }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva, Porta, Janela, Cerca, Lampiao, Rede, Canteiro, PlantaBatata, PlantaMelancia, Vela }
     public enum Station { Nenhuma, Bancada, Fundicao, Refinaria, Fogueira }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -66,6 +66,7 @@ namespace MarAberto
                 case PieceKind.Lampiao: return "Lampião";
                 case PieceKind.Rede: return "Rede coletora";
                 case PieceKind.Canteiro: return "Canteiro de horta";
+                case PieceKind.Vela: return "Vela";
                 case PieceKind.PlantaBatata: return "Pé de batata";
                 case PieceKind.PlantaMelancia: return "Pé de melancia";
                 default: return "Bancada";
@@ -74,7 +75,7 @@ namespace MarAberto
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
             || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
-            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva || k == PieceKind.Lampiao || k == PieceKind.Canteiro || k == PieceKind.PlantaBatata || k == PieceKind.PlantaMelancia;
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva || k == PieceKind.Lampiao || k == PieceKind.Vela || k == PieceKind.Canteiro || k == PieceKind.PlantaBatata || k == PieceKind.PlantaMelancia;
 
         /// <summary>Peças que vão na borda do piso, como a parede.</summary>
         public static bool IsWallLike(PieceKind k) => k == PieceKind.Parede || k == PieceKind.Porta || k == PieceKind.Janela || k == PieceKind.Cerca || k == PieceKind.Rede;
@@ -114,6 +115,7 @@ namespace MarAberto
                 case PieceKind.Lampiao: return new Vector3(0.4f, 1.7f, 0.4f);
                 case PieceKind.Rede: return new Vector3(Cell, 0.9f, 0.12f);
                 case PieceKind.Canteiro: return new Vector3(1.9f, 0.4f, 1.0f);
+                case PieceKind.Vela: return new Vector3(0.5f, 4.2f, 0.5f);
                 case PieceKind.PlantaBatata:
                 case PieceKind.PlantaMelancia: return new Vector3(0.5f, 0.4f, 0.5f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
@@ -578,6 +580,47 @@ namespace MarAberto
                     Box(root, new Vector3(0, 1.6f, -2.9f), new Vector3(0.6f, 0.6f, 3.4f));
                     Box(root, new Vector3(0, 0.1f, 0.15f), new Vector3(1.9f, 0.2f, 3.2f));
                     root.AddComponent<Helicopter>();
+                    break;
+                }
+                case PieceKind.Vela:
+                {
+                    // Mastro fixo; em cima, a verga e o pano giram com o vento.
+                    poles.AddTube(new[] { Vector3.zero, Vector3.up * 4.3f }, new[] { 0.1f, 0.07f }, 10, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    planks.AddBoxUV(new Vector3(0, 0.06f, 0), new Vector3(0.5f, 0.12f, 0.5f), Quaternion.identity, W(0.7f), 0.5f);
+                    var giro = new GameObject("Giro");
+                    giro.transform.SetParent(root.transform, false);
+                    giro.transform.localPosition = new Vector3(0, 0, 0);
+                    var yard = new MeshBuilder();
+                    yard.AddCylinder(new Vector3(-1.5f, 4.0f, 0.12f), new Vector3(1.5f, 4.0f, 0.12f), 0.05f, 0.05f, 8, C(0.45f, 0.32f, 0.2f));
+                    yard.AddCylinder(new Vector3(-1.4f, 1.3f, 0.12f), new Vector3(1.4f, 1.3f, 0.12f), 0.04f, 0.04f, 8, C(0.45f, 0.32f, 0.2f));
+                    var yg = new GameObject("Vergas");
+                    yg.transform.SetParent(giro.transform, false);
+                    yg.AddComponent<MeshFilter>().sharedMesh = yard.Build("Vergas");
+                    yg.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    // Pano: preso em cima (pivô na verga), estica para baixo quando abre.
+                    var pano = new GameObject("Pano");
+                    pano.transform.SetParent(giro.transform, false);
+                    pano.transform.localPosition = new Vector3(0, 4.0f, 0.14f);
+                    var cm = new MeshBuilder();
+                    Color cloth = C(0.88f, 0.82f, 0.68f), patch = C(0.78f, 0.7f, 0.55f);
+                    int cols = 6, rows = 5;
+                    for (int r = 0; r < rows; r++)
+                        for (int c = 0; c < cols; c++)
+                        {
+                            float x0 = -1.4f + c * 2.8f / cols, x1 = x0 + 2.8f / cols, y0 = -r * 2.7f / rows, y1 = y0 - 2.7f / rows;
+                            float b0 = Mathf.Sin((c / (float)cols) * Mathf.PI) * 0.35f * Mathf.Sin((r / (float)rows) * Mathf.PI + 0.3f);
+                            float b1 = Mathf.Sin(((c + 1) / (float)cols) * Mathf.PI) * 0.35f * Mathf.Sin((r / (float)rows) * Mathf.PI + 0.3f);
+                            float b2 = Mathf.Sin((c / (float)cols) * Mathf.PI) * 0.35f * Mathf.Sin(((r + 1) / (float)rows) * Mathf.PI + 0.3f);
+                            float b3 = Mathf.Sin(((c + 1) / (float)cols) * Mathf.PI) * 0.35f * Mathf.Sin(((r + 1) / (float)rows) * Mathf.PI + 0.3f);
+                            Color col = (r * 7 + c * 3) % 11 == 0 ? patch : cloth;
+                            Vector3 a = new Vector3(x0, y0, b0), b = new Vector3(x1, y0, b1), d = new Vector3(x0, y1, b2), e = new Vector3(x1, y1, b3);
+                            cm.AddTri(a, b, e, col); cm.AddTri(a, e, d, col);
+                            cm.AddTri(a, e, b, col * 0.92f); cm.AddTri(a, d, e, col * 0.92f);
+                        }
+                    pano.AddComponent<MeshFilter>().sharedMesh = cm.Build("Pano");
+                    pano.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    Box(root, new Vector3(0, 2.1f, 0), new Vector3(0.3f, 4.2f, 0.3f));
+                    root.AddComponent<SailPiece>();
                     break;
                 }
                 case PieceKind.Canteiro:

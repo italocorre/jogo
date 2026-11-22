@@ -11,6 +11,31 @@ namespace MarAberto
     public class Weather : MonoBehaviour
     {
         public static Weather Instance { get; private set; }
+
+        /// <summary>Direção do vento (para onde ele sopra), igual para todos: vem da hora do jogo, que é sincronizada.</summary>
+        public static Vector3 WindDir
+        {
+            get
+            {
+                var env = Game.Instance != null ? Game.Instance.Environment : null;
+                float t = env != null ? env.TimeOfDay : 0f;
+                float yaw = Mathf.PerlinNoise(t * 4f + 3.1f, 0.37f) * 720f;
+                return Quaternion.Euler(0, yaw, 0) * Vector3.forward;
+            }
+        }
+        /// <summary>Força do vento: fraca no tempo bom, forte na tempestade.</summary>
+        public static float WindStrength => Instance == null ? 0.6f : 0.55f + Instance.Cloud * 0.25f + Instance.Storm * 0.6f;
+        public static string WindName
+        {
+            get
+            {
+                Vector3 d = WindDir;
+                float a = Mathf.Repeat(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg, 360f);
+                string[] n = { "N", "NE", "L", "SE", "S", "SO", "O", "NO" };
+                float s = WindStrength;
+                return "para " + n[Mathf.RoundToInt(a / 45f) % 8] + (s > 1.1f ? ", muito forte" : s > 0.75f ? ", forte" : ", fraco");
+            }
+        }
         public WeatherKind Current { get; private set; } = WeatherKind.Limpo;
         public float Rain { get; private set; }     // 0..1 (suave)
         public float Cloud { get; private set; }

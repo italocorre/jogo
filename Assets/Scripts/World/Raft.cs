@@ -13,6 +13,7 @@ namespace MarAberto
         Rigidbody rb;
         readonly List<Vector3> floatPoints = new List<Vector3>();
         readonly List<RaftMotor> motors = new List<RaftMotor>();
+        readonly List<SailPiece> sails = new List<SailPiece>();
         Vector3 anchorPos;
         float smoothThrottle;
         bool hasAnchorPiece;
@@ -68,6 +69,7 @@ namespace MarAberto
         {
             floatPoints.Clear();
             motors.Clear();
+            sails.Clear();
             hasAnchorPiece = false;
             Seat = null;
             float mass = 0f;
@@ -85,6 +87,7 @@ namespace MarAberto
                 else mass += 35f;
                 if (bp.Kind == PieceKind.Motor || bp.Kind == PieceKind.MotorGas) motors.Add(bp.GetComponent<RaftMotor>());
                 if (bp.Kind == PieceKind.Ancora) hasAnchorPiece = true;
+                if (bp.Kind == PieceKind.Vela) { var sp = bp.GetComponent<SailPiece>(); if (sp != null) sails.Add(sp); }
                 if (bp.Kind == PieceKind.Leme) Seat = bp.transform.Find("Assento");
             }
             if (floatPoints.Count == 0) return;
@@ -151,9 +154,11 @@ namespace MarAberto
         {
             get
             {
-                if (motors.Count == 0) return "Sem motor: construa um motor a vapor na jangada";
+                int open = 0; foreach (var s in sails) if (s != null && s.Open) open++;
+                string sail = sails.Count > 0 ? "  ·  vela " + (open > 0 ? "aberta" : "recolhida") + " (vento " + Weather.WindName + ")" : "";
+                if (motors.Count == 0) return (sails.Count > 0 ? "Sem motor" : "Sem motor: construa um motor ou uma vela na jangada") + sail;
                 float fuel = 0; foreach (var m in motors) if (m != null) fuel += m.Fuel;
-                return motors.Count + " motor" + (motors.Count > 1 ? "es" : "") + "  ·  combustível para " + Mathf.CeilToInt(fuel / 60f) + " min";
+                return motors.Count + " motor" + (motors.Count > 1 ? "es" : "") + "  ·  combustível para " + Mathf.CeilToInt(fuel / 60f) + " min" + sail;
             }
         }
 
@@ -210,6 +215,19 @@ namespace MarAberto
                 float thr = smoothThrottle < 0 ? smoothThrottle * 0.4f : smoothThrottle;
                 Vector3 fwd = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
                 rb.AddForce(fwd * thr * power * wet);
+            }
+            // Velas abertas: o vento empurra para onde sopra (o arrasto de lado ajuda a seguir a proa).
+            int open = 0;
+            foreach (var s in sails) if (s != null && s.Open) open++;
+            if (open > 0 && Anchor != AnchorState.Set)
+            {
+                float sailPower = Mathf.Min(open, 3) * 1300f * Weather.WindStrength * Mathf.Clamp(6f / Mathf.Max(1, floatPoints.Count), 0.5f, 1.2f) * (rb.mass / 700f);
+                Vector3 wind = Weather.WindDir;
+                Vector3 fwd = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+                // Pega mais vento quando a jangada vai a favor; de través ainda anda um pouco para a frente.
+                float along = Vector3.Dot(wind, fwd);
+                Vector3 push = wind * 0.7f + fwd * Mathf.Max(0f, along) * 0.3f + fwd * Mathf.Abs(Vector3.Dot(wind, transform.right)) * 0.25f;
+                rb.AddForce(push * sailPower * wet);
             }
             float steer = Driven ? Steer : 0f;
             float speedFactor = Mathf.Clamp(Mathf.Abs(local.z) / 3f, 0.3f, 1.2f) * Mathf.Sign(local.z + 0.01f);

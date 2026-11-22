@@ -180,8 +180,53 @@ namespace MarAberto
 
 namespace MarAberto
 {
+    /// <summary>Peça que abre/fecha e é sincronizada (porta, vela).</summary>
+    public interface IToggleable
+    {
+        bool Open { get; }
+        void SetOpen(bool open);
+    }
+
+    /// <summary>Vela da jangada: E abre e fecha. Aberta, o vento empurra a jangada (sem gastar combustível).</summary>
+    public class SailPiece : MonoBehaviour, IInteractable, IToggleable
+    {
+        public bool Open { get; private set; }
+        Transform giro, pano;
+        float unfurl;
+
+        void Start() { giro = transform.Find("Giro"); pano = giro != null ? giro.Find("Pano") : null; }
+
+        public string Prompt => (Open ? "Recolher vela" : "Abrir vela") + "  (vento " + Weather.WindName + ")";
+        public bool CanInteract => GetComponentInParent<Raft>() != null;
+        public void Interact(PlayerController player) => NetGame.Toggle(this);
+
+        public void SetOpen(bool open)
+        {
+            if (open == Open) return;
+            Open = open;
+            Sfx.Play(Sfx.Creak, transform.position + Vector3.up * 3f, 0.6f, 0.2f);
+        }
+
+        void Update()
+        {
+            unfurl = Mathf.MoveTowards(unfurl, Open ? 1f : 0.08f, Time.deltaTime * 0.8f);
+            if (pano != null) pano.localScale = new Vector3(1f, unfurl, Mathf.Lerp(0.2f, 1f, unfurl) * (0.9f + Mathf.Sin(Time.time * 2.3f) * 0.1f * unfurl));
+            if (giro != null)
+            {
+                // A verga vira para o vento (o pano enche para o lado que o vento empurra).
+                Vector3 w = Weather.WindDir;
+                Vector3 local = transform.InverseTransformDirection(w); local.y = 0;
+                if (local.sqrMagnitude > 0.01f)
+                {
+                    Quaternion target = Quaternion.LookRotation(local.normalized);
+                    giro.localRotation = Quaternion.Slerp(giro.localRotation, target, Time.deltaTime * 0.8f);
+                }
+            }
+        }
+    }
+
     /// <summary>Porta: E abre e fecha (sincronizada no multiplayer).</summary>
-    public class DoorPiece : MonoBehaviour, IInteractable
+    public class DoorPiece : MonoBehaviour, IInteractable, IToggleable
     {
         public Transform Leaf;
         public bool Open { get; private set; }
@@ -189,7 +234,7 @@ namespace MarAberto
 
         public string Prompt => Open ? "Fechar porta" : "Abrir porta";
         public bool CanInteract => true;
-        public void Interact(PlayerController player) => NetGame.ToggleDoor(this);
+        public void Interact(PlayerController player) => NetGame.Toggle(this);
 
         public void SetOpen(bool open)
         {

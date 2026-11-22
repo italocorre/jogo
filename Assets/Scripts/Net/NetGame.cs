@@ -418,13 +418,13 @@ namespace MarAberto
                 case Msg.DoorToggle when server:
                 {
                     int id = m.Int();
-                    if (Pieces.TryGetValue(id, out var dp) && dp != null) { var d = dp.GetComponent<DoorPiece>(); if (d != null) { d.SetOpen(!d.Open); link.Broadcast(new NetWriter(Msg.DoorState).Int(id).Bool(d.Open)); } }
+                    if (Pieces.TryGetValue(id, out var dp) && dp != null) { var d = dp.GetComponent<IToggleable>(); if (d != null) { d.SetOpen(!d.Open); link.Broadcast(new NetWriter(Msg.DoorState).Int(id).Bool(d.Open)); } }
                     break;
                 }
                 case Msg.DoorState when !server:
                 {
                     int id = m.Int(); bool open = m.Bool();
-                    if (Pieces.TryGetValue(id, out var dp) && dp != null) dp.GetComponent<DoorPiece>()?.SetOpen(open);
+                    if (Pieces.TryGetValue(id, out var dp) && dp != null) dp.GetComponent<IToggleable>()?.SetOpen(open);
                     break;
                 }
                 case Msg.AnchorToggle when server:
@@ -776,10 +776,10 @@ namespace MarAberto
 
         // ---------- Jangada ----------
 
-        public static void ToggleDoor(DoorPiece d)
+        public static void Toggle(IToggleable d)
         {
             var n = Instance;
-            var bp = d.GetComponent<BuildPiece>();
+            var bp = (d as Component)?.GetComponent<BuildPiece>();
             if (n == null || n.link == null || bp == null) { d.SetOpen(!d.Open); return; }
             if (n.mode == NetMode.Client) n.link.SendToServer(new NetWriter(Msg.DoorToggle).Int(bp.Id));
             else { d.SetOpen(!d.Open); n.link.Broadcast(new NetWriter(Msg.DoorState).Int(bp.Id).Bool(d.Open)); }
