@@ -13,6 +13,7 @@ namespace MarAberto
         readonly List<(string text, float time)> chatLines = new List<(string, float)>();
         bool chatDirty;
         float chatShownUntil;
+        int chatOpenFrame = -10;
 
         class PingMark { public string Who; public Vector3 At; public float Until; }
         readonly List<PingMark> pings = new List<PingMark>();
@@ -69,8 +70,7 @@ namespace MarAberto
             SetPanel(Panel.Chat, false);
             chatInputBox.gameObject.SetActive(true);
             chatInput.text = "";
-            chatInput.ActivateInputField();
-            chatInput.Select();
+            chatOpenFrame = Time.frameCount;   // ativa o campo no quadro seguinte (o Enter que abriu não pode fechar)
             chatDirty = true;
         }
 
@@ -93,6 +93,8 @@ namespace MarAberto
             EnsureSocial();
             if (panel == Panel.Chat)
             {
+                if (Time.frameCount > chatOpenFrame && !chatInput.isFocused) { chatInput.Select(); chatInput.ActivateInputField(); }
+                if (Time.frameCount == chatOpenFrame) return true;
                 if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) CloseChat(true);
                 else if (Input.GetKeyDown(KeyCode.Escape)) CloseChat(false);
                 return true;

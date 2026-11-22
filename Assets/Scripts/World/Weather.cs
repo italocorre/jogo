@@ -19,7 +19,9 @@ namespace MarAberto
             {
                 var env = Game.Instance != null ? Game.Instance.Environment : null;
                 float t = env != null ? env.TimeOfDay : 0f;
-                float yaw = Mathf.PerlinNoise(t * 4f + 3.1f, 0.37f) * 720f;
+                // Caminho em círculo no ruído: sem pulo quando o dia vira (meia-noite).
+                float a = t * Mathf.PI * 2f;
+                float yaw = Mathf.PerlinNoise(Mathf.Cos(a) * 1.6f + 3.1f, Mathf.Sin(a) * 1.6f + 7.7f) * 900f;
                 return Quaternion.Euler(0, yaw, 0) * Vector3.forward;
             }
         }

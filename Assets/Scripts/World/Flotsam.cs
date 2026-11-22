@@ -161,8 +161,9 @@ namespace MarAberto
         {
             var g = Game.Instance;
             if (g == null || g.Player == null || g.World == null) return;
-            // A correnteza muda devagar.
-            turn += Time.deltaTime * 0.004f;
+            // A correnteza muda devagar (vem da hora do jogo: igual para todos).
+            float day = g.Environment != null ? g.Environment.TimeOfDay : 0f;
+            turn = Mathf.PerlinNoise(Mathf.Cos(day * Mathf.PI * 2f) + 11f, Mathf.Sin(day * Mathf.PI * 2f) + 5f) * Mathf.PI * 4f;
             float sp = 0.7f + (Weather.Instance != null ? Weather.Instance.Storm * 0.8f : 0f);
             Current = new Vector3(Mathf.Cos(turn), 0, Mathf.Sin(turn)) * sp;
 

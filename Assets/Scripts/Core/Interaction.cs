@@ -42,6 +42,7 @@ namespace MarAberto
         public LootSpot Spot;
         Rigidbody rb;
         float spawnTime;
+        bool? deepSea;
         float stillTime;
         bool touching;
 
@@ -89,8 +90,19 @@ namespace MarAberto
         void FixedUpdate()
         {
             if (rb == null || rb.isKinematic) return;
-            // Debaixo d'água afunda devagar.
+            // Debaixo d'água afunda devagar; em mar aberto (sem fundo por perto) boia na superfície.
             float water = Ocean.HeightAt(transform.position.x, transform.position.z);
+            if (deepSea == null && transform.position.y < water + 1f)
+                deepSea = !Physics.Raycast(transform.position, Vector3.down, 60f, ~((1 << Layers.Items) | (1 << Layers.IgnoreRaycast) | Layers.PlayerMask), QueryTriggerInteraction.Ignore);
+            if (deepSea == true)
+            {
+                float depth = water - transform.position.y;
+                if (depth > -0.1f) rb.AddForce(-Physics.gravity * (1f + Mathf.Clamp(depth, 0f, 1f) * 1.5f), ForceMode.Acceleration);
+                Vector3 v0 = rb.GetPointVelocity(rb.worldCenterOfMass);
+                rb.AddForce(new Vector3(-v0.x * 0.8f, -v0.y * 2.5f, -v0.z * 0.8f), ForceMode.Acceleration);
+                if (Time.time - spawnTime > 300f) Destroy(gameObject);   // a correnteza leva depois de 5 min
+                return;
+            }
             if (transform.position.y < water)
             {
                 rb.AddForce(-Physics.gravity * 0.75f, ForceMode.Acceleration);

@@ -102,14 +102,9 @@ namespace MarAberto
             Sfx.Play(Sfx.Splash, head.position, 1f, 0.05f);
             g.Hud.Toast("A SERPENTE MARINHA foi derrotada! O tesouro dela boia na água.", Hud.Gold);
             Journal.Bump("serpente");
-            // Saque boiando onde ela morreu (pegue com E, gancho ou nadando).
-            Vector3 p = head.position; p.y = Ocean.SeaLevel + 0.3f;
-            void Drop(ItemType t, int n) => WorldItem.Spawn(new ItemStack(t, n), p + Random.insideUnitSphere * 1.5f + Vector3.up, Vector3.up * 3f + Random.insideUnitSphere * 2f);
-            Drop(ItemType.EscamaSerpente, Random.Range(5, 8));
-            Drop(ItemType.LingoteTitanio, Random.Range(3, 6));
-            Drop(ItemType.LingoteOuro, Random.Range(3, 6));
-            Drop(ItemType.Perola, Random.Range(3, 7));
-            Drop(ItemType.CarneTubarao, 6);
+            // Saque num baú que boia onde ela morreu (o mar aberto não tem fundo para itens soltos).
+            Vector3 p = head.position; p.y = Ocean.SeaLevel;
+            FloatingLoot.Spawn(p);
         }
 
         void Update()
@@ -231,6 +226,68 @@ namespace MarAberto
             SeaSerpent.Spawn(p);
             g.Hud.Toast("Algo enorme se mexe debaixo d'água... uma SERPENTE MARINHA!", Hud.Bad);
             timer = 600f;
+        }
+    }
+
+    /// <summary>Baú boiando com o tesouro da serpente (E para pegar).</summary>
+    public class FloatingLoot : MonoBehaviour, IInteractable
+    {
+        bool taken;
+        float seed;
+
+        public static void Spawn(Vector3 at)
+        {
+            GameObject go = ModelLibrary.Spawn("treasure_chest", at, Quaternion.Euler(0, Random.value * 360f, 0), 0.7f, ModelLibrary.Fit.Height, -1, ModelLibrary.Col.Box, null);
+            if (go == null)
+            {
+                go = new GameObject("BauBoiando");
+                go.transform.position = at;
+                var mb = new MeshBuilder();
+                mb.AddBox(new Vector3(0, 0.3f, 0), new Vector3(0.9f, 0.6f, 0.6f), Quaternion.identity, new Color(0.45f, 0.3f, 0.18f));
+                go.AddComponent<MeshFilter>().sharedMesh = mb.Build("Bau");
+                go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                go.AddComponent<BoxCollider>().size = new Vector3(0.9f, 0.7f, 0.6f);
+            }
+            var fl = go.AddComponent<FloatingLoot>();
+            fl.seed = Random.value * 10f;
+            var lg = new GameObject("Brilho");
+            lg.transform.SetParent(go.transform, false);
+            lg.transform.localPosition = Vector3.up * 1f;
+            var l = lg.AddComponent<Light>();
+            l.type = LightType.Point; l.color = new Color(1f, 0.85f, 0.4f); l.range = 8f; l.intensity = 1.6f; l.shadows = LightShadows.None;
+            Destroy(go, 900f);
+        }
+
+        public string Prompt => "Pegar o tesouro da serpente";
+        public bool CanInteract => !taken;
+
+        public void Interact(PlayerController player)
+        {
+            if (taken) return;
+            taken = true;
+            var inv = Game.Instance.Inventory;
+            void Give(ItemType t, int n)
+            {
+                int left = inv.Add(t, n);
+                if (left > 0) WorldItem.Spawn(new ItemStack(t, left), player.transform.position + Vector3.up, Vector3.up);
+            }
+            Give(ItemType.EscamaSerpente, Random.Range(5, 8));
+            Give(ItemType.LingoteTitanio, Random.Range(3, 6));
+            Give(ItemType.LingoteOuro, Random.Range(3, 6));
+            Give(ItemType.Perola, Random.Range(3, 7));
+            Give(ItemType.CarneTubarao, 6);
+            Sfx.UI(Sfx.Coin, 0.8f);
+            Game.Instance.Hud.Toast("Tesouro da serpente!", Hud.Gold);
+            Destroy(gameObject);
+        }
+
+        void Update()
+        {
+            Vector3 p = transform.position;
+            p.y = Ocean.HeightAt(p.x, p.z) - 0.2f;
+            transform.position = p;
+            float t = Time.time + seed;
+            transform.rotation = Quaternion.Euler(Mathf.Sin(t * 0.8f) * 6f, transform.eulerAngles.y, Mathf.Cos(t * 0.6f) * 6f);
         }
     }
 }
