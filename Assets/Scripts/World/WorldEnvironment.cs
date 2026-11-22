@@ -72,7 +72,7 @@ namespace MarAberto
             float day = Mathf.Clamp01((elev + 0.08f) / 0.3f);      // 0 noite, 1 dia
             float golden = Mathf.Clamp01(1f - Mathf.Abs(elev - 0.08f) / 0.25f) * day;
 
-            Color dayTop = Hex("#5E9CCB"), dayHor = Hex("#F1DDBB");
+            Color dayTop = Hex("#3A82C4"), dayHor = Hex("#E4DCC6");
             Color nightTop = Hex("#121630"), nightHor = Hex("#3A3560");
             Color sunsetHor = Hex("#F4A07A");
             Color top = Color.Lerp(nightTop, dayTop, day);
@@ -125,8 +125,8 @@ namespace MarAberto
             else
             {
                 RenderSettings.fogColor = hor;
-                RenderSettings.fogStartDistance = 180f;
-                RenderSettings.fogEndDistance = 1400f;
+                RenderSettings.fogStartDistance = 260f;
+                RenderSettings.fogEndDistance = 1800f;
             }
             if (cam != null) cam.clearFlags = CameraUnderwater ? CameraClearFlags.SolidColor : CameraClearFlags.Skybox;
         }

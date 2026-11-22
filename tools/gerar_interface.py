@@ -12,7 +12,7 @@ TX = os.path.join(ROOT, 'Textures')
 os.makedirs(UI, exist_ok=True)
 os.makedirs(TX, exist_ok=True)
 
-GLASS = (9, 22, 31)
+GLASS = (6, 15, 23)
 BRASS = (225, 186, 110)
 GOLD = (255, 210, 122)
 
@@ -32,7 +32,7 @@ def rounded(size, radius, fill, outline=None, width=1, scale=4):
 
 def glass_panel():
     s = 64
-    img = rounded((s, s), 3, GLASS + (178,), BRASS + (150,), 1)
+    img = rounded((s, s), 3, GLASS + (222,), BRASS + (160,), 1)
     d = ImageDraw.Draw(img)
     # Cantoneiras de latão (canto superior esquerdo e inferior direito)
     c = GOLD + (255,)
@@ -45,8 +45,8 @@ def glass_panel():
 
 def glass_slot():
     s = 64
-    save(rounded((s, s), 4, GLASS + (165,), BRASS + (105,), 1), UI, 'glass_slot.png')
-    img = rounded((s, s), 4, (40, 32, 14, 190), GOLD + (255,), 2)
+    save(rounded((s, s), 4, GLASS + (205,), BRASS + (115,), 1), UI, 'glass_slot.png')
+    img = rounded((s, s), 4, (40, 32, 14, 215), GOLD + (255,), 2)
     # brilho interno
     glow = Image.new('L', (s, s), 0)
     ImageDraw.Draw(glow).rounded_rectangle([2, 2, s - 3, s - 3], 4, outline=150, width=6)

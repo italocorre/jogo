@@ -28,7 +28,9 @@ namespace MarAberto
 
         // HUD
         RectTransform healthFill, oxyFill, oxyRow, hotbarRt, tapeContent, tapeMarker;
+        Text healthLabel;
         Text healthText, oxyText, coinsText, clockText, itemName, promptText, targetName, speedText, anchorText, markerText;
+        RectTransform vitals;
         RectTransform promptBox, targetBox, targetFill, driveBox, marker, helpBox;
         Image underwaterTint, damageTint, crosshair;
         readonly List<SlotView> hotbar = new List<SlotView>();
@@ -150,9 +152,11 @@ namespace MarAberto
             clockText.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -94), new Vector2(300, 26));
 
             // Vida e fôlego (inferior esquerdo)
-            var vit = UIKit.Panel(root, "Vitais").rectTransform;
+            vitals = UIKit.Panel(root, "Vitais").rectTransform;
+            var vit = vitals;
             vit.Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(30, 28), new Vector2(380, 108));
             BuildVital(vit, "VIDA", 64, UIKit.BarRed, out healthText, out healthFill);
+            healthLabel = vit.Find("VIDA").GetComponent<Text>();
             oxyRow = UIKit.Rect(vit, "Folego").Fill();
             BuildVital(oxyRow, "FÔLEGO", 18, UIKit.BarBlue, out oxyText, out oxyFill);
 
@@ -205,14 +209,14 @@ namespace MarAberto
 
             // Ajuda
             helpBox = UIKit.Panel(root, "Ajuda").rectTransform;
-            helpBox.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -24), new Vector2(470, 168));
-            string K(string k) => "<color=#FFD27A>" + k + "</color>";
+            helpBox.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -24), new Vector2(560, 180));
+            string K(string k) => "<color=#FFD27A>" + k + "</color> ";
             var ht = UIKit.Txt(helpBox, "Texto",
-                K("WASD") + " andar  ·  " + K("Shift") + " correr  ·  " + K("Espaço") + " pular\n" +
-                K("Clique") + " minerar  ·  " + K("E") + " pegar, falar, pilotar\n" +
-                K("1-6") + " trocar item  ·  " + K("Tab") + " mochila  ·  " + K("Q") + " largar\n" +
-                K("R") + " âncora  ·  " + K("Ctrl") + " mergulhar  ·  " + K("H") + " esconder",
-                UIKit.Body, 20, UIKit.Text, TextAnchor.MiddleLeft);
+                K("WASD") + " andar     " + K("Shift") + " correr     " + K("Espaço") + " pular\n" +
+                K("Clique") + " minerar     " + K("E") + " pegar, falar, pilotar\n" +
+                K("1-6") + " trocar item     " + K("Tab") + " mochila     " + K("Q") + " largar\n" +
+                K("R") + " âncora     " + K("Ctrl") + " mergulhar     " + K("H") + " esconder",
+                UIKit.BodyMed, 22, UIKit.Text, TextAnchor.MiddleLeft);
             ht.rectTransform.Fill(22, 12, 16, 12);
         }
 
@@ -668,6 +672,10 @@ namespace MarAberto
                 healthText.text = Mathf.CeilToInt(p.Health).ToString();
                 bool showOxy = p.HeadUnderwater || p.Oxygen < p.MaxOxygen - 0.5f;
                 oxyRow.gameObject.SetActive(showOxy);
+                vitals.sizeDelta = new Vector2(380, showOxy ? 108 : 62);
+                ((RectTransform)healthFill.parent).anchoredPosition = new Vector2(20, showOxy ? 64 : 18);
+                healthText.rectTransform.anchoredPosition = new Vector2(-20, showOxy ? 74 : 28);
+                healthLabel.rectTransform.anchoredPosition = new Vector2(20, showOxy ? 74 : 28);
                 UIKit.SetFill(oxyFill, p.Oxygen / p.MaxOxygen);
                 oxyText.text = Mathf.RoundToInt(100f * p.Oxygen / p.MaxOxygen) + "%";
             }
@@ -766,7 +774,7 @@ namespace MarAberto
                 t.Rt.anchoredPosition = Vector2.Lerp(t.Rt.anchoredPosition, new Vector2(0, -ty), Application.isPlaying ? Time.deltaTime * 12f : 1f);
                 ty += 56;
             }
-            toastRoot.anchoredPosition = new Vector2(28, helpBox.gameObject.activeSelf ? -206 : -24);
+            toastRoot.anchoredPosition = new Vector2(28, helpBox.gameObject.activeSelf ? -218 : -24);
 
             if (panel == Panel.Backpack) RefreshBackpack(inv);
             if (panel == Panel.Shop && shopVersion != invVersion + game.Coins * 7919)

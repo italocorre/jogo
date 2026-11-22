@@ -140,8 +140,8 @@ Shader "MarAberto/Water"
                 // Reflexos pintados: traços compridos e claros que deslizam (estilo pintado à mão).
                 float s1 = MA_ValueNoise(float2(uv.x * 0.22 + uv.y * 0.05, uv.y * 1.5) + float2(_MA_Time * 0.12, 0));
                 float s2 = MA_ValueNoise(float2(uv.x * 0.55, uv.y * 2.8 - uv.x * 0.2) - float2(_MA_Time * 0.18, 0));
-                float strokes = smoothstep(0.74, 0.86, s1) * 0.45 + smoothstep(0.82, 0.92, s2) * 0.3;
-                strokes *= saturate(1.0 - camDist / 420.0);
+                float strokes = smoothstep(0.78, 0.9, s1) * 0.22 + smoothstep(0.86, 0.95, s2) * 0.14;
+                strokes *= saturate(1.0 - camDist / 420.0) * saturate((camDist - 6.0) / 25.0);
                 col = lerp(col, float3(0.93, 0.95, 0.88) * light, strokes);
                 // Crista das ondas pega a luz quente do sol.
                 col = lerp(col, float3(0.98, 0.88, 0.72) * light, smoothstep(0.6, 1.4, i.extra.x) * 0.25);
