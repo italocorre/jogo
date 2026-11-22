@@ -251,6 +251,9 @@ namespace MarAberto
                 Research = L((ItemType.LingoteFerro, 8), (ItemType.LingoteTitanio, 3), (ItemType.Gasolina, 4)) });
 
             // ---- Navegação ----
+            Add(new Recipe { Id = "radio_resgate", Name = "Rádio de resgate", Category = CraftCategory.Navegacao, Piece = PieceKind.RadioResgate, IconOverride = ItemType.Receptor,
+                Description = "O FIM DA AVENTURA: construa (de preferência numa ilha), aperte E e um navio de resgate vem buscar vocês.",
+                Cost = L((ItemType.LingoteTitanio, 4), (ItemType.LingoteOuro, 3), (ItemType.LingoteCobre, 6), (Mad, 4)), Research = L((ItemType.LingoteTitanio, 2), (ItemType.LingoteOuro, 2)) });
             Add(new Recipe { Id = "receptor", Name = "Receptor", Category = CraftCategory.Navegacao, Output = ItemType.Receptor, Station = Station.Bancada,
                 Description = "Na mochila, aponta a ilha não descoberta mais próxima e capta antenas a até 3 km. Feito na bancada.",
                 Cost = L((ItemType.LingoteCobre, 2), (Mad, 2), (Cor, 1)), Research = L((ItemType.LingoteCobre, 3)) });

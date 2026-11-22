@@ -7,6 +7,7 @@ namespace MarAberto
     public class WorldEnvironment : MonoBehaviour
     {
         public float DayLengthSeconds = 1200f; // 20 minutos por dia
+        public int Days = 1;   // dias no mar (para a tela de vitória)
         [Range(0, 1)] public float TimeOfDay = 0.36f; // 0 = meia-noite, 0.5 = meio-dia
 
         Light sun;
@@ -66,7 +67,9 @@ namespace MarAberto
 
         public void Tick(float dt)
         {
+            float before = TimeOfDay;
             TimeOfDay = Mathf.Repeat(TimeOfDay + dt / DayLengthSeconds, 1f);
+            if (TimeOfDay < before - 0.5f) Days++;
 
             // Sol nasce no leste (+X) e se põe no oeste.
             float ang = (TimeOfDay - 0.25f) * Mathf.PI * 2f;

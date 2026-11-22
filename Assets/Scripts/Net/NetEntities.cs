@@ -7,7 +7,7 @@ namespace MarAberto
     public interface INetEnt
     {
         int NetId { get; set; }
-        /// <summary>0 destroço, 1 bicho, 2 serpente, 3 barco à deriva.</summary>
+        /// <summary>0 destroço, 1 bicho, 2 serpente, 3 barco à deriva, 4 navio de resgate.</summary>
         int EntType { get; }
         int EntSub { get; }
         bool Moving { get; }
@@ -130,6 +130,8 @@ namespace MarAberto
         public static void EntHit(int id, float dmg) => Act(id, 1, dmg);
         /// <summary>Pegar o que a rede juntou (id da peça).</summary>
         public static void NetTake(int pieceId) => Act(pieceId, 2, 0f);
+        /// <summary>Chamar o navio de resgate pelo rádio (id da peça).</summary>
+        public static void CallRescue(int pieceId) => Act(pieceId, 3, 0f);
 
         static void Act(int id, int action, float value)
         {
@@ -169,6 +171,7 @@ namespace MarAberto
                         if (game.Player != null && Vector3.Distance(game.Player.transform.position, pos) < 250f) game.Hud.Toast("Algo enorme se mexe debaixo d'água... uma SERPENTE MARINHA!", Hud.Bad);
                     }
                     else if (type == 3) e = SeaEvents.SpawnDerelict(pos, sub, yaw);
+                    else if (type == 4) e = RescueShip.Spawn(pos, yaw, true);
                     if (e == null) break;
                     e.NetId = id;
                     e.ApplyState(pos, yaw, 0, hp);
@@ -197,6 +200,11 @@ namespace MarAberto
                 case Msg.EntAct when server:
                 {
                     int id = m.Int(), action = m.Int(); float value = m.Float();
+                    if (action == 3)
+                    {
+                        if (Pieces.TryGetValue(id, out var rb) && rb != null) RescueShip.Call(rb.transform.position);
+                        break;
+                    }
                     if (action == 2)
                     {
                         if (Pieces.TryGetValue(id, out var bp) && bp != null) bp.GetComponent<NetCatcher>()?.TakeFor(m.From);

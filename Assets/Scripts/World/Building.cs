@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva, Porta, Janela, Cerca, Lampiao, Rede, Canteiro, PlantaBatata, PlantaMelancia, Vela }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva, Porta, Janela, Cerca, Lampiao, Rede, Canteiro, PlantaBatata, PlantaMelancia, Vela, RadioResgate }
     public enum Station { Nenhuma, Bancada, Fundicao, Refinaria, Fogueira }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -67,6 +67,7 @@ namespace MarAberto
                 case PieceKind.Rede: return "Rede coletora";
                 case PieceKind.Canteiro: return "Canteiro de horta";
                 case PieceKind.Vela: return "Vela";
+                case PieceKind.RadioResgate: return "Rádio de resgate";
                 case PieceKind.PlantaBatata: return "Pé de batata";
                 case PieceKind.PlantaMelancia: return "Pé de melancia";
                 default: return "Bancada";
@@ -75,7 +76,7 @@ namespace MarAberto
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
             || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
-            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva || k == PieceKind.Lampiao || k == PieceKind.Vela || k == PieceKind.Canteiro || k == PieceKind.PlantaBatata || k == PieceKind.PlantaMelancia;
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva || k == PieceKind.Lampiao || k == PieceKind.Vela || k == PieceKind.RadioResgate || k == PieceKind.Canteiro || k == PieceKind.PlantaBatata || k == PieceKind.PlantaMelancia;
 
         /// <summary>Peças que vão na borda do piso, como a parede.</summary>
         public static bool IsWallLike(PieceKind k) => k == PieceKind.Parede || k == PieceKind.Porta || k == PieceKind.Janela || k == PieceKind.Cerca || k == PieceKind.Rede;
@@ -116,6 +117,7 @@ namespace MarAberto
                 case PieceKind.Rede: return new Vector3(Cell, 0.9f, 0.12f);
                 case PieceKind.Canteiro: return new Vector3(1.9f, 0.4f, 1.0f);
                 case PieceKind.Vela: return new Vector3(0.5f, 4.2f, 0.5f);
+                case PieceKind.RadioResgate: return new Vector3(1.2f, 3.2f, 0.8f);
                 case PieceKind.PlantaBatata:
                 case PieceKind.PlantaMelancia: return new Vector3(0.5f, 0.4f, 0.5f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
@@ -580,6 +582,23 @@ namespace MarAberto
                     Box(root, new Vector3(0, 1.6f, -2.9f), new Vector3(0.6f, 0.6f, 3.4f));
                     Box(root, new Vector3(0, 0.1f, 0.15f), new Vector3(1.9f, 0.2f, 3.2f));
                     root.AddComponent<Helicopter>();
+                    break;
+                }
+                case PieceKind.RadioResgate:
+                {
+                    // Mesa com rádio grande, fones, e uma antena alta com luz vermelha piscando.
+                    Color metal = C(0.32f, 0.34f, 0.3f), dark = C(0.12f, 0.12f, 0.13f), dial = C(0.95f, 0.8f, 0.35f), red = C(1f, 0.15f, 0.1f);
+                    planks.AddBoxUV(new Vector3(0, 0.8f, 0), new Vector3(1.2f, 0.08f, 0.7f), Quaternion.identity, W(0.8f), 0.5f);
+                    foreach (var q in new[] { new Vector3(-0.55f, 0, -0.3f), new Vector3(0.55f, 0, -0.3f), new Vector3(-0.55f, 0, 0.3f), new Vector3(0.55f, 0, 0.3f) })
+                        poles.AddTube(new[] { q, q + Vector3.up * 0.8f }, new[] { 0.04f, 0.04f }, 6, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    other.AddBox(new Vector3(0, 1.1f, 0.05f), new Vector3(0.8f, 0.5f, 0.45f), Quaternion.identity, metal);
+                    other.AddBox(new Vector3(0, 1.12f, -0.18f), new Vector3(0.6f, 0.3f, 0.02f), Quaternion.identity, dark);
+                    for (int i = 0; i < 3; i++) other.AddCylinder(new Vector3(-0.2f + i * 0.2f, 1.0f, -0.19f), new Vector3(-0.2f + i * 0.2f, 1.0f, -0.24f), 0.04f, 0.04f, 8, dial);
+                    other.AddSphere(new Vector3(0.45f, 0.9f, -0.15f), new Vector3(0.08f, 0.06f, 0.08f), dark, 1); // fone
+                    poles.AddTube(new[] { new Vector3(0.45f, 0.84f, 0.25f), new Vector3(0.45f, 3.1f, 0.25f) }, new[] { 0.04f, 0.025f }, 6, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    other.AddSphere(new Vector3(0.45f, 3.15f, 0.25f), Vector3.one * 0.07f, red, 2);
+                    Box(root, new Vector3(0, 0.6f, 0), new Vector3(1.2f, 1.2f, 0.75f));
+                    root.AddComponent<RescueRadio>();
                     break;
                 }
                 case PieceKind.Vela:

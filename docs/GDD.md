@@ -86,3 +86,20 @@ Servidor hospedado por um jogador (até 20). Salva o mundo, as construções e o
 8. **Helicóptero** — receita final, gasolina e arma montada.
 9. **Perigos do mar** — tubarões e peixes.
 10. **Personagens realistas** (Mixamo) — jogadores animados.
+11. **Sobrevivência** — fome, sede, comida, água, fogueira.
+12. **Clima e vida na ilha** — chuva, tempestade, raios, coletor de chuva, caranguejos e javalis.
+13. **Mapa e destroços** — mapa (M) com marcação, destroços boiando e gancho.
+14. **Armas e defesa** — besta, pistola de pólvora, armaduras, ilhas distantes mais perigosas.
+15. **Base** — porta, janela, cerca, lampião, rede coletora.
+16. **Mergulho** — nadadeiras, tanque, máscara, lanterna, garrafas com mensagem.
+17. **Horta e cozinha** — canteiro, batata, melancia, ensopado.
+18. **Diário de objetivos** (J).
+19. **Mar vivo** — gaivotas, golfinhos, baleias, barco abandonado à deriva.
+20. **Configurações gráficas** — qualidade, distância de visão, FOV, VSync.
+21. **Social** — chat (Enter), marcação (botão do meio/Z), lista de jogadores (P).
+22. **Vela e vento**.
+23. **Chefe do mar** — serpente marinha, armadura de escamas.
+24. **Correções** — revisão geral.
+25. **Mundo compartilhado** — destroços, bichos, serpente, barco à deriva e plantas iguais para todos no multiplayer.
+26. **Personagem** — câmera em 3ª pessoa (V), animações de pulo e golpe.
+27. **Final** — rádio de resgate, navio de resgate e tela de vitória.

@@ -25,6 +25,7 @@ namespace MarAberto
             return navMarkers[i];
         }
 
+        public static string KmText(float m) => Km(m);
         static string Km(float m) => m >= 1000f ? (m / 1000f).ToString("0.0") + " km" : Mathf.RoundToInt(m) + " m";
 
         void UpdateNav(PlayerController p, bool hudOn)
@@ -57,6 +58,13 @@ namespace MarAberto
                 Vector3 pp = p.transform.position, w = SeaEvents.Derelict.position;
                 float dd = Vector3.Distance(new Vector3(pp.x, 0, pp.z), new Vector3(w.x, 0, w.z));
                 if (dd > 8f) Place(GetNav(used++), cam, w + Vector3.up * 4f, "BARCO À DERIVA\n<size=15>" + Km(dd) + "</size>", new Color(0.55f, 0.85f, 1f));
+            }
+            // Navio de resgate.
+            if (hudOn && cam != null && RescueShip.Active != null)
+            {
+                Vector3 pp = p.transform.position, w = RescueShip.Active.transform.position;
+                float dd = Vector3.Distance(new Vector3(pp.x, 0, pp.z), new Vector3(w.x, 0, w.z));
+                if (dd > 15f) Place(GetNav(used++), cam, w + Vector3.up * 14f, "NAVIO DE RESGATE\n<size=15>" + Km(dd) + "</size>", new Color(1f, 0.85f, 0.3f));
             }
             // Marca feita no mapa (M).
             if (hudOn && cam != null && Waypoint.HasValue)
