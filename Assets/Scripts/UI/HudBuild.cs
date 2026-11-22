@@ -85,7 +85,7 @@ namespace MarAberto
                 if (!unlocked) card.color = new Color(1, 1, 1, 0.5f);
                 var ic = UIKit.Icon(card.transform, "Icone");
                 ic.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -10), new Vector2(76, 76));
-                ic.texture = Icons.Get(r.IconItem);
+                ic.texture = Icons.ForRecipe(r);
                 ic.color = unlocked ? Color.white : new Color(0.5f, 0.5f, 0.55f, 0.8f);
                 UIKit.Txt(card.transform, "Nome", r.Name, UIKit.BodyBold, 16, unlocked ? UIKit.Text : UIKit.Muted, TextAnchor.UpperCenter)
                     .rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -90), new Vector2(w - 8, 40));

@@ -250,6 +250,110 @@ namespace MarAberto
             return m;
         }
 
+        /// <summary>
+        /// Malha de item com várias texturas (uma parte por material). include escolhe as peças pelo nome
+        /// (alguns arquivos trazem duas versões do mesmo objeto, ou balas soltas).
+        /// </summary>
+        public static Mesh BakedMeshMulti(string id, out Material[] mats, System.Func<string, bool> include = null)
+        {
+            mats = null;
+            var prefab = Prefab(id);
+            if (prefab == null) return null;
+            var root = prefab.transform.worldToLocalMatrix;
+            var groups = new Dictionary<string, List<CombineInstance>>();
+            var order = new List<string>();
+            foreach (var mf in prefab.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (mf.sharedMesh == null || !mf.sharedMesh.isReadable) continue;
+                if (include != null && !include(mf.gameObject.name)) continue;
+                var r = mf.GetComponent<MeshRenderer>();
+                for (int sm = 0; sm < mf.sharedMesh.subMeshCount; sm++)
+                {
+                    string mn = r != null && r.sharedMaterials.Length > sm && r.sharedMaterials[sm] != null ? r.sharedMaterials[sm].name : id;
+                    if (!groups.TryGetValue(mn, out var list)) { list = new List<CombineInstance>(); groups[mn] = list; order.Add(mn); }
+                    list.Add(new CombineInstance { mesh = mf.sharedMesh, subMeshIndex = sm, transform = root * mf.transform.localToWorldMatrix });
+                }
+            }
+            if (order.Count == 0) return null;
+            var parts = new CombineInstance[order.Count];
+            mats = new Material[order.Count];
+            for (int i = 0; i < order.Count; i++)
+            {
+                var gm = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+                gm.CombineMeshes(groups[order[i]].ToArray(), true, true);
+                parts[i] = new CombineInstance { mesh = gm, transform = Matrix4x4.identity };
+                mats[i] = MaterialFor(id, order[i]);
+            }
+            var m = new Mesh { name = id + "_item", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+            m.CombineMeshes(parts, false, false);
+            m.RecalculateBounds();
+            return m;
+        }
+
+        static readonly Dictionary<string, Mesh> creatures = new Dictionary<string, Mesh>();
+
+        /// <summary>
+        /// Animal a partir de um modelo real: comprimento no eixo Z (cabeça para +Z), centro na origem.
+        /// paint = pinta dorso escuro e barriga clara (para esculturas); senão mantém a textura do modelo.
+        /// </summary>
+        public static Mesh Creature(string id, float length, bool paint, Color top, Color belly, out Material[] mats)
+        {
+            string key = id + "|" + length + "|" + paint + "|" + top + "|" + belly;
+            mats = null;
+            var src = BakedMeshMulti(id, out var srcMats);
+            if (src == null) return null;
+            if (creatures.TryGetValue(key, out var cached)) { mats = paint ? new[] { NormalOnly(id, 0.35f) } : srcMats; return cached; }
+            var v = src.vertices; var n = src.normals;
+            Bounds b = src.bounds;
+            Vector3 s = b.size;
+            // Maior eixo vira Z.
+            Quaternion rot = s.x >= s.y && s.x >= s.z ? Quaternion.Euler(0, 90, 0) : s.y >= s.z ? Quaternion.Euler(-90, 0, 0) : Quaternion.identity;
+            for (int i = 0; i < v.Length; i++) v[i] = rot * (v[i] - b.center);
+            // Qual ponta é a cabeça: a 20% de cada ponta, o lado mais grosso (o rabo afina antes da cauda).
+            float minZ = float.MaxValue, maxZ = float.MinValue;
+            foreach (var p in v) { minZ = Mathf.Min(minZ, p.z); maxZ = Mathf.Max(maxZ, p.z); }
+            float span = maxZ - minZ;
+            float thickA = 0, thickB = 0;
+            foreach (var p in v)
+            {
+                float u = (p.z - minZ) / span;
+                float r = Mathf.Abs(p.x) + Mathf.Abs(p.y);
+                if (u > 0.15f && u < 0.25f) thickA = Mathf.Max(thickA, r);
+                if (u > 0.75f && u < 0.85f) thickB = Mathf.Max(thickB, r);
+            }
+            Quaternion flip = thickA > thickB ? Quaternion.Euler(0, 180, 0) : Quaternion.identity;   // cabeça para +Z
+            float k = length / Mathf.Max(span, 1e-4f);
+            var cols = new Color[v.Length];
+            for (int i = 0; i < v.Length; i++)
+            {
+                v[i] = flip * v[i] * k;
+                Vector3 nn = n.Length == v.Length ? flip * (rot * n[i]) : Vector3.up;
+                if (n.Length == v.Length) n[i] = nn;
+                float shade = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.45f, 0.2f, nn.y));
+                cols[i] = Color.Lerp(belly, top, shade);
+            }
+            var m = Object.Instantiate(src);
+            m.name = "Animal_" + id;
+            m.vertices = v;
+            if (n.Length == v.Length) m.normals = n;
+            if (paint) m.colors = cols;
+            m.RecalculateBounds();
+            m.RecalculateTangents();
+            creatures[key] = m;
+            mats = paint ? new[] { NormalOnly(id, 0.35f) } : srcMats;
+            return m;
+        }
+
+        /// <summary>Material com o relevo (normal map) do modelo, mas cor pelos vértices (para pintar animais em esculturas).</summary>
+        public static Material NormalOnly(string id, float gloss)
+        {
+            string key = id + "/relevo";
+            if (materials.TryGetValue(key, out var m)) return m;
+            var nor = FindTex(id, id, "_nor");
+            m = Custom(key, null, nor, gloss, true);
+            return m;
+        }
+
         public static int PartCount(string id)
         {
             var p = Prefab(id);

@@ -15,7 +15,7 @@ namespace MarAberto
             if (bossBar == null)
             {
                 bossBar = UIKit.Rect(root, "Chefe").Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -110), new Vector2(700, 50));
-                UIKit.Txt(bossBar, "Nome", "SERPENTE MARINHA", UIKit.Title, 26, new Color(1f, 0.55f, 0.45f), TextAnchor.UpperCenter)
+                UIKit.Txt(bossBar, "Nome", "TUBARÃO-REI", UIKit.Title, 26, new Color(1f, 0.55f, 0.45f), TextAnchor.UpperCenter)
                     .rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), Vector2.zero, new Vector2(700, 30));
                 bossFill = UIKit.Bar(bossBar, "Vida", UIKit.BarRed, new Vector2(0.5f, 0), new Vector2(0.5f, 0), Vector2.zero, new Vector2(680, 14));
             }

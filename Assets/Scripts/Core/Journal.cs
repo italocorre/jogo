@@ -89,13 +89,13 @@ namespace MarAberto
             Add("fundicao", "Construir uma fundição", "Derrete minério em lingotes.", () => Built(PieceKind.Fundicao), 1, ItemType.Carvao, 6);
             Add("ilhas3", "Descobrir 3 ilhas", "Navegue até outras ilhas. O receptor mostra a mais próxima.", Discovered, 3, ItemType.FragmentoMapa, 1);
             Add("ferro", "Fazer lingote de ferro", "Ferro fica no fundo do mar e em ilhas mais longe. Derreta na fundição.", () => Has(ItemType.LingoteFerro), 1, ItemType.LingoteCobre, 3);
-            Add("javali", "Caçar um javali", "Dá carne e couro. Cuidado: ele ataca!", () => Counter("javali"), 1, ItemType.Flecha, 10);
+            Add("tubarao", "Caçar um tubarão", "Lança, arco ou besta na água. Dá carne e couro (para armadura e nadadeiras).", () => Counter("tubarao"), 1, ItemType.Flecha, 10);
             Add("horta", "Colher da horta", "Plante sementes num canteiro e colha (E).", () => Counter("colheita"), 1, ItemType.SementeMelancia, 2);
             Add("tesouro", "Abrir um baú de tesouro", "Fica perto dos naufrágios, debaixo d'água.", () => Counter("tesouro"), 1, ItemType.Perola, 2);
             Add("bandeira", "Fincar uma bandeira", "A ilha vira do seu time: só vocês constroem lá.", () => Built(PieceKind.Bandeira), 1, ItemType.LingoteFerro, 3);
             Add("ilhas10", "Descobrir 10 ilhas", "As ilhas longe do centro têm ouro e titânio.", Discovered, 10, ItemType.LingoteOuro, 2);
             Add("refinaria", "Construir uma refinaria", "Faz gasolina para o motor a gasolina e o helicóptero.", () => Built(PieceKind.Refinaria), 1, ItemType.Gasolina, 4);
-            Add("serpente", "Derrotar a serpente marinha", "Vive nas águas distantes (aparece mais à noite e na tempestade). Leve canhão, pistola e amigos!", () => Counter("serpente"), 1, ItemType.LingoteTitanio, 4);
+            Add("serpente", "Derrotar o tubarão-rei", "Vive nas águas distantes (aparece mais à noite e na tempestade). Leve canhão, pistola e amigos!", () => Counter("serpente"), 1, ItemType.LingoteTitanio, 4);
             Add("helicoptero", "Construir o helicóptero", "Voe por cima do mar inteiro para achar titânio e ouro.", () => Built(PieceKind.Helicoptero), 1, ItemType.Municao, 40);
             Add("radio", "Construir o rádio de resgate", "B > Navegação. Precisa de titânio, ouro e cobre.", () => Built(PieceKind.RadioResgate), 1, ItemType.Gasolina, 4);
             Add("resgate", "Ser resgatado!", "Use o rádio (E), espere o navio e suba pela escada dele.", () => Counter("resgate"), 1, ItemType.Perola, 10);

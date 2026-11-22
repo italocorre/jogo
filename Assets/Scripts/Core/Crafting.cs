@@ -177,8 +177,8 @@ namespace MarAberto
                 Description = "Feitas na fundição.", Cost = L((ItemType.LingoteFerro, 1), (ItemType.Polvora, 2)), Research = L((ItemType.Polvora, 2)) });
             Add(new Recipe { Id = "armadura_couro", Name = "Armadura de couro", Category = CraftCategory.Armas, Output = ItemType.ArmaduraCouro,
                 Description = "Basta ter na mochila: -25% de dano recebido.", Cost = L((ItemType.Couro, 6), (Cor, 2)), Research = L((ItemType.Couro, 3)) });
-            Add(new Recipe { Id = "armadura_escamas", Name = "Armadura de escamas", Category = CraftCategory.Armas, Output = ItemType.ArmaduraEscamas, Station = Station.Bancada, StartUnlocked = true,
-                Description = "Escamas da serpente marinha: -60% de dano recebido (basta ter na mochila).", Cost = L((ItemType.EscamaSerpente, 6), (ItemType.Couro, 2), (ItemType.LingoteTitanio, 2)) });
+            Add(new Recipe { Id = "armadura_escamas", Name = "Armadura do tubarão-rei", Category = CraftCategory.Armas, Output = ItemType.ArmaduraEscamas, Station = Station.Bancada, StartUnlocked = true,
+                Description = "Dentes do tubarão-rei: -60% de dano recebido (basta ter na mochila).", Cost = L((ItemType.EscamaSerpente, 6), (ItemType.Couro, 2), (ItemType.LingoteTitanio, 2)) });
             Add(new Recipe { Id = "armadura_ferro", Name = "Armadura de ferro", Category = CraftCategory.Armas, Output = ItemType.ArmaduraFerro, Station = Station.Bancada,
                 Description = "Basta ter na mochila: -45% de dano recebido.", Cost = L((ItemType.LingoteFerro, 8), (ItemType.Couro, 3)), Research = L((ItemType.LingoteFerro, 8), (ItemType.Couro, 2)) });
             Add(new Recipe { Id = "canhao", Name = "Canhão", Category = CraftCategory.Armas, Piece = PieceKind.Canhao, IconOverride = ItemType.BalaCanhao,
@@ -307,27 +307,10 @@ namespace MarAberto
             Add(new Recipe { Id = "batata_assada", Name = "Batata assada", Category = CraftCategory.Comida, Output = ItemType.BatataAssada, Station = Station.Fogueira, StartUnlocked = true,
                 Description = "Assada na fogueira.", Cost = L((ItemType.Batata, 1)) });
             Add(new Recipe { Id = "ensopado", Name = "Ensopado", Category = CraftCategory.Comida, Output = ItemType.Ensopado, Station = Station.Fogueira, StartUnlocked = true,
-                Description = "Carne + batata + água limpa: a comida mais forte do jogo (cura bastante).", Cost = L((ItemType.CarneCrua, 1), (ItemType.Batata, 2), (ItemType.AguaLimpa, 1)) });
+                Description = "Carne + batata + água limpa: a comida mais forte do jogo (cura bastante).", Cost = L((ItemType.CarneTubarao, 1), (ItemType.Batata, 2), (ItemType.AguaLimpa, 1)) });
             Add(new Recipe { Id = "ensopado_peixe", Name = "Ensopado de peixe", Category = CraftCategory.Comida, Output = ItemType.Ensopado, Station = Station.Fogueira, StartUnlocked = true,
                 Description = "Peixe + batata + água limpa.", Cost = L((ItemType.PeixeCru, 1), (ItemType.Batata, 2), (ItemType.AguaLimpa, 1)) });
-            Add(new Recipe { Id = "carne_crua_assada", Name = "Carne assada (caça)", Category = CraftCategory.Comida, Output = ItemType.CarneAssada, Station = Station.Fogueira, StartUnlocked = true,
-                Description = "Carne de javali ou caranguejo assada na fogueira.", Cost = L((ItemType.CarneCrua, 1)) });
-            Add(new Recipe { Id = "carne_assada", Name = "Carne assada", Category = CraftCategory.Comida, Output = ItemType.CarneAssada, Station = Station.Fogueira, StartUnlocked = true,
-                Description = "Carne de tubarão assada na fogueira.", Cost = L((ItemType.CarneTubarao, 1)) });
-            Add(new Recipe { Id = "muda", Name = "Muda de coqueiro", Category = CraftCategory.Comida, Output = ItemType.MudaCoqueiro, StartUnlocked = true,
-                Description = "Plante (clique no chão com ela na mão). Em ~6 min vira um coqueiro que dá madeira, folhas e cocos.", Cost = L((ItemType.Coco, 1), (Fol, 2)) });
-            Add(new Recipe { Id = "muda_arvore", Name = "Muda de árvore", Category = CraftCategory.Comida, Output = ItemType.MudaArvore,
-                Description = "Vira uma árvore grande: bastante madeira e gravetos.", Cost = L((Gra, 2), (Fol, 2), (Mad, 1)), Research = L((Gra, 4), (Fol, 3)) });
-
-            // ---- Itens / melhorias pessoais ----
-            Add(new Recipe { Id = "mochila1", Name = "Mochila maior", Category = CraftCategory.Itens,
-                Description = "+6 espaços na mochila.", Cost = L((Fol, 8), (Cor, 6)), Research = L((Cor, 6)),
-                Blocked = () => game.BackpackLevel >= 2 ? "Já é a maior mochila" : null,
-                OnCraft = () => { game.BackpackLevel++; game.Inventory.Resize(game.Inventory.Size + 6); game.Hud.Toast("Mochila maior: " + game.Inventory.Size + " espaços!", Hud.Good); } });
-            Add(new Recipe { Id = "oxigenio", Name = "Tanque de oxigênio", Category = CraftCategory.Itens,
-                Description = "Fôlego 60% maior debaixo d'água.", Cost = L((Cob, 4), (Fer, 4)), Research = L((Fer, 4)),
-                Blocked = () => game.OxygenLevel >= 1 ? "Já tem" : null,
-                OnCraft = () => { game.OxygenLevel++; game.Player.OxygenSeconds *= 1.6f; game.Hud.Toast("Mais fôlego debaixo d'água!", Hud.Good); } });
+            // (O antigo "Tanque de oxigênio" de melhoria saiu: agora o tanque é um item de verdade, feito na fundição.)
             OnChanged?.Invoke();
         }
     }

@@ -20,7 +20,7 @@ namespace MarAberto
         enum State { Circle, Attack, BiteRaft, Flee, Dying }
         State state = State.Circle;
         float stateT, biteCooldown, circleAngle, speed, deadT;
-        Transform tail;
+        Transform tail, bodyT;
         Vector3 vel;
         BuildPiece raftTarget;
         float raftBiteTimer;
@@ -134,6 +134,20 @@ namespace MarAberto
             var mb = new MeshBuilder();
             var body = new GameObject("Corpo");
             body.transform.SetParent(transform, false);
+            bodyT = body.transform;
+            // Modelo real: tubarão com a forma de uma escultura de verdade (pintado como tubarão); barracuda = peixe escaneado.
+            var real = shark ? ModelLibrary.Creature("bronze_shark_statue", L, true, top, belly, out var rm)
+                             : ModelLibrary.Creature("peixe_barramundi", L, false, top, belly, out rm);
+            if (real != null)
+            {
+                body.AddComponent<MeshFilter>().sharedMesh = real;
+                body.AddComponent<MeshRenderer>().sharedMaterials = rm;
+                var col0 = gameObject.AddComponent<CapsuleCollider>();
+                col0.direction = 2; col0.radius = L * 0.17f; col0.height = L;
+                var rb0 = gameObject.AddComponent<Rigidbody>();
+                rb0.isKinematic = true;
+                return;
+            }
             body.AddComponent<MeshFilter>().sharedMesh = bodyMesh;
             body.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
 
@@ -181,7 +195,10 @@ namespace MarAberto
             var g = Game.Instance;
             int meat = Kind == CreatureKind.Tubarao ? 3 : 1;
             int left = g.Inventory.Add(ItemType.CarneTubarao, meat, false);
-            g.Hud.Toast((Kind == CreatureKind.Tubarao ? "Tubarão" : "Barracuda") + " abatido: +" + (meat - left) + " carne", Hud.Good);
+            int hide = Kind == CreatureKind.Tubarao ? Random.Range(2, 4) : 0;   // couro de tubarão (armadura, nadadeiras...)
+            if (hide > 0) g.Inventory.Add(ItemType.Couro, hide, false);
+            if (Kind == CreatureKind.Tubarao) Journal.Bump("tubarao");
+            g.Hud.Toast((Kind == CreatureKind.Tubarao ? "Tubarão" : "Barracuda") + " abatido: +" + (meat - left) + " carne" + (hide > 0 ? ", +" + hide + " couro" : ""), Hud.Good);
             SeaLife.Instance?.OnKilled(this);
         }
 
@@ -203,6 +220,7 @@ namespace MarAberto
             stateT += dt;
             biteCooldown -= dt;
             if (tail != null) tail.localRotation = Quaternion.Euler(0, Mathf.Sin(Time.time * (state == State.Attack ? 14f : 6f)) * 25f, 0);
+            else if (bodyT != null) bodyT.localRotation = Quaternion.Euler(0, Mathf.Sin(Time.time * (state == State.Attack ? 9f : 3.5f)) * 5f, 0);   // nado
 
             if (state == State.Dying)
             {
@@ -312,6 +330,7 @@ namespace MarAberto
         Vector3 center;
         float radius;
         static readonly Dictionary<Color, Mesh> meshes = new Dictionary<Color, Mesh>();
+        static readonly Dictionary<Color, Material> tinted = new Dictionary<Color, Material>();
 
         public static FishSchool Spawn(Vector3 center, int count, Color color)
         {
@@ -320,17 +339,21 @@ namespace MarAberto
             var s = go.AddComponent<FishSchool>();
             s.center = center;
             s.radius = Random.Range(2.5f, 5f);
-            if (!meshes.TryGetValue(color, out var fishMesh))
+            // Peixe escaneado de verdade (textura real), com um leve tom de cor por cardume.
+            var fishMesh = ModelLibrary.Creature("peixe_barramundi", 0.36f, false, color, color, out var fishMats);
+            Material mat = Mats.LowPoly;
+            if (fishMesh != null && fishMats != null && fishMats.Length > 0)
+            {
+                if (!tinted.TryGetValue(color, out mat)) { mat = new Material(fishMats[0]) { name = "Cardume" }; mat.color = Color.Lerp(Color.white, color, 0.35f); tinted[color] = mat; }
+            }
+            else if (!meshes.TryGetValue(color, out fishMesh))
             {
                 var mb = new MeshBuilder();
                 Color belly = Color.Lerp(color, Color.white, 0.6f);
                 mb.AddRock(Vector3.zero, 0.12f, 9, n => n.y > -0.2f ? color : belly, 0.02f, new Vector3(0.35f, 0.6f, 1f), 1);
-                mb.AddTri(new Vector3(0, 0, -0.1f), new Vector3(0, 0.07f, -0.18f), new Vector3(0, -0.07f, -0.18f), color);
-                mb.AddTri(new Vector3(0, 0, -0.1f), new Vector3(0, -0.07f, -0.18f), new Vector3(0, 0.07f, -0.18f), color);
                 fishMesh = mb.Build("PeixeEnfeite");
                 meshes[color] = fishMesh;
             }
-            var mat = Mats.LowPoly;
             for (int i = 0; i < count; i++)
             {
                 var f = new GameObject("Peixe").transform;

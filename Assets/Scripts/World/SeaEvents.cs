@@ -37,7 +37,7 @@ namespace MarAberto
                 gullTimer = 3f;
                 gulls.RemoveAll(x => x == null);
                 Island near = isl;
-                bool want = day && near != null;
+                bool want = false && day && near != null;   // gaivotas desenhadas saíram (só o som fica)
                 if (want && gulls.Count < 6)
                 {
                     Vector3 c = near.transform.position;
@@ -319,8 +319,11 @@ namespace MarAberto
                 mesh = mb.Build("Golfinho");
             }
             var go = new GameObject("Golfinho");
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            // Forma real (escultura de verdade), pintada de golfinho: cinza em cima, claro embaixo.
+            var real = ModelLibrary.Creature("bronze_shark_statue", 2.2f, true, new Color(0.38f, 0.44f, 0.52f), new Color(0.85f, 0.86f, 0.88f), out var rm);
+            go.AddComponent<MeshFilter>().sharedMesh = real != null ? real : mesh;
+            if (real != null) go.AddComponent<MeshRenderer>().sharedMaterials = rm;
+            else go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
             var d = go.AddComponent<Dolphin>();
             d.dir = dir.normalized; d.start = pos; d.delay = delay;
             go.transform.position = pos + Vector3.down * 3f;
@@ -365,8 +368,10 @@ namespace MarAberto
                 mesh = mb.Build("Baleia");
             }
             var go = new GameObject("Baleia");
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            var real = ModelLibrary.Creature("bronze_whale_statue", 18f, true, new Color(0.16f, 0.19f, 0.24f), new Color(0.6f, 0.62f, 0.65f), out var rm);
+            go.AddComponent<MeshFilter>().sharedMesh = real != null ? real : mesh;
+            if (real != null) go.AddComponent<MeshRenderer>().sharedMaterials = rm;
+            else go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
             var w = go.AddComponent<Whale>();
             w.basePos = at;
             w.dir = Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward;

@@ -63,6 +63,8 @@ namespace MarAberto
 
             arm = BuildArm().transform;
             arm.SetParent(root, false);
+            // O braço feito por código parecia boneco: mostra só o item de verdade na mão.
+            foreach (var r in arm.GetComponents<MeshRenderer>()) r.enabled = false;
 
             held = new GameObject("NaMao").transform;
             held.SetParent(root, false);
@@ -140,7 +142,7 @@ namespace MarAberto
             }
             heldRenderer.enabled = true;
             heldFilter.sharedMesh = ItemModels.Get(t);
-            heldRenderer.sharedMaterial = ItemModels.Material(t);
+            heldRenderer.sharedMaterials = ItemModels.Materials(t);
             if (torch == null && t == ItemType.Tocha) torch = TorchLight.Attach(held, new Vector3(0, 0.33f, 0));
             if (torch != null) torch.gameObject.SetActive(t == ItemType.Tocha);
             if (diveLight == null && t == ItemType.LanternaMergulho)

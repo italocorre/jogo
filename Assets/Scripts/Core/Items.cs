@@ -72,6 +72,7 @@ namespace MarAberto
         Ensopado,
         EscamaSerpente,
         ArmaduraEscamas,
+        Mochila,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca, Gancho, Besta, Pistola }
@@ -163,7 +164,7 @@ namespace MarAberto
             SetRarity(ItemType.Pistola, 2);
             Def(ItemType.Polvora, "Pólvora", "Carvão moído com conchas. Para balas de pistola.", new Color(0.2f, 0.2f, 0.2f), 2, 50);
             Def(ItemType.BalaPistola, "Bala de Pistola", "Munição da pistola de pólvora.", new Color(0.6f, 0.58f, 0.55f), 2, 50);
-            Def(ItemType.Couro, "Couro", "Tirado do javali. Para armadura de couro.", new Color(0.55f, 0.38f, 0.25f), 3, 30);
+            Def(ItemType.Couro, "Couro", "Couro de tubarão. Para armadura, nadadeiras e máscara.", new Color(0.55f, 0.38f, 0.25f), 3, 30);
             Def(ItemType.ArmaduraCouro, "Armadura de Couro", "Na mochila, protege: -25% de dano recebido.", new Color(0.5f, 0.34f, 0.22f), 0, 1);
             SetRarity(ItemType.ArmaduraCouro, 1);
             Def(ItemType.ArmaduraFerro, "Armadura de Ferro", "Na mochila, protege: -45% de dano recebido.", new Color(0.6f, 0.6f, 0.62f), 0, 1);
@@ -178,21 +179,22 @@ namespace MarAberto
             SetRarity(ItemType.LanternaMergulho, 1);
             Def(ItemType.SementeBatata, "Semente de Batata", "Clique na terra ou num canteiro para plantar. Achada em barris boiando.", new Color(0.6f, 0.47f, 0.3f), 1, 20);
             defs[ItemType.SementeBatata].Plant = PieceKind.PlantaBatata;
-            Def(ItemType.SementeMelancia, "Semente de Melancia", "Clique na terra ou num canteiro para plantar. Achada em barris boiando.", new Color(0.2f, 0.18f, 0.15f), 1, 20);
+            Def(ItemType.SementeMelancia, "Semente de Limão", "Clique na terra ou num canteiro para plantar. Achada em barris boiando.", new Color(0.2f, 0.18f, 0.15f), 1, 20);
             defs[ItemType.SementeMelancia].Plant = PieceKind.PlantaMelancia;
             Def(ItemType.Batata, "Batata", "Crua mata pouco a fome. Asse na fogueira ou faça ensopado.", new Color(0.65f, 0.5f, 0.32f), 2, 20);
             SetFood(ItemType.Batata, 8f, 0f, 0f);
             Def(ItemType.BatataAssada, "Batata Assada", "Mata bem a fome.", new Color(0.55f, 0.38f, 0.22f), 3, 20);
             SetFood(ItemType.BatataAssada, 30f, 0f, 5f);
-            Def(ItemType.Melancia, "Melancia", "Mata a sede e um pouco a fome.", new Color(0.3f, 0.55f, 0.22f), 3, 10);
+            Def(ItemType.Melancia, "Limão", "Suco de limão: mata a sede e um pouco a fome.", new Color(0.3f, 0.55f, 0.22f), 3, 10);
             SetFood(ItemType.Melancia, 12f, 35f, 0f);
             Def(ItemType.Ensopado, "Ensopado", "Carne, batata e água na fogueira: a comida mais forte. Cura bastante.", new Color(0.6f, 0.35f, 0.2f), 8, 10);
             SetFood(ItemType.Ensopado, 70f, 15f, 35f);
             SetRarity(ItemType.Ensopado, 1);
-            Def(ItemType.EscamaSerpente, "Escama de Serpente", "Da serpente marinha. Muito dura: vira a melhor armadura.", new Color(0.2f, 0.45f, 0.4f), 20, 20);
+            Def(ItemType.EscamaSerpente, "Dente do Tubarão-rei", "Do tubarão gigante. Muito duro: vira a melhor armadura.", new Color(0.2f, 0.45f, 0.4f), 20, 20);
             SetRarity(ItemType.EscamaSerpente, 2);
-            Def(ItemType.ArmaduraEscamas, "Armadura de Escamas", "Na mochila, protege: -60% de dano recebido.", new Color(0.18f, 0.42f, 0.38f), 0, 1);
+            Def(ItemType.ArmaduraEscamas, "Armadura do Tubarão-rei", "Na mochila, protege: -60% de dano recebido.", new Color(0.18f, 0.42f, 0.38f), 0, 1);
             SetRarity(ItemType.ArmaduraEscamas, 2);
+            Def(ItemType.Mochila, "Mochila", "Mais espaço para carregar.", new Color(0.5f, 0.35f, 0.2f), 0, 1);
             Def(ItemType.CarneAssada, "Carne Assada", "Assada na fogueira: mata bem a fome e cura.", new Color(0.55f, 0.3f, 0.18f), 6, 20);
             SetFood(ItemType.CarneAssada, 45f, 0f, 15f);
             Def(ItemType.PeixeCru, "Peixe (cru)", "Pescado com a vara. Melhor assar na fogueira.", new Color(0.6f, 0.7f, 0.8f), 2, 20);

@@ -112,7 +112,7 @@ namespace MarAberto
             if (!preview)
             {
                 gameObject.AddComponent<SeaLife>();
-                gameObject.AddComponent<LandLife>();
+                // Caranguejos e javalis saíram (não há modelos reais gratuitos deles).
                 gameObject.AddComponent<Flotsam>();
                 gameObject.AddComponent<Journal>();
                 gameObject.AddComponent<SeaEvents>();
@@ -188,7 +188,7 @@ namespace MarAberto
                 Weather.Instance.Set(next, true);
                 Hud.Toast("Teste: clima " + next, Hud.Gold);
             }
-            if (Input.GetKeyDown(KeyCode.F9) && SeaSerpent.Active == null && NetGame.IsAuthority) { NetGame.Register(SeaSerpent.Spawn(Player.transform.position)); Hud.Toast("Teste: serpente marinha!", Hud.Bad); }
+            if (Input.GetKeyDown(KeyCode.F9) && SeaSerpent.Active == null && NetGame.IsAuthority) { NetGame.Register(SeaSerpent.Spawn(Player.transform.position)); Hud.Toast("Teste: tubarão-rei!", Hud.Bad); }
             if (Input.GetKeyDown(KeyCode.F6)) { Player.Heal(); Player.Consume(100f, 100f, 0f); Hud.Toast("Teste: vida, fôlego, fome e sede cheios", Hud.Gold); }
         }
 

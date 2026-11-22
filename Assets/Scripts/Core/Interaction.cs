@@ -46,7 +46,17 @@ namespace MarAberto
         float stillTime;
         bool touching;
 
-        void OnCollisionStay(Collision c) => touching = true;
+        void OnCollisionStay(Collision c)
+        {
+            touching = true;
+            // Caiu na jangada: vai junto com ela.
+            var raft = c.collider.GetComponentInParent<Raft>();
+            if (raft != null && rb != null && transform.parent != raft.transform)
+            {
+                rb.isKinematic = true;
+                transform.SetParent(raft.transform, true);
+            }
+        }
         static PhysicsMaterial grip;
 
         public string Prompt => "Pegar " + Items.Get(Stack.Type).Name + (Stack.Count > 1 ? " x" + Stack.Count : "");
@@ -62,7 +72,7 @@ namespace MarAberto
             go.transform.localScale = Vector3.one * (Items.Get(stack.Type).IsTool ? 1.3f : 1.9f);
             go.AddComponent<MeshFilter>().sharedMesh = ItemModels.Get(stack.Type);
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = ItemModels.Material(stack.Type);
+            mr.sharedMaterials = ItemModels.Materials(stack.Type);
             // Caixa do tamanho do modelo: não sai rolando como uma bola.
             var mesh = ItemModels.Get(stack.Type);
             var col = go.AddComponent<BoxCollider>();

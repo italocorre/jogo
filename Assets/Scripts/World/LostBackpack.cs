@@ -49,16 +49,23 @@ namespace MarAberto
 
         public static LostBackpack Spawn(Vector3 pos, IEnumerable<ItemStack> items, int coins)
         {
-            if (mesh == null) mesh = BuildMesh();
+            // Mala de verdade (modelo real), deitada.
             var go = new GameObject("MochilaPerdida");
             go.layer = Layers.Items;
             go.transform.position = pos;
             go.transform.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            var m = ItemModels.Get(ItemType.Mochila);
+            var vis = new GameObject("Mala");
+            vis.layer = Layers.Items;
+            vis.transform.SetParent(go.transform, false);
+            vis.AddComponent<MeshFilter>().sharedMesh = m;
+            vis.AddComponent<MeshRenderer>().sharedMaterials = ItemModels.Materials(ItemType.Mochila);
+            vis.transform.localScale = Vector3.one * 1.3f;
+            var bb = m.bounds;
+            vis.transform.localPosition = new Vector3(0, -bb.min.y * 1.3f, 0);
             var col = go.AddComponent<BoxCollider>();
-            col.center = new Vector3(0, 0.3f, 0);
-            col.size = new Vector3(0.6f, 0.62f, 0.45f);
+            col.center = new Vector3(0, bb.size.y * 0.65f, 0);
+            col.size = bb.size * 1.3f;
             var bp = go.AddComponent<LostBackpack>();
             foreach (var s in items) if (!s.IsEmpty) bp.Items.Add(s);
             bp.Coins = coins;
@@ -71,12 +78,36 @@ namespace MarAberto
         }
 
         void OnDestroy() => All.Remove(this);
-        void OnCollisionStay(Collision c) => touching = true;
+        void OnCollisionStay(Collision c)
+        {
+            touching = true;
+            // Caiu na jangada: vai junto com ela.
+            var raft = c.collider.GetComponentInParent<Raft>();
+            if (raft != null && transform.parent != raft.transform)
+            {
+                rb.isKinematic = true;
+                transform.SetParent(raft.transform, true);
+            }
+        }
+        bool? deepSea;
 
         void FixedUpdate()
         {
             if (rb == null || rb.isKinematic) return;
             float water = Ocean.HeightAt(transform.position.x, transform.position.z);
+            // Mar aberto (sem fundo por perto): boia na superfície.
+            if (deepSea == null && transform.position.y < water + 1f)
+                deepSea = !Physics.Raycast(transform.position, Vector3.down, 60f, ~((1 << Layers.Items) | (1 << Layers.IgnoreRaycast) | Layers.PlayerMask), QueryTriggerInteraction.Ignore);
+            if (deepSea == true)
+            {
+                float depth = water - transform.position.y;
+                if (depth > -0.1f) rb.AddForce(-Physics.gravity * (1f + Mathf.Clamp(depth, 0f, 1f) * 1.5f), ForceMode.Acceleration);
+                Vector3 v0 = rb.GetPointVelocity(rb.worldCenterOfMass);
+                rb.AddForce(new Vector3(-v0.x * 0.8f, -v0.y * 2.5f, -v0.z * 0.8f), ForceMode.Acceleration);
+                rb.AddTorque(-rb.angularVelocity * 2f, ForceMode.Acceleration);
+                touching = false;
+                return;
+            }
             if (transform.position.y < water)
             {
                 // Afunda devagar, balançando pouco.

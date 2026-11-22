@@ -69,7 +69,7 @@ namespace MarAberto
                 case PieceKind.Vela: return "Vela";
                 case PieceKind.RadioResgate: return "Rádio de resgate";
                 case PieceKind.PlantaBatata: return "Pé de batata";
-                case PieceKind.PlantaMelancia: return "Pé de melancia";
+                case PieceKind.PlantaMelancia: return "Pé de limão";
                 default: return "Bancada";
             }
         }
@@ -155,6 +155,25 @@ namespace MarAberto
                 r.receiveShadows = false;
             }
             foreach (var t in go.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layers.IgnoreRaycast;
+            return go;
+        }
+
+        /// <summary>Cópia só para foto (ícone): com materiais reais, sem colisão nem comportamento.</summary>
+        public static GameObject IconCopy(PieceKind k)
+        {
+            var tpl = Template(k);
+            if (tpl == null) return null;
+            var go = Object.Instantiate(tpl, templateRoot, false);   // fica inativo enquanto limpa
+            foreach (var b in go.GetComponentsInChildren<MonoBehaviour>(true)) Object.DestroyImmediate(b);
+            foreach (var c in go.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
+            foreach (var l in go.GetComponentsInChildren<Light>(true)) Object.DestroyImmediate(l);
+            foreach (var a in go.GetComponentsInChildren<AudioSource>(true)) Object.DestroyImmediate(a);
+            foreach (var lr in go.GetComponentsInChildren<LineRenderer>(true)) Object.DestroyImmediate(lr);
+            foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true)) Object.DestroyImmediate(rb);
+            go.transform.SetParent(null, false);
+            go.SetActive(true);
+            foreach (var t in go.GetComponentsInChildren<Transform>(true)) t.gameObject.SetActive(true);
+            var fruit = go.transform.Find("Fruto");
             return go;
         }
 
@@ -677,20 +696,16 @@ namespace MarAberto
                     }
                     broto.AddComponent<MeshFilter>().sharedMesh = sb.Build("Broto");
                     broto.AddComponent<MeshRenderer>().sharedMaterial = Mats.Foliage;
+                    // Frutos de verdade (modelos reais): limões no pé, batatas na terra.
                     var fruto = new GameObject("Fruto");
                     fruto.transform.SetParent(root.transform, false);
-                    var fb = new MeshBuilder();
-                    if (melon)
+                    for (int i = 0; i < (melon ? 4 : 3); i++)
                     {
-                        fb.AddRock(new Vector3(0.12f, 0.12f, 0.05f), 0.15f, 7, n => Mathf.Repeat(Mathf.Atan2(n.z, n.x) * 3f, 1f) > 0.5f ? C(0.18f, 0.4f, 0.15f) : C(0.3f, 0.55f, 0.22f), 0.03f, new Vector3(1.25f, 0.95f, 1f), 2);
+                        float a = i * 2.1f;
+                        Vector3 fp = melon ? new Vector3(Mathf.Cos(a) * 0.14f, 0.18f + (i % 2) * 0.08f, Mathf.Sin(a) * 0.14f) : new Vector3(Mathf.Cos(a) * 0.13f, 0.03f, Mathf.Sin(a) * 0.13f);
+                        ModelLibrary.Spawn(melon ? "lemon" : "sweet_potato", Vector3.zero, Quaternion.Euler(0, a * 57f, melon ? 0 : 80f), melon ? 0.08f : 0.15f, ModelLibrary.Fit.Max, -1, ModelLibrary.Col.None, fruto.transform)
+                            ?.transform.SetLocalPositionAndRotation(fp, Quaternion.Euler(0, a * 57f, melon ? 0 : 80f));
                     }
-                    else
-                    {
-                        for (int i = 0; i < 3; i++)
-                            fb.AddRock(new Vector3(Mathf.Cos(i * 2.1f) * 0.12f, 0.04f, Mathf.Sin(i * 2.1f) * 0.12f), 0.05f, 8 + i, _ => C(0.62f, 0.47f, 0.3f), 0.15f, new Vector3(1.2f, 0.8f, 1f), 1);
-                    }
-                    fruto.AddComponent<MeshFilter>().sharedMesh = fb.Build("Fruto");
-                    fruto.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
                     fruto.SetActive(false);
                     var bc = root.AddComponent<BoxCollider>();
                     bc.center = new Vector3(0, 0.2f, 0); bc.size = new Vector3(0.5f, 0.4f, 0.5f); bc.isTrigger = true;

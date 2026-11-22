@@ -8,7 +8,7 @@ namespace MarAberto
     {
         static readonly Dictionary<ItemType, Mesh> cache = new Dictionary<ItemType, Mesh>();
 
-        static readonly Dictionary<ItemType, Material> mats = new Dictionary<ItemType, Material>();
+        static readonly Dictionary<ItemType, Material[]> mats = new Dictionary<ItemType, Material[]>();
 
         public static Mesh Get(ItemType t)
         {
@@ -23,27 +23,97 @@ namespace MarAberto
                     (i, k) => Color.white, null, true, true, null, 3f, 1f);
                 lb.AddTube(new[] { new Vector3(0.02f, 0.05f, 0.03f), new Vector3(0.05f, 0.11f, 0.07f) }, new[] { 0.016f, 0.007f }, 6, (i, k) => Color.white, null, false, true, null, 3f, 1f);
                 m = lb.Build("Item_Madeira");
-                mats[t] = Mats.Bark;
+                mats[t] = new[] { Mats.Bark };
             }
-            else m = Build(t);
+            else
+            {
+                m = Build(t);
+                // Itens de madeira feitos por código: textura de madeira de verdade (UV por projeção).
+                if (Wooden(t)) { BoxUV(m, 7f); mats[t] = new[] { Mats.Poles }; }
+            }
             cache[t] = m;
             return m;
         }
 
+        static bool Wooden(ItemType t) => t == ItemType.Tocha || t == ItemType.Lanca || t == ItemType.LancaCobre || t == ItemType.LancaTitanio
+            || t == ItemType.Arco || t == ItemType.Flecha || t == ItemType.Virote || t == ItemType.Besta || t == ItemType.VaraPescar || t == ItemType.Gancho;
+
+        /// <summary>Coordenadas de textura pela direção de cada face (para malhas feitas por código).</summary>
+        static void BoxUV(Mesh m, float perMeter)
+        {
+            var v = m.vertices; var n = m.normals;
+            if (n == null || n.Length != v.Length) { m.RecalculateNormals(); n = m.normals; }
+            var uv = new Vector2[v.Length];
+            for (int i = 0; i < v.Length; i++)
+            {
+                Vector3 a = new Vector3(Mathf.Abs(n[i].x), Mathf.Abs(n[i].y), Mathf.Abs(n[i].z));
+                Vector2 u = a.x >= a.y && a.x >= a.z ? new Vector2(v[i].z, v[i].y) : a.y >= a.z ? new Vector2(v[i].x, v[i].z) : new Vector2(v[i].x, v[i].y);
+                uv[i] = u * perMeter;
+            }
+            m.uv = uv;
+            m.RecalculateTangents();
+        }
+
         /// <summary>Material do item: realista quando vem de um modelo da Poly Haven.</summary>
-        public static Material Material(ItemType t)
+        public static Material Material(ItemType t) => Materials(t)[0];
+
+        /// <summary>Materiais do item (modelos reais podem ter várias texturas).</summary>
+        public static Material[] Materials(ItemType t)
         {
             Get(t);
-            return mats.TryGetValue(t, out var m) && m != null ? m : Mats.ForItem(t);
+            if (mats.TryGetValue(t, out var m) && m != null && m.Length > 0) return m;
+            var one = new[] { Mats.ForItem(t) };
+            mats[t] = one;
+            return one;
         }
 
         /// <summary>Itens que usam modelos realistas (Poly Haven, CC0).</summary>
-        static Mesh FromModel(ItemType t, out Material mat)
+        static Mesh FromModel(ItemType t, out Material[] mat)
         {
             mat = null;
             string id; float size; bool tool = false; Color? tint = null;
+            System.Func<string, bool> only = null;
             switch (t)
             {
+                // ---- Tudo com modelo real (Poly Haven / Khronos, CC0) ----
+                case ItemType.Coco: id = "food_avocado_01"; size = 0.17f; tint = new Color(0.62f, 0.42f, 0.25f); break;
+                case ItemType.Perola: id = "lambis_shell"; size = 0.13f; tint = new Color(1f, 0.92f, 0.97f); break;
+                case ItemType.Carvao: id = "stone_01"; size = 0.17f; tint = new Color(0.16f, 0.16f, 0.17f); break;
+                case ItemType.Cobre: id = "stone_01"; size = 0.2f; tint = new Color(1f, 0.58f, 0.36f); break;
+                case ItemType.Ferro: id = "stone_01"; size = 0.2f; tint = new Color(0.72f, 0.52f, 0.46f); break;
+                case ItemType.Ouro: id = "stone_01"; size = 0.18f; tint = new Color(1f, 0.82f, 0.35f); break;
+                case ItemType.Titanio: id = "stone_01"; size = 0.18f; tint = new Color(0.72f, 0.82f, 0.95f); break;
+                case ItemType.FragmentoMapa: id = "postcard_set_01"; size = 0.18f; tint = new Color(0.98f, 0.88f, 0.68f); only = n => n == "postcard_03"; break;
+                case ItemType.Metralhadora: id = "bolt_action_rifle_7_62"; size = 1.0f; only = n => !n.Contains("bolt_b") && !n.Contains("bullet"); break;
+                case ItemType.Pistola: id = "service_pistol"; size = 0.22f; only = n => n.EndsWith("_a"); break;
+                case ItemType.Municao: id = "ammo_box"; size = 0.24f; break;
+                case ItemType.BalaPistola: id = "ammo_box"; size = 0.17f; tint = new Color(0.8f, 0.75f, 0.6f); break;
+                case ItemType.BalaCanhao: id = "wooden_crate_01"; size = 0.32f; tint = new Color(0.6f, 0.6f, 0.6f); break;
+                case ItemType.Polvora: id = "compost_bag_02"; size = 0.26f; tint = new Color(0.36f, 0.34f, 0.33f); break;
+                case ItemType.Couro: id = "compost_bag_02"; size = 0.24f; tint = new Color(0.62f, 0.45f, 0.32f); break;
+                case ItemType.ArmaduraCouro: id = "life_jacket"; size = 0.55f; tint = new Color(0.62f, 0.42f, 0.28f); break;
+                case ItemType.ArmaduraFerro: id = "life_jacket"; size = 0.55f; tint = new Color(0.62f, 0.64f, 0.68f); break;
+                case ItemType.ArmaduraEscamas: id = "life_jacket"; size = 0.55f; tint = new Color(0.3f, 0.6f, 0.52f); break;
+                case ItemType.EscamaSerpente: id = "lambis_shell"; size = 0.15f; tint = new Color(0.97f, 0.95f, 0.88f); break;
+                case ItemType.Nadadeiras: id = "rubber_boots"; size = 0.34f; tint = new Color(0.4f, 0.62f, 0.95f); only = n => !n.Contains("dirt"); break;
+                case ItemType.TanqueOxigenio: id = "small_lpg_tank"; size = 0.45f; tint = new Color(1f, 0.86f, 0.3f); break;
+                case ItemType.Mascara: id = "old_gas_mask"; size = 0.28f; break;
+                case ItemType.LanternaMergulho: id = "vintage_flashlight"; size = 0.26f; break;
+                case ItemType.Receptor: id = "vintage_radio_transceiver"; size = 0.32f; break;
+                case ItemType.SementeBatata: id = "seeding_tray_01"; size = 0.26f; break;
+                case ItemType.SementeMelancia: id = "seeding_tray_01"; size = 0.26f; tint = new Color(1f, 1f, 0.75f); break;
+                case ItemType.Batata: id = "sweet_potato"; size = 0.17f; break;
+                case ItemType.BatataAssada: id = "sweet_potato"; size = 0.17f; tint = new Color(0.55f, 0.36f, 0.22f); break;
+                case ItemType.Melancia: id = "lemon"; size = 0.1f; break;
+                case ItemType.Ensopado: id = "wooden_bowl_01"; size = 0.22f; break;
+                case ItemType.PeixeCru: id = "peixe_barramundi"; size = 0.34f; break;
+                case ItemType.PeixeAssado: id = "peixe_barramundi"; size = 0.34f; tint = new Color(0.72f, 0.5f, 0.3f); break;
+                case ItemType.CarneTubarao: id = "peixe_barramundi"; size = 0.4f; tint = new Color(0.62f, 0.66f, 0.72f); break;
+                case ItemType.CarneCrua: id = "peixe_barramundi"; size = 0.34f; tint = new Color(0.9f, 0.6f, 0.6f); break;
+                case ItemType.CarneAssada: id = "peixe_barramundi"; size = 0.38f; tint = new Color(0.55f, 0.35f, 0.2f); break;
+                case ItemType.MudaCoqueiro: id = "planter_pot_clay"; size = 0.22f; break;
+                case ItemType.MudaArvore: id = "planter_pot_clay"; size = 0.22f; tint = new Color(0.85f, 0.85f, 0.85f); break;
+                case ItemType.Mochila: id = "vintage_suitcase"; size = 0.5f; only = n => n.Contains("_01_"); break;
                 case ItemType.PicaretaPedra: id = "picke_dirty_01"; size = 0.68f; tool = true; break;
                 case ItemType.PicaretaCobre: id = "picke_dirty_01"; size = 0.7f; tool = true; tint = new Color(1f, 0.72f, 0.55f); break;
                 case ItemType.PicaretaFerro: id = "picke_dirty_01"; size = 0.72f; tool = true; tint = new Color(0.8f, 0.86f, 0.95f); break;
@@ -57,9 +127,10 @@ namespace MarAberto
                 case ItemType.Pedra: id = "stone_01"; size = 0.24f; break;
                 default: return null;
             }
-            var src = ModelLibrary.BakedMesh(id, out mat);
+            var src = ModelLibrary.BakedMeshMulti(id, out mat, only);
             if (src == null || mat == null) return null;
-            if (tint.HasValue) { mat = new Material(mat) { name = mat.name + "_" + t }; mat.color = tint.Value; }
+            if (tint.HasValue)
+                for (int i = 0; i < mat.Length; i++) { mat[i] = new Material(mat[i]) { name = mat[i].name + "_" + t }; mat[i].color = tint.Value; }
             var verts = src.vertices;
             var norms = src.normals;
             var tans = src.tangents;

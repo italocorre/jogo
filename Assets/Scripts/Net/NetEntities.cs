@@ -168,7 +168,7 @@ namespace MarAberto
                     else if (type == 2)
                     {
                         e = SeaSerpent.SpawnAt(pos, true);
-                        if (game.Player != null && Vector3.Distance(game.Player.transform.position, pos) < 250f) game.Hud.Toast("Algo enorme se mexe debaixo d'água... uma SERPENTE MARINHA!", Hud.Bad);
+                        if (game.Player != null && Vector3.Distance(game.Player.transform.position, pos) < 250f) game.Hud.Toast("Algo enorme se mexe debaixo d'água... um TUBARÃO-REI!", Hud.Bad);
                     }
                     else if (type == 3) e = SeaEvents.SpawnDerelict(pos, sub, yaw);
                     else if (type == 4) e = RescueShip.Spawn(pos, yaw, true);

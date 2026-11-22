@@ -277,7 +277,7 @@ namespace MarAberto
                 if (item != ItemType.Nada)
                 {
                     heldFilter.sharedMesh = ItemModels.Get(item);
-                    heldRenderer.sharedMaterial = ItemModels.Material(item);
+                    heldRenderer.sharedMaterials = ItemModels.Materials(item);
                 }
             }
         }

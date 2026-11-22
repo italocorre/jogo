@@ -73,11 +73,26 @@ namespace MarAberto
             s.Remote = remote;
             s.angle = Random.value * Mathf.PI * 2f;
             for (int i = 0; i < s.trail.Length; i++) s.trail[i] = start;
+            // Tubarão-rei: um tubarão gigante com forma real (escultura de verdade, pintada).
+            var real = ModelLibrary.Creature("bronze_shark_statue", 11f, true, new Color(0.24f, 0.28f, 0.32f), new Color(0.86f, 0.86f, 0.84f), out var rm);
             for (int i = 0; i < Segs; i++)
             {
                 var go = new GameObject(i == 0 ? "Cabeca" : "Corpo" + i);
                 go.transform.SetParent(root.transform, false);
                 go.transform.position = start;
+                if (real != null)
+                {
+                    s.segs[i] = go.transform;
+                    if (i > 0) continue;   // o corpo é um só modelo; os outros pontos só guiam o movimento
+                    var vis = new GameObject("TubaraoRei");
+                    vis.transform.SetParent(go.transform, false);
+                    vis.transform.localPosition = new Vector3(0, 0, -4f);
+                    vis.AddComponent<MeshFilter>().sharedMesh = real;
+                    vis.AddComponent<MeshRenderer>().sharedMaterials = rm;
+                    var cap = go.AddComponent<CapsuleCollider>();
+                    cap.direction = 2; cap.center = new Vector3(0, 0, -4f); cap.height = 11f; cap.radius = 1.4f;
+                    continue;
+                }
                 go.AddComponent<MeshFilter>().sharedMesh = i == 0 ? headMesh : segMesh;
                 go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
                 float k = 1f - i / (float)Segs * 0.65f;
@@ -162,7 +177,7 @@ namespace MarAberto
             g.Hud.BossHealth = -1f;
             if (g.Player == null || Vector3.Distance(g.Player.transform.position, head.position) > 300f) return;
             Sfx.Play(Sfx.Splash, head.position, 1f, 0.05f);
-            g.Hud.Toast("A SERPENTE MARINHA foi derrotada! O tesouro dela boia na água.", Hud.Gold);
+            g.Hud.Toast("O TUBARÃO-REI foi derrotado! O tesouro boia na água.", Hud.Gold);
             Journal.Bump("serpente");
             // Saque num baú que boia onde ela morreu (o mar aberto não tem fundo para itens soltos).
             Vector3 p = head.position; p.y = Ocean.SeaLevel;
@@ -196,7 +211,7 @@ namespace MarAberto
             bool onLand = isl != null && isl.Height(pp.x, pp.z) > -2f;
             if (dist > 220f || life > 420f || (onLand && life > 30f))
             {
-                if (nearMe) g.Hud.Toast("A serpente afundou nas profundezas...", Hud.Info);
+                if (nearMe) g.Hud.Toast("O tubarão-rei sumiu nas profundezas...", Hud.Info);
                 Destroy(gameObject);
                 return;
             }
@@ -213,7 +228,7 @@ namespace MarAberto
                 target.y = Mathf.Lerp(water - 0.5f, lungeTarget.y + 1.2f, Mathf.Sin(Mathf.Clamp01(k) * Mathf.PI));
                 if (k > 0.45f && k < 0.75f && Vector3.Distance(head.position, tgt.Head) < 3.2f)
                 {
-                    NetGame.DamageTarget(tgt, tgt.Swimming ? 34f : 22f, "A serpente marinha");
+                    NetGame.DamageTarget(tgt, tgt.Swimming ? 34f : 22f, "O tubarão-rei");
                     Sfx.Play(Sfx.Hurt, pp, 0.8f);
                     lungeT = 1.6f; // um golpe por bote
                 }
@@ -226,7 +241,7 @@ namespace MarAberto
                 radius = Mathf.MoveTowards(radius, tgt.Swimming ? 9f : 14f, dt * 2f);
                 target = pp + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
                 float tw = Ocean.HeightAt(target.x, target.z);
-                target.y = tw + 0.4f + Mathf.Sin(life * 1.3f) * 0.6f;
+                target.y = tw - 0.9f + Mathf.Sin(life * 1.3f) * 0.3f;   // barbatana para fora d'água
                 if (attackCd <= 0 && dist < 30f)
                 {
                     lungeT = 0f;
@@ -307,7 +322,7 @@ namespace MarAberto
             if (Random.value > chance) return;
             var s = SeaSerpent.Spawn(p);
             NetGame.Register(s);
-            if (Vector3.Distance(g.Player.transform.position, p) < 250f) g.Hud.Toast("Algo enorme se mexe debaixo d'água... uma SERPENTE MARINHA!", Hud.Bad);
+            if (Vector3.Distance(g.Player.transform.position, p) < 250f) g.Hud.Toast("Algo enorme se mexe debaixo d'água... um TUBARÃO-REI!", Hud.Bad);
             timer = 600f;
         }
     }
@@ -341,7 +356,7 @@ namespace MarAberto
             Destroy(go, 900f);
         }
 
-        public string Prompt => "Pegar o tesouro da serpente";
+        public string Prompt => "Pegar o tesouro do tubarão-rei";
         public bool CanInteract => !taken;
 
         public void Interact(PlayerController player)
@@ -360,7 +375,7 @@ namespace MarAberto
             Give(ItemType.Perola, Random.Range(3, 7));
             Give(ItemType.CarneTubarao, 6);
             Sfx.UI(Sfx.Coin, 0.8f);
-            Game.Instance.Hud.Toast("Tesouro da serpente!", Hud.Gold);
+            Game.Instance.Hud.Toast("Tesouro do tubarão-rei!", Hud.Gold);
             Destroy(gameObject);
         }
 

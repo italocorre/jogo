@@ -94,7 +94,7 @@ namespace MarAberto
                 btn.onClick.AddListener(() => { craftSel = rr; Sfx.UI(Sfx.Page, 0.3f); craftDirty++; });
                 var ic = UIKit.Icon(card.transform, "Icone");
                 ic.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -10), new Vector2(84, 84));
-                ic.texture = r.IconItem != ItemType.Nada ? Icons.Get(r.IconItem) : null;
+                ic.texture = Icons.ForRecipe(r);
                 ic.enabled = ic.texture != null;
                 ic.color = coming ? new Color(0.4f, 0.4f, 0.4f, 0.6f) : unlocked ? Color.white : new Color(0.55f, 0.55f, 0.6f, 0.9f);
                 var nm = UIKit.Txt(card.transform, "Nome", r.Name, UIKit.BodyBold, 15, coming ? UIKit.Muted : UIKit.Text, TextAnchor.UpperCenter);
@@ -114,7 +114,7 @@ namespace MarAberto
             big.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(20, 0), new Vector2(120, 120));
             var bic = UIKit.Icon(big.transform, "Icone");
             bic.rectTransform.Fill(12, 12, 12, 12);
-            bic.texture = sel.IconItem != ItemType.Nada ? Icons.Get(sel.IconItem) : null;
+            bic.texture = Icons.ForRecipe(sel);
             bic.enabled = bic.texture != null;
             UIKit.Txt(craftDetail, "Nome", sel.Name, UIKit.Title, 26, UIKit.Cream, TextAnchor.UpperLeft)
                 .rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(156, -6), new Vector2(240, 70));

@@ -19,12 +19,37 @@ namespace MarAberto
             return tex;
         }
 
+        static readonly Dictionary<PieceKind, Texture2D> pieceCache = new Dictionary<PieceKind, Texture2D>();
+
+        /// <summary>Ícone da receita: a peça de verdade (construções) ou o item.</summary>
+        public static Texture2D ForRecipe(Recipe r)
+        {
+            if (r == null) return null;
+            if (r.Piece.HasValue) { var t = GetPiece(r.Piece.Value); if (t != null) return t; }
+            return r.IconItem != ItemType.Nada ? Get(r.IconItem) : null;
+        }
+
+        /// <summary>Foto da construção (com os modelos e texturas reais dela).</summary>
+        public static Texture2D GetPiece(PieceKind k)
+        {
+            if (pieceCache.TryGetValue(k, out var tex) && tex != null) return tex;
+            var obj = Building.IconCopy(k);
+            if (obj == null) return null;
+            obj.hideFlags = HideFlags.HideAndDontSave;
+            foreach (var tr in obj.GetComponentsInChildren<Transform>(true)) tr.gameObject.layer = Layers.Icons;
+            tex = Shoot(obj, Quaternion.Euler(-22, 0, 0) * Quaternion.Euler(0, 35, 0));
+            Object.DestroyImmediate(obj);
+            tex.name = "Icone_" + k;
+            pieceCache[k] = tex;
+            return tex;
+        }
+
         public static void RenderAll()
         {
             foreach (var d in Items.All) Get(d.Type);
         }
 
-        static Texture2D Render(ItemType t)
+        static void Setup()
         {
             if (cam == null)
             {
@@ -59,24 +84,42 @@ namespace MarAberto
                 L("IconeRecorte", new Color(0.75f, 0.85f, 1f), 0.9f, new Vector3(20, 160, 0));
                 L("IconePreenche", new Color(0.9f, 0.88f, 1f), 0.35f, new Vector3(-30, 30, 0));
             }
+        }
+
+        static Texture2D Render(ItemType t)
+        {
 
             var mesh = ItemModels.Get(t);
-            var obj = new GameObject("IconeTemp");
+            var obj0 = new GameObject("IconeTemp");
+            var obj = obj0;
             obj.hideFlags = HideFlags.HideAndDontSave;
             obj.layer = Layers.Icons;
             obj.AddComponent<MeshFilter>().sharedMesh = mesh;
-            obj.AddComponent<MeshRenderer>().sharedMaterial = ItemModels.Material(t);
+            obj.AddComponent<MeshRenderer>().sharedMaterials = ItemModels.Materials(t);
             Quaternion rot = Items.Get(t).IsTool
                 ? Quaternion.Euler(0, 0, -40) * Quaternion.Euler(0, 90, 0)
                 : t == ItemType.Concha || t == ItemType.FragmentoMapa ? Quaternion.Euler(-60, 0, 0) * Quaternion.Euler(0, 15, 0)
                 : Quaternion.Euler(-28, 0, 0) * Quaternion.Euler(0, 30, 0);
+            var tex = Shoot(obj, rot);
+            Object.DestroyImmediate(obj);
+            tex.name = "Icone_" + t;
+            return tex;
+        }
+
+        /// <summary>Fotografa um objeto (camada dos ícones) já montado.</summary>
+        static Texture2D Shoot(GameObject obj, Quaternion rot)
+        {
+            Setup();
             obj.transform.rotation = rot;
-            // Centraliza pelo tamanho da malha.
-            var b = mesh.bounds;
-            Vector3 center = rot * b.center;
-            float ext = Mathf.Max(b.extents.x, Mathf.Max(b.extents.y, b.extents.z));
-            obj.transform.position = cam.transform.position + Vector3.forward * 5f - center;
-            cam.orthographicSize = ext * 1.15f;
+            obj.transform.position = cam.transform.position + Vector3.forward * 5f;
+            // Centraliza pelo tamanho que aparece na tela.
+            var rends = obj.GetComponentsInChildren<Renderer>(true);
+            Bounds wb = new Bounds(obj.transform.position, Vector3.zero);
+            bool first = true;
+            foreach (var r in rends) { if (first) { wb = r.bounds; first = false; } else wb.Encapsulate(r.bounds); }
+            obj.transform.position += cam.transform.position + Vector3.forward * 5f - wb.center;
+            float ext = Mathf.Max(wb.extents.x, wb.extents.y);
+            cam.orthographicSize = Mathf.Max(0.01f, ext * 1.12f);
 
             var rt = RenderTexture.GetTemporary(Size, Size, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB, 4);
             bool fog = RenderSettings.fog;
@@ -103,9 +146,6 @@ namespace MarAberto
             tex.Apply();
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(rt);
-            // Apaga já (com Destroy normal o modelo ficava até o fim do quadro e aparecia nos próximos ícones).
-            Object.DestroyImmediate(obj);
-            tex.name = "Icone_" + t;
             return tex;
         }
     }

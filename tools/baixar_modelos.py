@@ -11,6 +11,10 @@ MODELS = [
     'modular_wooden_pier', 'treasure_chest', 'wooden_crate_01', 'wooden_lantern_01', 'wooden_barrels_01',
     'lateral_sea_marker', 'fern_02', 'pachira_aquatica_01',
     'wooden_axe_02', 'hatchet', 'wooden_hammer_01', 'metal_jerrycan', 'cannon_01', 'stone_fire_pit', 'wooden_bucket_01', 'dead_quiver_branch_01',
+    # Itens reais (no lugar dos feitos à mão)
+    'service_pistol', 'bolt_action_rifle_7_62', 'ammo_box', 'compost_bag_02', 'life_jacket', 'rubber_boots', 'small_lpg_tank',
+    'old_gas_mask', 'vintage_flashlight', 'seeding_tray_01', 'sweet_potato', 'lemon', 'wooden_bowl_01', 'vintage_radio_transceiver',
+    'food_avocado_01', 'planter_pot_clay', 'Barrel_01', 'vintage_suitcase', 'bronze_whale_statue', 'bronze_shark_statue', 'postcard_set_01',
 ]
 # Texturas de chão (terreno): cor + relevo
 TEXTURES = ['coast_sand_01', 'aerial_grass_rock', 'rock_06', 'forrest_ground_01', 'bark_brown_02']
