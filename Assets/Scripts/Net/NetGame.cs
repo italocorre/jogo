@@ -146,6 +146,7 @@ namespace MarAberto
                 health = p.Health,
                 hunger = p.Hunger,
                 thirst = p.Thirst,
+                goals = Journal.GetDone(),
             };
             if (p.Driving != null) d.pos = p.Driving.transform.position + Vector3.up * 1.5f;
             if (game.World != null)
@@ -164,6 +165,7 @@ namespace MarAberto
             game.Inventory.Load(WorldSave.Stacks(d.inv));
             game.Inventory.Selected = Mathf.Clamp(d.selected, 0, Inventory.HotbarSize - 1);
             Crafting.SetUnlocked(d.unlocked);
+            Journal.SetDone(d.goals);
             if (d.oxygen > 0 && game.OxygenLevel == 0) { game.OxygenLevel = d.oxygen; game.Player.OxygenSeconds *= 1.6f; }
             if (d.hasBed) game.Player.SetRespawn(d.bedPos, d.bedLook);
             if (game.World != null)

@@ -98,6 +98,7 @@ namespace MarAberto
         public static void Give(FlotsamKind kind)
         {
             var inv = Game.Instance.Inventory;
+            Journal.Bump("destroco");
             switch (kind)
             {
                 case FlotsamKind.Tabua: inv.Add(ItemType.Madeira, Random.Range(1, 3)); break;

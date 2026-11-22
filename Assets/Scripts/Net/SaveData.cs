@@ -46,6 +46,7 @@ namespace MarAberto
         public float health = 100f;
         public float hunger = 100f, thirst = 100f;
         public List<int> discovered = new List<int>(), revealed = new List<int>();
+        public List<string> goals = new List<string>();
     }
 
     [Serializable]

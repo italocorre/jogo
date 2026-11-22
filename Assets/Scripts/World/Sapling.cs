@@ -172,6 +172,7 @@ namespace MarAberto
             var g = Game.Instance;
             if (!Ripe) { g.Hud.Toast("Ainda está crescendo. No canteiro e com chuva cresce mais rápido.", Hud.Info); return; }
             harvested = true;
+            Journal.Bump("colheita");
             if (Melon) { g.Inventory.Add(ItemType.Melancia, onBed ? 2 : 1); g.Inventory.Add(ItemType.SementeMelancia, 2); }
             else { g.Inventory.Add(ItemType.Batata, onBed ? 4 : 3); g.Inventory.Add(ItemType.SementeBatata, 2); }
             Sfx.Play(Sfx.StepGrass, transform.position, 0.7f);

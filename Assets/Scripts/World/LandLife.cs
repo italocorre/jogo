@@ -160,6 +160,7 @@ namespace MarAberto
             if (hide > 0) g.Inventory.Add(ItemType.Couro, hide, false);
             g.Hud.Toast((Kind == AnimalKind.Javali ? "Javali" : "Caranguejo") + " abatido: +" + (meat - left) + " carne crua" + (hide > 0 ? ", +" + hide + " couro" : ""), Hud.Good);
             LandLife.Instance?.OnKilled();
+            if (Kind == AnimalKind.Javali) Journal.Bump("javali");
         }
 
         void Update()

@@ -14,7 +14,7 @@ namespace MarAberto
         public static readonly Color Info = UIKit.Hex("#E8EEF0");
         public static readonly Color Gold = UIKit.Hex("#FFD27A");
 
-        enum Panel { None, Backpack, Shop, Pause, Chest, Build, Map }
+        enum Panel { None, Backpack, Shop, Pause, Chest, Build, Map, Journal }
         enum Tab { Bag, Craft, Boat, Map }
 
         Game game;
@@ -220,7 +220,7 @@ namespace MarAberto
             var ht = UIKit.Txt(helpBox, "Texto",
                 K("WASD") + " andar     " + K("Shift") + " correr     " + K("Espaço") + " pular\n" +
                 K("Clique") + " minerar     " + K("E") + " pegar, falar, pilotar\n" +
-                K("1-6") + " item     " + K("Tab") + " mochila     " + K("B") + " fabricar     " + K("M") + " mapa     " + K("Q") + " largar\n" +
+                K("1-6") + " item     " + K("Tab") + " mochila     " + K("B") + " fabricar     " + K("M") + " mapa     " + K("J") + " diário     " + K("Q") + " largar\n" +
                 K("R") + " âncora     " + K("Ctrl") + " mergulhar     " + K("H") + " esconder",
                 UIKit.BodyMed, 22, UIKit.Text, TextAnchor.MiddleLeft);
             ht.rectTransform.Fill(22, 12, 16, 12);
@@ -542,6 +542,7 @@ namespace MarAberto
             shopWin.gameObject.SetActive(p == Panel.Shop);
             pauseWin.gameObject.SetActive(p == Panel.Pause);
             if (mapWin != null) mapWin.gameObject.SetActive(p == Panel.Map);
+            if (journalWin != null) journalWin.gameObject.SetActive(p == Panel.Journal);
             if (p == Panel.Backpack || p == Panel.Shop) hotbarRt.SetAsLastSibling();
             if (p == Panel.Pause) pauseWin.SetAsLastSibling();
             if (p == Panel.Shop) shopVersion = -1;
@@ -667,7 +668,11 @@ namespace MarAberto
                 else if (panel == Panel.Backpack && tab != Tab.Craft) { tab = Tab.Craft; RefreshTabs(); }
                 else if (panel == Panel.Backpack) SetPanel(Panel.None);
             }
-            else if (Input.GetKeyDown(KeyCode.M) && (panel == Panel.None || panel == Panel.Map || panel == Panel.Backpack))
+            else if (Input.GetKeyDown(KeyCode.J) && (panel == Panel.None || panel == Panel.Journal || panel == Panel.Map || panel == Panel.Backpack))
+            {
+                if (panel == Panel.Journal) SetPanel(Panel.None); else OpenJournal();
+            }
+            else if (Input.GetKeyDown(KeyCode.M) && (panel == Panel.None || panel == Panel.Map || panel == Panel.Backpack || panel == Panel.Journal))
             {
                 if (panel == Panel.Map) SetPanel(Panel.None); else OpenMap();
             }
@@ -681,6 +686,7 @@ namespace MarAberto
             }
             Refresh();
             UpdateMap();
+            UpdateJournal(panel == Panel.None);
         }
 
         static float WrapAngle(float a)

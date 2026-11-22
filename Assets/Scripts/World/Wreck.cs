@@ -110,6 +110,7 @@ namespace MarAberto
             var g = Game.Instance;
             if (!Ready) { g.Hud.Toast("Já está vazio. Volte daqui a uns minutos.", Hud.Info); return; }
             openedAt = Time.time;
+            Journal.Bump("tesouro");
             if (glow != null) glow.enabled = false;
             var rng = new System.Random();
             void Give(ItemType t, int min, int max)
