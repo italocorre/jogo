@@ -113,6 +113,7 @@ namespace MarAberto
                 gameObject.AddComponent<LandLife>();
                 gameObject.AddComponent<Flotsam>();
                 gameObject.AddComponent<Journal>();
+                gameObject.AddComponent<SeaEvents>();
                 Net = gameObject.AddComponent<NetGame>();
                 Net.Init(this);
             }

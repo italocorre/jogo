@@ -51,6 +51,13 @@ namespace MarAberto
                     if (used > 8) break;
                 }
             }
+            // Destroço à deriva (evento).
+            if (hudOn && cam != null && SeaEvents.Derelict != null)
+            {
+                Vector3 pp = p.transform.position, w = SeaEvents.Derelict.position;
+                float dd = Vector3.Distance(new Vector3(pp.x, 0, pp.z), new Vector3(w.x, 0, w.z));
+                if (dd > 8f) Place(GetNav(used++), cam, w + Vector3.up * 4f, "BARCO À DERIVA\n<size=15>" + Km(dd) + "</size>", new Color(0.55f, 0.85f, 1f));
+            }
             // Marca feita no mapa (M).
             if (hudOn && cam != null && Waypoint.HasValue)
             {
