@@ -11,6 +11,29 @@ float _MA_Time;
 float _MA_SeaLevel;
 float _MA_Underwater;
 float4 _MA_Wave0, _MA_Wave1, _MA_Wave2, _MA_Wave3;
+sampler2D _MA_Brush;          // pinceladas (estilo pintado à mão)
+float _MA_BrushAmount;        // 0 = sem pinceladas, 1 = forte
+
+// Pinceladas projetadas pelos 3 eixos (as malhas não têm UV).
+float MA_Brush(float3 wp, float3 n, float scale)
+{
+    float3 w = pow(abs(n), 4.0);
+    w /= (w.x + w.y + w.z + 1e-4);
+    float a = tex2D(_MA_Brush, wp.zy * scale).r;
+    float b = tex2D(_MA_Brush, wp.xz * scale + 0.37).r;
+    float c = tex2D(_MA_Brush, wp.xy * scale + 0.71).r;
+    return a * w.x + b * w.y + c * w.z;
+}
+
+// Multiplicador de cor: escurece/clareia em volta de 1 conforme as pinceladas.
+float3 MA_Paint(float3 albedo, float3 wp, float3 n, float scale)
+{
+    float b = MA_Brush(wp, n, scale);
+    float k = lerp(1.0, 0.7 + b * 0.6, _MA_BrushAmount);
+    // Pinceladas claras puxam levemente para o quente, escuras para o lilás.
+    float3 tint = lerp(float3(0.96, 0.94, 1.04), float3(1.04, 1.0, 0.94), b);
+    return albedo * k * lerp(float3(1,1,1), tint, _MA_BrushAmount);
+}
 
 // Cores de vértice são escritas em sRGB; converte para o espaço linear.
 float3 MA_VertexColor(float3 c)

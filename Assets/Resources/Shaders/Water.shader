@@ -2,8 +2,8 @@ Shader "MarAberto/Water"
 {
     Properties
     {
-        _Scatter ("Cor da água", Color) = (0.03, 0.42, 0.58, 1)
-        _Shallow ("Turquesa raso", Color) = (0.20, 0.85, 0.78, 1)
+        _Scatter ("Cor da água", Color) = (0.36, 0.58, 0.74, 1)
+        _Shallow ("Turquesa raso", Color) = (0.60, 0.88, 0.82, 1)
         _Foam ("Espuma", Color) = (0.95, 0.98, 1.0, 1)
         _Absorb ("Absorção (RGB)", Vector) = (0.42, 0.11, 0.08, 0)
     }
@@ -135,12 +135,21 @@ Shader "MarAberto/Water"
                 float ndv = saturate(dot(n, v));
                 float fresnel = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
                 float3 refl = MA_SkyColor(reflect(-v, n));
-                float3 col = lerp(water, refl, fresnel * 0.9);
+                float3 col = lerp(water, refl, fresnel * 0.6);
+
+                // Reflexos pintados: traços compridos e claros que deslizam (estilo pintado à mão).
+                float s1 = MA_ValueNoise(float2(uv.x * 0.22 + uv.y * 0.05, uv.y * 1.5) + float2(_MA_Time * 0.12, 0));
+                float s2 = MA_ValueNoise(float2(uv.x * 0.55, uv.y * 2.8 - uv.x * 0.2) - float2(_MA_Time * 0.18, 0));
+                float strokes = smoothstep(0.74, 0.86, s1) * 0.45 + smoothstep(0.82, 0.92, s2) * 0.3;
+                strokes *= saturate(1.0 - camDist / 420.0);
+                col = lerp(col, float3(0.93, 0.95, 0.88) * light, strokes);
+                // Crista das ondas pega a luz quente do sol.
+                col = lerp(col, float3(0.98, 0.88, 0.72) * light, smoothstep(0.6, 1.4, i.extra.x) * 0.25);
 
                 // Brilho do sol (no HDR vira "brilhinho" com o bloom)
                 float3 hv = normalize(sunDir + v);
                 float nh = saturate(dot(n, hv));
-                float spec = pow(nh, 700.0) * 7.0 * saturate(1.0 - camDist / 300.0) + pow(nh, 80.0) * 0.3;
+                float spec = pow(nh, 500.0) * 2.5 * saturate(1.0 - camDist / 300.0) + pow(nh, 60.0) * 0.25;
                 col += _MA_SunColor.rgb * spec * step(0.0, sunDir.y);
 
                 // Espuma: linhas na beira da praia e um pouco nas cristas.

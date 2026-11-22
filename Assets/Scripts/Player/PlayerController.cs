@@ -357,6 +357,12 @@ namespace MarAberto
             Cam.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
         }
 
+        public void Heal()
+        {
+            Health = MaxHealth;
+            Oxygen = MaxOxygen;
+        }
+
         public void Damage(float amount, bool flash = true)
         {
             Health -= amount;

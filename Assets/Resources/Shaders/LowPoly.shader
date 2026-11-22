@@ -5,6 +5,7 @@ Shader "MarAberto/LowPoly"
         _Color ("Cor", Color) = (1,1,1,1)
         _Glossiness ("Brilho", Range(0,1)) = 0.08
         _Detail ("Detalhe do terreno", Range(0,1)) = 0
+        _BrushScale ("Tamanho da pincelada", Float) = 0.9
     }
     SubShader
     {
@@ -26,10 +27,12 @@ Shader "MarAberto/LowPoly"
         fixed4 _Color;
         half _Glossiness;
         half _Detail;
+        float _BrushScale;
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
             float3 albedo = MA_VertexColor(IN.color.rgb) * _Color.rgb;
+            albedo = MA_Paint(albedo, IN.worldPos, IN.worldNormal, _BrushScale);
 
             if (_Detail > 0.0)
             {

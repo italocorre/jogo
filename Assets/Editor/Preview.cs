@@ -115,7 +115,7 @@ namespace MarAberto.EditorTools
             inv.Add(ItemType.FragmentoMapa, 1, false);
             game.SetCoinsForPreview(187);
             game.Hands.ShowSelectedNow();
-            game.Hud.Toast("+3 Cobre", Hud.Info, ItemType.Cobre, 3);
+            game.Hud.Toast("Cobre", Hud.Info, ItemType.Cobre, 3);
             game.Hud.Toast("Âncora presa no fundo (12 m). Pode mergulhar!", Hud.Good);
             Shot("10_interface", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.down * 1.2f, 0.42f, true);
             game.Hud.PreviewPanel(1);

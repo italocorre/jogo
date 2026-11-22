@@ -106,9 +106,45 @@ namespace MarAberto
             musicGap = 6f;
         }
 
+        /// <summary>Atalhos de teste (F1–F6) para testar rápido sem precisar farmar.</summary>
+        void TestShortcuts()
+        {
+            if (Player == null || Hud.AnyPanelOpen) return;
+            if (Input.GetKeyDown(KeyCode.F1)) { AddCoins(500); Hud.Toast("Teste: +500 moedas", Hud.Gold); }
+            if (Input.GetKeyDown(KeyCode.F2))
+            {
+                GiveBoat();
+                if (Player.Driving == null) Boat.MoveTo(StartIsland.BoatSpawn, StartIsland.BoatSpawnRot);
+                Hud.Toast("Teste: barco no fim do píer", Hud.Gold);
+            }
+            if (Input.GetKeyDown(KeyCode.F3) && StartIsland.Reefs != null && StartIsland.Reefs.Count > 0)
+            {
+                GiveBoat();
+                if (Player.Driving != null) Player.StopDriving();
+                Vector3 reef = StartIsland.Reefs[0].transform.position;
+                Vector3 dir = (StartIsland.transform.position - reef); dir.y = 0; dir.Normalize();
+                Vector3 pos = reef + dir * 14f + Vector3.up * 0.3f;
+                Boat.MoveTo(pos, Quaternion.LookRotation(-dir));
+                Player.BoardBoat(Boat);
+                Hud.Toast("Teste: no recife da boia. Aperte R para ancorar.", Hud.Gold);
+            }
+            if (Input.GetKeyDown(KeyCode.F4))
+            {
+                Environment.TimeOfDay = Mathf.Repeat(Environment.TimeOfDay + 0.125f, 1f);
+                Hud.Toast("Teste: hora " + Environment.ClockText, Hud.Gold);
+            }
+            if (Input.GetKeyDown(KeyCode.F5))
+            {
+                Inventory.Add(ItemType.Cobre, 10); Inventory.Add(ItemType.Carvao, 6); Inventory.Add(ItemType.Ferro, 4);
+                Inventory.Add(ItemType.Perola, 2); Inventory.Add(ItemType.Concha, 5); Inventory.Add(ItemType.FragmentoMapa, 1);
+            }
+            if (Input.GetKeyDown(KeyCode.F6)) { Player.Heal(); Hud.Toast("Teste: vida e fôlego cheios", Hud.Gold); }
+        }
+
         void Update()
         {
             float dt = Time.deltaTime;
+            TestShortcuts();
             bool under = Environment.CameraUnderwater;
             lowPass.cutoffFrequency = Mathf.Lerp(lowPass.cutoffFrequency, under ? 650f : 22000f, dt * 8f);
             // Perto da praia as ondas são mais altas; longe, quase silêncio.

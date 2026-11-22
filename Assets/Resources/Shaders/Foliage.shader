@@ -43,6 +43,7 @@ Shader "MarAberto/Foliage"
         void surf (Input IN, inout SurfaceOutput o)
         {
             float3 albedo = MA_VertexColor(IN.color.rgb) * _Color.rgb;
+            albedo = MA_Paint(albedo, IN.worldPos, float3(0, 1, 0), 0.8);
             o.Albedo = albedo;
             o.Alpha = 1;
             // Luz atravessando as folhas (contraluz).

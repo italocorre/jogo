@@ -12,6 +12,8 @@ Shader "Hidden/MarAberto/Post"
     sampler2D _MainTex;
     float4 _MainTex_TexelSize;
     sampler2D _BloomTex;
+    sampler2D _PaperTex;
+    float4 _Paper;    // x = força do grão de papel, y = tamanho, z = largura/altura da tela
     float4 _Params;   // x = limiar, y = joelho, z = intensidade do bloom, w = exposição
     float4 _Grade;    // x = saturação, y = contraste, z = vinheta, w = calor
     float4 _Lift;     // sombras (rgb)
@@ -107,6 +109,9 @@ Shader "Hidden/MarAberto/Post"
                 // Tom quente / sombras levemente azuladas
                 c *= float3(1.0 + _Grade.w, 1.0 + _Grade.w * 0.4, 1.0 - _Grade.w * 0.6);
                 c += _Lift.rgb * (1.0 - saturate(l * 3.0));
+                // Grão de papel (estilo pintado à mão)
+                float paper = tex2D(_PaperTex, i.uv * float2(_Paper.z, 1.0) * _Paper.y).r;
+                c *= 1.0 + (paper - 0.5) * _Paper.x;
                 // Vinheta
                 float2 d = i.uv - 0.5;
                 float vig = 1.0 - dot(d, d) * _Grade.z;

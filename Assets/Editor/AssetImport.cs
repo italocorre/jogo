@@ -8,6 +8,19 @@ namespace MarAberto.EditorTools
     {
         void OnPreprocessTexture()
         {
+            if (assetPath.Contains("Resources/Textures/"))
+            {
+                // Pinceladas e papel: dados (não cor), repetem sem emenda.
+                var tt = (TextureImporter)assetImporter;
+                tt.textureType = TextureImporterType.Default;
+                tt.sRGBTexture = false;
+                tt.mipmapEnabled = true;
+                tt.wrapMode = TextureWrapMode.Repeat;
+                tt.filterMode = FilterMode.Trilinear;
+                tt.anisoLevel = 4;
+                tt.textureCompression = TextureImporterCompression.Uncompressed;
+                return;
+            }
             if (!assetPath.Contains("Resources/UI/")) return;
             var ti = (TextureImporter)assetImporter;
             bool cursor = assetPath.EndsWith("cursor.png");

@@ -10,21 +10,26 @@ namespace MarAberto
     [RequireComponent(typeof(Camera))]
     public class PostFX : MonoBehaviour
     {
-        public float Threshold = 1.4f;
+        // Estilo "pintado à mão": contraste baixo, tom quente, sombras lilás e grão de papel.
+        public float Threshold = 1.5f;
         public float Knee = 0.6f;
-        public float BloomIntensity = 0.28f;
-        public float Exposure = 0.92f;
-        public float Saturation = 1.12f;
-        public float Contrast = 1.12f;
-        public float Vignette = 0.75f;
-        public float Warmth = 0.03f;
-        public Color Lift = new Color(0.0f, 0.006f, 0.014f);
+        public float BloomIntensity = 0.2f;
+        public float Exposure = 0.95f;
+        public float Saturation = 1.02f;
+        public float Contrast = 0.94f;
+        public float Vignette = 0.6f;
+        public float Warmth = 0.05f;
+        public Color Lift = new Color(0.016f, 0.008f, 0.026f);
+        public float PaperGrain = 0.11f;
 
         Material mat;
         static readonly int paramsId = Shader.PropertyToID("_Params");
         static readonly int gradeId = Shader.PropertyToID("_Grade");
         static readonly int liftId = Shader.PropertyToID("_Lift");
         static readonly int bloomId = Shader.PropertyToID("_BloomTex");
+        static readonly int paperId = Shader.PropertyToID("_Paper");
+        static readonly int paperTexId = Shader.PropertyToID("_PaperTex");
+        static Texture2D paperTex;
         const int Levels = 6;
         readonly RenderTexture[] chain = new RenderTexture[Levels];
 
@@ -44,6 +49,10 @@ namespace MarAberto
             mat.SetVector(paramsId, new Vector4(Threshold, Knee, BloomIntensity, Exposure));
             mat.SetVector(gradeId, new Vector4(Saturation, Contrast, Vignette, Warmth));
             mat.SetColor(liftId, Lift);
+            if (paperTex == null) paperTex = Resources.Load<Texture2D>("Textures/papel");
+            if (paperTex != null) mat.SetTexture(paperTexId, paperTex);
+            float rep = src.height / 256f;
+            mat.SetVector(paperId, new Vector4(paperTex != null ? PaperGrain : 0f, rep, src.width / (float)src.height, 0));
 
             int w = src.width / 2, h = src.height / 2;
             var fmt = RenderTextureFormat.DefaultHDR;

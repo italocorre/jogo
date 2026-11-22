@@ -1,29 +1,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace MarAberto
 {
     /// <summary>
-    /// Peças da interface com tema pirata: pergaminho, madeira com latão, fontes
-    /// Pirata One (títulos) e Almendra (textos). Tudo montado por código.
+    /// Peças da interface "Latão e vidro": painéis de vidro escuro com fio dourado e cantoneiras de latão,
+    /// fontes Cinzel (títulos) e Alegreya Sans (textos). Tudo montado por código.
     /// </summary>
     public static class UIKit
     {
-        public static readonly Color Ink = Hex("#3A2414");
-        public static readonly Color InkSoft = Hex("#6E4D2E");
-        public static readonly Color Cream = Hex("#F6E8C8");
-        public static readonly Color Gold = Hex("#F2C063");
-        public static readonly Color GoldDeep = Hex("#8A5A12");
-        public static readonly Color Green = Hex("#2F6B2A");
-        public static readonly Color Red = Hex("#9A2A1E");
-        public static readonly Color Shadow = new Color(0, 0, 0, 0.6f);
+        public static readonly Color Text = Hex("#E8EEF0");
+        public static readonly Color Muted = Hex("#A9B8BF");
+        public static readonly Color Label = Hex("#CDB98D");
+        public static readonly Color Cream = Hex("#F6E7C4");
+        public static readonly Color Brass = Hex("#E1BA6E");
+        public static readonly Color Gold = Hex("#FFD27A");
+        public static readonly Color GoodC = Hex("#8FE08A");
+        public static readonly Color BadC = Hex("#FF8A70");
+        public static readonly Color Rare = Hex("#C7A8FF");
+        public static readonly Color Uncommon = Hex("#8FE0B0");
+        public static readonly Color Shadow = new Color(0, 0, 0, 0.75f);
 
-        public static Font Title, Body, BodyBold;
-        public static Sprite Parchment, Wood, Slot, SlotSelected, Button, ButtonHover, BarFrame, BarRed, BarBlue, BarGold,
-            Coin, Divider, Compass, Heart, Bubble, Scroll, Circle, White;
+        public static Font Title, Body, BodyMed, BodyBold;
+        public static Sprite Glass, Slot, SlotSelected, BarTrack, BarRed, BarBlue, BarGold, Coin, KeyBox, Glow, Hairline, Circle, White;
         public static Texture2D CursorTex;
 
         static bool loaded;
@@ -64,30 +65,23 @@ namespace MarAberto
         {
             if (loaded) return;
             loaded = true;
-            Title = Resources.Load<Font>("Fonts/PirataOne-Regular");
-            Body = Resources.Load<Font>("Fonts/Almendra-Regular");
-            BodyBold = Resources.Load<Font>("Fonts/Almendra-Bold");
             var fallback = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (Title == null) Title = fallback;
-            if (Body == null) Body = fallback;
-            if (BodyBold == null) BodyBold = Body;
+            Title = Resources.Load<Font>("Fonts/Cinzel") ?? fallback;
+            Body = Resources.Load<Font>("Fonts/AlegreyaSans-Regular") ?? fallback;
+            BodyMed = Resources.Load<Font>("Fonts/AlegreyaSans-Medium") ?? Body;
+            BodyBold = Resources.Load<Font>("Fonts/AlegreyaSans-Bold") ?? Body;
 
-            Parchment = Load("parchment", 90);
-            Wood = Load("wood_panel", 40);
-            Slot = Load("slot", 30);
-            SlotSelected = Load("slot_selected", 30);
-            Button = Load("button", 28);
-            ButtonHover = Load("button_hover", 28);
-            BarFrame = Load("bar_frame", 18);
-            BarRed = Load("bar_red", 14);
-            BarBlue = Load("bar_blue", 14);
-            BarGold = Load("bar_gold", 14);
+            Glass = Load("glass_panel", 16);
+            Slot = Load("glass_slot", 10);
+            SlotSelected = Load("glass_slot_sel", 12);
+            BarTrack = Load("bar_track", 5);
+            BarRed = Load("bar_red", 5);
+            BarBlue = Load("bar_blue", 5);
+            BarGold = Load("bar_gold", 5);
             Coin = Load("coin", 0);
-            Divider = Load("divider", 0);
-            Compass = Load("compass", 0);
-            Heart = Load("icon_heart", 0);
-            Bubble = Load("icon_bubble", 0);
-            Scroll = Load("scroll", 30);
+            KeyBox = Load("key_box", 8);
+            Glow = Load("glow", 0);
+            Hairline = Load("hairline", 0);
             Circle = MakeCircle(64);
             White = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 100f);
             CursorTex = Resources.Load<Texture2D>("UI/cursor");
@@ -104,7 +98,6 @@ namespace MarAberto
             return rt;
         }
 
-        /// <summary>Posiciona por âncora (0..1), pivô, posição e tamanho em pixels de referência.</summary>
         public static RectTransform Place(this RectTransform rt, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size)
         {
             rt.anchorMin = rt.anchorMax = anchor;
@@ -114,7 +107,6 @@ namespace MarAberto
             return rt;
         }
 
-        /// <summary>Estica para preencher o pai, com margens.</summary>
         public static RectTransform Fill(this RectTransform rt, float left = 0, float bottom = 0, float right = 0, float top = 0)
         {
             rt.anchorMin = Vector2.zero;
@@ -138,7 +130,10 @@ namespace MarAberto
             return img;
         }
 
-        public static Text Txt(Transform parent, string name, string text, Font font, int size, Color color, TextAnchor align = TextAnchor.MiddleLeft, bool shadow = false)
+        /// <summary>Painel de vidro escuro com fio de latão.</summary>
+        public static Image Panel(Transform parent, string name) => Img(parent, name, Glass, null, true, 1f);
+
+        public static Text Txt(Transform parent, string name, string text, Font font, int size, Color color, TextAnchor align = TextAnchor.MiddleLeft, bool shadow = true)
         {
             var rt = Rect(parent, name);
             var t = rt.gameObject.AddComponent<Text>();
@@ -151,50 +146,50 @@ namespace MarAberto
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
             t.verticalOverflow = VerticalWrapMode.Overflow;
             t.raycastTarget = false;
-            t.lineSpacing = 0.95f;
+            t.lineSpacing = 1f;
             if (shadow)
             {
                 var s = rt.gameObject.AddComponent<Shadow>();
                 s.effectColor = Shadow;
-                s.effectDistance = new Vector2(2, -2);
+                s.effectDistance = new Vector2(1.5f, -1.5f);
             }
             return t;
         }
 
-        public static Button Btn(Transform parent, string name, string label, UnityAction onClick, int fontSize = 30)
+        /// <summary>Texto em caixa alta (estilo dos títulos em Cinzel).</summary>
+        public static string Spaced(string s) => s.ToUpperInvariant();
+
+        public static Button Btn(Transform parent, string name, string label, UnityAction onClick, int fontSize = 24)
         {
-            var img = Img(parent, name, Button, null, true, 0.8f);
+            var img = Img(parent, name, Slot, null, true, 1f);
             img.raycastTarget = true;
             var b = img.gameObject.AddComponent<Button>();
-            b.transition = Selectable.Transition.SpriteSwap;
-            var st = new SpriteState { highlightedSprite = ButtonHover, pressedSprite = ButtonHover, selectedSprite = Button };
-            b.spriteState = st;
+            b.transition = Selectable.Transition.ColorTint;
+            var cb = b.colors;
+            cb.normalColor = Color.white;
+            cb.highlightedColor = new Color(1.35f, 1.2f, 0.9f, 1f);
+            cb.pressedColor = new Color(1.6f, 1.35f, 0.9f, 1f);
+            cb.selectedColor = Color.white;
+            cb.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.6f);
+            cb.colorMultiplier = 1.5f;
+            b.colors = cb;
             b.targetGraphic = img;
             var nav = b.navigation; nav.mode = Navigation.Mode.None; b.navigation = nav;
             if (onClick != null) b.onClick.AddListener(onClick);
             b.onClick.AddListener(() => Sfx.UI(Sfx.Click, 0.45f));
-            var t = Txt(img.transform, "Texto", label, Title, fontSize, Cream, TextAnchor.MiddleCenter, true);
-            t.rectTransform.Fill(10, 4, 10, 4);
+            var t = Txt(img.transform, "Texto", label, Title, fontSize, Cream, TextAnchor.MiddleCenter);
+            t.rectTransform.Fill(10, 2, 10, 2);
             return b;
         }
 
-        public static void SetLabel(this Button b, string label)
+        /// <summary>Barra fina com trilho; devolve o RectTransform do preenchimento.</summary>
+        public static RectTransform Bar(Transform parent, string name, Sprite fill, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size)
         {
-            var t = b.GetComponentInChildren<Text>();
-            if (t != null) t.text = label;
-        }
-
-        /// <summary>Barra com moldura de latão; devolve o RectTransform do preenchimento.</summary>
-        public static RectTransform Bar(Transform parent, string name, Sprite fill, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, out Text label)
-        {
-            var frame = Img(parent, name, BarFrame, null, true, 0.7f);
-            frame.rectTransform.Place(anchor, pivot, pos, size);
-            var holder = Rect(frame.transform, "Area").Fill(6, 6, 6, 6);
-            var f = Img(holder, "Preenchimento", fill, null, true, 0.7f);
+            var track = Img(parent, name, BarTrack, null, true, 0.8f);
+            track.rectTransform.Place(anchor, pivot, pos, size);
+            var f = Img(track.transform, "Preenchimento", fill, null, true, 0.8f);
             var frt = f.rectTransform;
             frt.anchorMin = Vector2.zero; frt.anchorMax = Vector2.one; frt.offsetMin = frt.offsetMax = Vector2.zero;
-            label = Txt(frame.transform, "Texto", "", BodyBold, 20, Cream, TextAnchor.MiddleLeft, true);
-            label.rectTransform.Fill(18, 0, 10, 0);
             return frt;
         }
 
@@ -203,6 +198,15 @@ namespace MarAberto
             t = Mathf.Clamp01(t);
             fill.anchorMax = new Vector2(Mathf.Max(0.0001f, t), 1f);
             fill.gameObject.SetActive(t > 0.005f);
+        }
+
+        public static RawImage Icon(Transform parent, string name)
+        {
+            var ri = new GameObject(name, typeof(RectTransform)).AddComponent<RawImage>();
+            ri.gameObject.layer = 5;
+            ri.rectTransform.SetParent(parent, false);
+            ri.raycastTarget = false;
+            return ri;
         }
 
         public static void Destroy(Object o)
@@ -217,5 +221,8 @@ namespace MarAberto
             foreach (Transform c in t) list.Add(c.gameObject);
             foreach (var g in list) Destroy(g);
         }
+
+        public static Color RarityColor(int r) => r >= 2 ? Rare : r == 1 ? Uncommon : Muted;
+        public static string RarityName(int r) => r >= 2 ? "Rara" : r == 1 ? "Incomum" : "Comum";
     }
 }

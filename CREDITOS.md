@@ -15,10 +15,10 @@ Os recursos abaixo são de terceiros, todos com licença livre.
   - "Chest of Adventure" (CC0) — música
 
 ## Fontes (SIL Open Font License)
-- **Pirata One** — Rodrigo Fuenzalida, Nicolas Massi (títulos)
-- **Almendra** — Ana Sanfelippo (textos)
+- **Cinzel** — Natanael Gama (títulos)
+- **Alegreya Sans** — Juan Pablo del Peral / Huerta Tipográfica (textos)
 Licenças em `Assets/Resources/Fonts/OFL-*.txt`.
 
-## Interface
+## Interface e texturas
 - Cursor de espada dourada: **Kenney** *UI Pack: RPG Expansion* (CC0).
-- Pergaminho, madeira, latão, dobrão, rosa dos ventos e ícones: desenhados por código (`tools/gerar_interface.py`).
+- Painéis de vidro e latão, dobrão, pinceladas e grão de papel: gerados por código (`tools/gerar_interface.py`).

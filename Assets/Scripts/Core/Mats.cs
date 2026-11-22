@@ -41,6 +41,7 @@ namespace MarAberto
                 if (cache.TryGetValue("Terrain", out var m) && m != null) return m;
                 m = new Material(Find("MarAberto/LowPoly", "Diffuse")) { name = "Terrain" };
                 m.SetFloat("_Detail", 1f);
+                m.SetFloat("_BrushScale", 0.28f);
                 m.SetFloat("_Glossiness", 0.05f);
                 cache["Terrain"] = m;
                 return m;

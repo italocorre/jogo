@@ -28,6 +28,7 @@ namespace MarAberto
         public int SellPrice;
         public bool IsTool;
         public int ToolTier;
+        public int Rarity; // 0 comum, 1 incomum, 2 rara
     }
 
     public static class Items
@@ -49,10 +50,15 @@ namespace MarAberto
             Def(ItemType.Concha, "Concha", "Achada na praia. Bonita e vendável.", new Color(0.98f, 0.82f, 0.78f), 2);
             Def(ItemType.Coco, "Coco", "Cai das palmeiras.", new Color(0.45f, 0.32f, 0.18f), 3, 20);
             Def(ItemType.Perola, "Pérola", "Achada em ostras dos recifes. Vale muito!", new Color(0.96f, 0.94f, 0.98f), 25, 20);
+            SetRarity(ItemType.Perola, 2);
+            SetRarity(ItemType.Ferro, 1);
+            SetRarity(ItemType.FragmentoMapa, 2);
             Def(ItemType.PicaretaPedra, "Picareta de Pedra", "Quebra rochas, carvão e cobre (nível 1).", new Color(0.6f, 0.6f, 0.58f), 0, 1, true, 1);
         }
 
         public static ItemDef Get(ItemType t) => defs[t];
+
+        static void SetRarity(ItemType t, int r) => defs[t].Rarity = r;
 
         public static IEnumerable<ItemDef> All => defs.Values;
     }
