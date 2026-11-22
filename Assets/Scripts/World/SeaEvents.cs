@@ -76,11 +76,12 @@ namespace MarAberto
                 }
             }
 
-            // Destroço à deriva.
+            // Destroço à deriva (quem hospeda decide; todos veem o mesmo barco).
+            if (!NetGame.IsAuthority) return;
             if (Derelict != null)
             {
                 derelictLife -= dt;
-                if (derelictLife <= 0 || (Derelict.position - p).sqrMagnitude > 900f * 900f) { Destroy(Derelict.gameObject); Derelict = null; }
+                if (derelictLife <= 0 || NetGame.NearestDistance(Derelict.position) > 900f) { Destroy(Derelict.gameObject); Derelict = null; }
             }
             else
             {
@@ -88,6 +89,12 @@ namespace MarAberto
                 if (derelictTimer <= 0)
                 {
                     derelictTimer = Random.Range(420f, 780f);
+                    // Perto de um jogador qualquer que esteja em mar aberto.
+                    var all = NetGame.Targets();
+                    var pick = all[Random.Range(0, all.Count)];
+                    p = pick.Pos;
+                    var pi = g.World.IslandAt(p);
+                    atSea = pi == null || pi.Height(p.x, p.z) < -8f;
                     if (atSea)
                     {
                         Vector3 at = p + Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * Random.Range(180f, 320f);
@@ -96,20 +103,33 @@ namespace MarAberto
                         {
                             var near = g.World.Nearest(at, false);
                             int tier = near != null ? Mathf.Clamp(near.Tier, 1, 3) : 2;
-                            Derelict = BuildDerelict(at, tier).transform;
+                            var d = SpawnDerelict(at, tier, Random.Range(0f, 360f));
+                            NetGame.Register(d);
                             derelictLife = 900f;
-                            g.Hud.Toast("Algo boiando no horizonte... um barco abandonado!", Hud.Gold);
                         }
                     }
                 }
             }
         }
 
-        static GameObject BuildDerelict(Vector3 at, int tier)
+        /// <summary>Cria o barco abandonado (em todo PC) e avisa quem estiver perto.</summary>
+        public static DerelictFloat SpawnDerelict(Vector3 at, int tier, float yaw)
+        {
+            var go = BuildDerelict(at, tier, yaw);
+            var d = go.GetComponent<DerelictFloat>();
+            d.Tier = tier;
+            Derelict = go.transform;
+            var g = Game.Instance;
+            if (g != null && g.Player != null && Vector3.Distance(g.Player.transform.position, at) < 600f)
+                g.Hud.Toast("Algo boiando no horizonte... um barco abandonado!", Hud.Gold);
+            return d;
+        }
+
+        static GameObject BuildDerelict(Vector3 at, int tier, float yaw)
         {
             var root = new GameObject("DestrocoADeriva");
             root.transform.position = new Vector3(at.x, Ocean.SeaLevel, at.z);
-            root.transform.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+            root.transform.rotation = Quaternion.Euler(0, yaw, 0);
             var planks = new MeshBuilder();
             var poles = new MeshBuilder();
             // Casco raso, convés de tábuas meio quebrado, mastro partido e caixotes.
@@ -163,10 +183,28 @@ namespace MarAberto
     }
 
     /// <summary>Faz o destroço boiar e balançar.</summary>
-    public class DerelictFloat : MonoBehaviour
+    public class DerelictFloat : MonoBehaviour, INetEnt
     {
+        public int Tier = 2;
+        public int NetId { get; set; }
+        public int EntType => 3;
+        public int EntSub => Tier;
+        public bool Moving => false;
+        public Vector3 NetPos => transform.position;
+        public float NetYaw => yaw;
+        public int NetState => 0;
+        public float NetHp => 0f;
+        public GameObject Go => this != null ? gameObject : null;
+        public void ApplyState(Vector3 pos, float y, int state, float hp) { }
+        public void RemoteGone(bool dead) => Destroy(gameObject);
+        void OnDestroy()
+        {
+            if (NetGame.IsAuthority) NetGame.Unregister(this, false); else NetGame.Forget(this);
+            if (SeaEvents.Derelict == transform) SeaEvents.Derelict = null;
+        }
+
         float yaw, seed;
-        void Start() { yaw = transform.eulerAngles.y; seed = Random.value * 10f; }
+        void Awake() { yaw = transform.eulerAngles.y; seed = Random.value * 10f; }
         void Update()
         {
             Vector3 p = transform.position;

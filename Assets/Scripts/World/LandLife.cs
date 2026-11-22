@@ -9,7 +9,7 @@ namespace MarAberto
     /// Bicho da ilha (cada jogador vê os seus). Caranguejo: anda de lado na praia e foge.
     /// Javali: fuça no mato; se você chegar perto demais ou bater nele, ataca. Os dois dão carne crua.
     /// </summary>
-    public class LandAnimal : MonoBehaviour
+    public class LandAnimal : MonoBehaviour, INetEnt
     {
         public AnimalKind Kind;
         public float Health;
@@ -27,7 +27,34 @@ namespace MarAberto
 
         static Color C(float r, float g, float b) => new Color(r, g, b, 1f);
 
-        public static LandAnimal Spawn(AnimalKind k, Vector3 pos, Island home)
+        // ---- Igual para todos: quem hospeda decide; os outros só mostram ----
+        public bool Remote;
+        Vector3 netPos; float netYaw;
+        public int NetId { get; set; }
+        public int EntType => 1;
+        public int EntSub => (int)Kind;
+        public bool Moving => !Dead;
+        public Vector3 NetPos => transform.position;
+        public float NetYaw => transform.eulerAngles.y;
+        public int NetState => (int)state;
+        public float NetHp => Health;
+        public GameObject Go => this != null ? gameObject : null;
+        public void ApplyState(Vector3 pos, float yaw, int st, float hp)
+        {
+            netPos = pos; netYaw = yaw; Health = hp;
+            if (!hasNet) { hasNet = true; transform.position = pos; transform.rotation = Quaternion.Euler(0, yaw, 0); }
+            if (st == (int)State.Charge && state != State.Charge) Sfx.Play(new[] { "javali" }, pos, 1f, 0.1f);
+            if (st != (int)State.Dying) state = (State)st;
+        }
+        bool hasNet;
+        public void RemoteGone(bool dead)
+        {
+            if (dead) { Dead = true; state = State.Dying; deadT = 0; }
+            else Destroy(gameObject);
+        }
+        void OnDestroy() { if (!Remote) NetGame.Unregister(this, false); else NetGame.Forget(this); }
+
+        public static LandAnimal Spawn(AnimalKind k, Vector3 pos, Island home, bool remote = false)
         {
             var go = new GameObject(k == AnimalKind.Javali ? "Javali" : "Caranguejo");
             go.transform.position = pos;
@@ -38,6 +65,7 @@ namespace MarAberto
             int tier = home != null ? Mathf.Max(1, home.Tier) : 1;
             a.Tier = tier;
             a.Health = k == AnimalKind.Javali ? 45f + (tier - 1) * 25f : 10f;
+            a.Remote = remote;
             a.Build();
             a.PickWander();
             return a;
@@ -140,27 +168,50 @@ namespace MarAberto
         public void Hit(float dmg, Vector3 point)
         {
             if (Dead) return;
+            if (Remote)
+            {
+                // Quem hospeda decide; aqui só o efeito.
+                Debris.Burst(point, Vector3.up, 5, new Color(0.6f, 0.08f, 0.08f));
+                if (Kind == AnimalKind.Javali) Sfx.Play(new[] { "javali" }, transform.position, 0.9f, 0.15f);
+                NetGame.EntHit(NetId, dmg);
+                return;
+            }
+            ApplyHit(dmg, point, 0);
+        }
+
+        /// <summary>Quem hospeda aplica o golpe (attacker = jogador que bateu, 0 = quem hospeda).</summary>
+        public void ApplyHit(float dmg, Vector3 point, int attacker)
+        {
+            if (Dead) return;
             Health -= dmg;
             Debris.Burst(point, Vector3.up, 5, new Color(0.6f, 0.08f, 0.08f));
             if (Kind == AnimalKind.Javali) Sfx.Play(new[] { "javali" }, transform.position, 0.9f, 0.15f);
-            if (Health <= 0) { Die(); return; }
+            if (Health <= 0) { Die(attacker); return; }
             // Javali bravo ataca; caranguejo foge.
             state = Kind == AnimalKind.Javali && (Health > 12f || Tier >= 3) ? State.Charge : State.Flee;
             stateT = 0f;
         }
 
-        void Die()
+        void Die(int attacker)
         {
             Dead = true;
             state = State.Dying;
-            var g = Game.Instance;
-            int meat = Kind == AnimalKind.Javali ? 3 : 1;
-            int left = g.Inventory.Add(ItemType.CarneCrua, meat, false);
-            int hide = Kind == AnimalKind.Javali ? Random.Range(1, 3) + (Tier >= 3 ? 1 : 0) : 0;
-            if (hide > 0) g.Inventory.Add(ItemType.Couro, hide, false);
-            g.Hud.Toast((Kind == AnimalKind.Javali ? "Javali" : "Caranguejo") + " abatido: +" + (meat - left) + " carne crua" + (hide > 0 ? ", +" + hide + " couro" : ""), Hud.Good);
+            deadT = 0;
+            NetGame.Unregister(this, true);
+            NetGame.Give(attacker, 1, (int)Kind, Tier);   // a carne vai para quem abateu
             LandLife.Instance?.OnKilled();
-            if (Kind == AnimalKind.Javali) Journal.Bump("javali");
+        }
+
+        /// <summary>Carne (e couro) para quem abateu.</summary>
+        public static void GiveLoot(AnimalKind kind, int tier)
+        {
+            var g = Game.Instance;
+            int meat = kind == AnimalKind.Javali ? 3 : 1;
+            int left = g.Inventory.Add(ItemType.CarneCrua, meat, false);
+            int hide = kind == AnimalKind.Javali ? Random.Range(1, 3) + (tier >= 3 ? 1 : 0) : 0;
+            if (hide > 0) g.Inventory.Add(ItemType.Couro, hide, false);
+            g.Hud.Toast((kind == AnimalKind.Javali ? "Javali" : "Caranguejo") + " abatido: +" + (meat - left) + " carne crua" + (hide > 0 ? ", +" + hide + " couro" : ""), Hud.Good);
+            if (kind == AnimalKind.Javali) Journal.Bump("javali");
         }
 
         void Update()
@@ -175,9 +226,23 @@ namespace MarAberto
                 if (deadT > 12f) Destroy(gameObject);
                 return;
             }
+            bool boar0 = Kind == AnimalKind.Javali;
+            if (Remote)
+            {
+                // Só segue o que quem hospeda manda.
+                Vector3 cur = transform.position;
+                Vector3 np = Vector3.Lerp(cur, netPos, dt * 8f);
+                float moved = (np - cur).magnitude;
+                transform.position = np;
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0, netYaw, 0), dt * 8f);
+                legT += moved * (boar0 ? 4f : 23f);
+                AnimateLegs(boar0);
+                return;
+            }
             stateT += dt;
             attackCd -= dt;
-            Vector3 pp = g.Player.transform.position;
+            if (!NetGame.Nearest(transform.position, out var tgt)) return;
+            Vector3 pp = tgt.Pos;
             Vector3 pos = transform.position;
             float distP = Vector3.Distance(new Vector3(pp.x, 0, pp.z), new Vector3(pos.x, 0, pos.z));
             bool boar = Kind == AnimalKind.Javali;
@@ -204,11 +269,11 @@ namespace MarAberto
                     speed = 5.5f;
                     if (distP < 1.3f && attackCd <= 0)
                     {
-                        g.Player.Damage(12f + (Tier - 1) * 6f);
+                        NetGame.DamageTarget(tgt, 12f + (Tier - 1) * 6f, "Um javali");
                         attackCd = 1.8f;
                         Sfx.Play(new[] { "javali" }, pos, 1f, 0.1f);
                     }
-                    if (stateT > 10f || distP > 25f || g.Player.Swimming) { state = State.Flee; stateT = 0; }
+                    if (stateT > 10f || distP > 25f || tgt.Swimming) { state = State.Flee; stateT = 0; }
                     break;
             }
 
@@ -230,6 +295,11 @@ namespace MarAberto
                 }
                 else if (state == State.Wander) PickWander();
             }
+            AnimateLegs(boar);
+        }
+
+        void AnimateLegs(bool boar)
+        {
             float sw = Mathf.Sin(legT);
             for (int i = 0; i < legs.Count; i++)
                 legs[i].localRotation = boar ? Quaternion.Euler(sw * 28f * (i % 2 == 0 ? 1 : -1) * (i < 2 ? 1 : -1), 0, 0)
@@ -251,17 +321,23 @@ namespace MarAberto
         {
             var g = Game.Instance;
             if (g == null || g.Player == null || g.World == null) return;
+            if (!NetGame.IsAuthority) return;   // quem hospeda cria os bichos para todos
             cooldown -= Time.deltaTime;
             timer -= Time.deltaTime;
             if (timer > 0) return;
             timer = 3f;
-            Vector3 p = g.Player.transform.position;
             mine.RemoveAll(a => a == null);
-            foreach (var a in mine) if (a != null && !a.Dead && (a.transform.position - p).magnitude > 110f) Destroy(a.gameObject);
+            foreach (var a in mine) if (a != null && !a.Dead && NetGame.NearestDistance(a.transform.position) > 120f) Destroy(a.gameObject);
+            if (cooldown > 0) return;
+            foreach (var t in NetGame.Targets().ToArray()) SpawnNear(g, t.Pos);
+        }
+
+        void SpawnNear(Game g, Vector3 p)
+        {
             var isl = g.World.IslandAt(p);
-            if (isl == null || !isl.Generated || cooldown > 0) return;
+            if (isl == null) return;
             int crabs = 0, boars = 0;
-            foreach (var a in mine) if (a != null && !a.Dead) { if (a.Kind == AnimalKind.Caranguejo) crabs++; else boars++; }
+            foreach (var a in mine) if (a != null && !a.Dead && (a.transform.position - p).sqrMagnitude < 110f * 110f) { if (a.Kind == AnimalKind.Caranguejo) crabs++; else boars++; }
             int maxBoars = isl.Tier >= 3 ? 1 : 0;
             maxBoars += isl.Type == IslandType.Floresta ? 3 : isl.Type == IslandType.Montanha ? 2 : isl.Type == IslandType.Vulcanica ? 0 : 1;
             for (int tries = 0; tries < 12; tries++)
@@ -269,8 +345,10 @@ namespace MarAberto
                 Vector3 sp = p + Quaternion.Euler(0, Random.value * 360f, 0) * Vector3.forward * Random.Range(25f, 55f);
                 float h = isl.Height(sp.x, sp.z);
                 sp.y = h;
-                if (crabs < 4 && h > 0.3f && h < 2.5f) { mine.Add(LandAnimal.Spawn(AnimalKind.Caranguejo, sp, isl)); crabs++; }
-                else if (boars < maxBoars && h > 4f && h < 50f && Random.value < 0.4f) { mine.Add(LandAnimal.Spawn(AnimalKind.Javali, sp, isl)); boars++; }
+                LandAnimal made = null;
+                if (crabs < 4 && h > 0.3f && h < 2.5f) { made = LandAnimal.Spawn(AnimalKind.Caranguejo, sp, isl); crabs++; }
+                else if (boars < maxBoars && h > 4f && h < 50f && Random.value < 0.4f) { made = LandAnimal.Spawn(AnimalKind.Javali, sp, isl); boars++; }
+                if (made != null) { mine.Add(made); NetGame.Register(made); }
             }
         }
     }

@@ -7,7 +7,7 @@ namespace MarAberto
     /// Chefe do mar: serpente gigante das águas distantes. Rodeia o jogador, dá botes em quem está
     /// na água ou na borda da jangada. Não quebra nem empurra construções. Morta, deixa tesouro e escamas.
     /// </summary>
-    public class SeaSerpent : MonoBehaviour
+    public class SeaSerpent : MonoBehaviour, INetEnt
     {
         public static SeaSerpent Active;
         public const float MaxHealth = 650f;
@@ -25,13 +25,53 @@ namespace MarAberto
 
         static Color C(float r, float g, float b) => new Color(r, g, b, 1f);
 
+        // ---- Igual para todos: quem hospeda move e decide; os outros só mostram ----
+        public bool Remote;
+        Vector3 netPos; float netYaw; bool netLunge, hasNet;
+        public int NetId { get; set; }
+        public int EntType => 2;
+        public int EntSub => 0;
+        public bool Moving => !Dead;
+        public Vector3 HeadPos => head != null ? head.position : transform.position;
+        public Vector3 NetPos => HeadPos;
+        public float NetYaw => head != null ? head.eulerAngles.y : 0f;
+        public int NetState => lungeT >= 0 ? 1 : 0;
+        public float NetHp => Health;
+        public GameObject Go => this != null ? gameObject : null;
+        public void ApplyState(Vector3 pos, float yaw, int st, float hp)
+        {
+            netPos = pos; netYaw = yaw; Health = hp;
+            if (st == 1 && !netLunge) Sfx.Play(Sfx.Splash, pos, 1f, 0.1f);
+            netLunge = st == 1;
+            if (!hasNet) { hasNet = true; head.position = pos; for (int i = 0; i < trail.Length; i++) trail[i] = pos; }
+        }
+        public void RemoteGone(bool dead)
+        {
+            if (dead) DeathFx();
+            else { Destroy(gameObject); }
+        }
+        void OnDestroy()
+        {
+            if (!Remote) NetGame.Unregister(this, false); else NetGame.Forget(this);
+            if (Active == this) { Active = null; var g = Game.Instance; if (g != null && g.Hud != null) g.Hud.BossHealth = -1f; }
+        }
+
+        /// <summary>Quem hospeda: aparece perto de um jogador.</summary>
         public static SeaSerpent Spawn(Vector3 near)
+        {
+            float a = Random.value * Mathf.PI * 2f;
+            var s = SpawnAt(near + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * 40f + Vector3.down * 6f, false);
+            s.angle = a;
+            return s;
+        }
+
+        public static SeaSerpent SpawnAt(Vector3 start, bool remote)
         {
             BuildMeshes();
             var root = new GameObject("SerpenteMarinha");
             var s = root.AddComponent<SeaSerpent>();
+            s.Remote = remote;
             s.angle = Random.value * Mathf.PI * 2f;
-            Vector3 start = near + new Vector3(Mathf.Cos(s.angle), 0, Mathf.Sin(s.angle)) * 40f + Vector3.down * 6f;
             for (int i = 0; i < s.trail.Length; i++) s.trail[i] = start;
             for (int i = 0; i < Segs; i++)
             {
@@ -87,18 +127,40 @@ namespace MarAberto
         public void Hit(float dmg, Vector3 point)
         {
             if (Dead) return;
+            if (Remote)
+            {
+                Debris.Burst(point, Vector3.up, 8, new Color(0.35f, 0.6f, 0.3f));
+                NetGame.EntHit(NetId, dmg);
+                return;
+            }
+            ApplyHit(dmg, point);
+        }
+
+        /// <summary>Quem hospeda aplica o golpe.</summary>
+        public void ApplyHit(float dmg, Vector3 point)
+        {
+            if (Dead) return;
             Health -= dmg;
             Debris.Burst(point, Vector3.up, 8, new Color(0.35f, 0.6f, 0.3f));
-            Game.Instance.Hud.BossHealth = Mathf.Clamp01(Health / MaxHealth);
             if (Health <= 0) Die();
             else if (lungeT < 0 && Random.value < 0.3f) attackCd = Mathf.Min(attackCd, 0.5f);
         }
 
         void Die()
         {
+            NetGame.Unregister(this, true);
+            DeathFx();
+        }
+
+        /// <summary>Morte (em todo PC): cai, e quem estiver perto ganha um baú boiando com o tesouro.</summary>
+        void DeathFx()
+        {
+            if (Dead) return;
             Dead = true;
+            deadT = 0f;
             var g = Game.Instance;
             g.Hud.BossHealth = -1f;
+            if (g.Player == null || Vector3.Distance(g.Player.transform.position, head.position) > 300f) return;
             Sfx.Play(Sfx.Splash, head.position, 1f, 0.05f);
             g.Hud.Toast("A SERPENTE MARINHA foi derrotada! O tesouro dela boia na água.", Hud.Gold);
             Journal.Bump("serpente");
@@ -117,24 +179,27 @@ namespace MarAberto
             {
                 deadT += dt;
                 for (int i = 0; i < Segs; i++) segs[i].position += Vector3.down * dt * (0.6f + i * 0.05f);
-                if (deadT > 20f) { Destroy(gameObject); if (Active == this) Active = null; }
+                if (deadT > 20f) Destroy(gameObject);
                 return;
             }
-            Vector3 pp = g.Player.transform.position;
+            // Barra de vida para quem está perto.
+            bool nearMe = Vector3.Distance(g.Player.transform.position, head.position) < 250f;
+            g.Hud.BossHealth = nearMe ? Mathf.Clamp01(Health / MaxHealth) : -1f;
+            if (Remote) { FollowNet(dt); return; }
+
+            if (!NetGame.Nearest(head.position, out var tgt)) return;
+            Vector3 pp = tgt.Pos;
             Vector3 hp = head.position;
             float dist = Vector3.Distance(new Vector3(pp.x, 0, pp.z), new Vector3(hp.x, 0, hp.z));
-            // Vai embora se o jogador fugir para longe ou chegar em terra.
+            // Vai embora se todos fugirem para longe ou chegarem em terra.
             var isl = g.World != null ? g.World.IslandAt(pp) : null;
             bool onLand = isl != null && isl.Height(pp.x, pp.z) > -2f;
             if (dist > 220f || life > 420f || (onLand && life > 30f))
             {
-                g.Hud.BossHealth = -1f;
-                g.Hud.Toast("A serpente afundou nas profundezas...", Hud.Info);
+                if (nearMe) g.Hud.Toast("A serpente afundou nas profundezas...", Hud.Info);
                 Destroy(gameObject);
-                if (Active == this) Active = null;
                 return;
             }
-            g.Hud.BossHealth = Mathf.Clamp01(Health / MaxHealth);
 
             float water = Ocean.HeightAt(hp.x, hp.z);
             Vector3 target;
@@ -144,12 +209,11 @@ namespace MarAberto
                 // Bote: sai da água em arco na direção do jogador.
                 lungeT += dt;
                 float k = lungeT / 1.6f;
-                Vector3 from = lungeTarget + (hp - lungeTarget).normalized * 3f;
                 target = Vector3.Lerp(hp, lungeTarget, dt * 3.2f);
                 target.y = Mathf.Lerp(water - 0.5f, lungeTarget.y + 1.2f, Mathf.Sin(Mathf.Clamp01(k) * Mathf.PI));
-                if (k > 0.45f && k < 0.75f && Vector3.Distance(head.position, g.Player.Cam.transform.position) < 3.2f)
+                if (k > 0.45f && k < 0.75f && Vector3.Distance(head.position, tgt.Head) < 3.2f)
                 {
-                    g.Player.Damage(g.Player.Swimming ? 34f : 22f);
+                    NetGame.DamageTarget(tgt, tgt.Swimming ? 34f : 22f, "A serpente marinha");
                     Sfx.Play(Sfx.Hurt, pp, 0.8f);
                     lungeT = 1.6f; // um golpe por bote
                 }
@@ -159,14 +223,14 @@ namespace MarAberto
             {
                 // Rodeia: meio corpo para fora, ondulando.
                 angle += dt * 0.32f;
-                radius = Mathf.MoveTowards(radius, g.Player.Swimming ? 9f : 14f, dt * 2f);
+                radius = Mathf.MoveTowards(radius, tgt.Swimming ? 9f : 14f, dt * 2f);
                 target = pp + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
                 float tw = Ocean.HeightAt(target.x, target.z);
                 target.y = tw + 0.4f + Mathf.Sin(life * 1.3f) * 0.6f;
                 if (attackCd <= 0 && dist < 30f)
                 {
                     lungeT = 0f;
-                    lungeTarget = g.Player.Cam.transform.position;
+                    lungeTarget = tgt.Head;
                     Sfx.Play(Sfx.Splash, hp, 1f, 0.1f);
                 }
             }
@@ -179,6 +243,21 @@ namespace MarAberto
             Vector3 nh = hp + Vector3.ClampMagnitude(move, speed * dt);
             if (move.sqrMagnitude > 0.01f) head.rotation = Quaternion.Slerp(head.rotation, Quaternion.LookRotation(move), dt * 5f);
             head.position = nh;
+            MoveBody(nh, lungeT >= 0, dt);
+        }
+
+        /// <summary>Em outro PC: a cabeça segue o que quem hospeda manda; o corpo segue a cabeça.</summary>
+        void FollowNet(float dt)
+        {
+            Vector3 hp = head.position;
+            Vector3 nh = Vector3.Lerp(hp, netPos, dt * 6f);
+            head.position = nh;
+            head.rotation = Quaternion.Slerp(head.rotation, Quaternion.Euler(head.eulerAngles.x, netYaw, 0), dt * 6f);
+            MoveBody(nh, netLunge, dt);
+        }
+
+        void MoveBody(Vector3 nh, bool lunging, float dt)
+        {
             if ((trail[0] - nh).sqrMagnitude > 0.04f)
             {
                 for (int i = trail.Length - 1; i > 0; i--) trail[i] = trail[i - 1];
@@ -188,7 +267,7 @@ namespace MarAberto
             {
                 Vector3 want = trail[Mathf.Min(trail.Length - 1, i * 5)];
                 float w = Ocean.HeightAt(want.x, want.z);
-                want.y = Mathf.Lerp(want.y, w - 0.2f + Mathf.Sin(life * 2f - i * 0.7f) * 0.9f, lungeT >= 0 ? 0.2f : 0.6f);
+                want.y = Mathf.Lerp(want.y, w - 0.2f + Mathf.Sin(life * 2f - i * 0.7f) * 0.9f, lunging ? 0.2f : 0.6f);
                 Vector3 prev = segs[i - 1].position;
                 Vector3 d = want - prev;
                 if (d.magnitude > SegLen) want = prev + d.normalized * SegLen;
@@ -209,10 +288,13 @@ namespace MarAberto
         {
             var g = Game.Instance;
             if (g == null || g.Player == null || g.World == null || SeaSerpent.Active != null) return;
+            if (!NetGame.IsAuthority) return;   // quem hospeda decide (todos veem a mesma serpente)
             timer -= Time.deltaTime;
             if (timer > 0) return;
             timer = 60f;
-            Vector3 p = g.Player.transform.position;
+            var all = NetGame.Targets();
+            if (all.Count == 0) return;
+            Vector3 p = all[Random.Range(0, all.Count)].Pos;
             float fromCenter = new Vector2(p.x, p.z).magnitude;
             var isl = g.World.IslandAt(p);
             if (isl != null && isl.Height(p.x, p.z) > -8f) return;     // só em mar aberto
@@ -223,8 +305,9 @@ namespace MarAberto
             if (g.Environment != null && (g.Environment.TimeOfDay < 0.25f || g.Environment.TimeOfDay > 0.78f)) chance += 0.12f;
             if (Weather.Instance != null) chance += Weather.Instance.Storm * 0.25f;
             if (Random.value > chance) return;
-            SeaSerpent.Spawn(p);
-            g.Hud.Toast("Algo enorme se mexe debaixo d'água... uma SERPENTE MARINHA!", Hud.Bad);
+            var s = SeaSerpent.Spawn(p);
+            NetGame.Register(s);
+            if (Vector3.Distance(g.Player.transform.position, p) < 250f) g.Hud.Toast("Algo enorme se mexe debaixo d'água... uma SERPENTE MARINHA!", Hud.Bad);
             timer = 600f;
         }
     }

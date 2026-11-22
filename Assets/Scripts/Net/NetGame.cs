@@ -7,7 +7,7 @@ namespace MarAberto
     /// Multiplayer e jogo salvo. Quem hospeda manda no mundo (peças, jangadas, baús, mochilas) e salva tudo;
     /// cada jogador manda o próprio personagem. No modo sozinho, é como hospedar sem abrir a porta.
     /// </summary>
-    public class NetGame : MonoBehaviour
+    public partial class NetGame : MonoBehaviour
     {
         public static NetGame Instance { get; private set; }
         public static bool IsClient => Instance != null && Instance.mode == NetMode.Client;
@@ -30,6 +30,7 @@ namespace MarAberto
         readonly Dictionary<int, string> teams = new Dictionary<int, string>();
         readonly Dictionary<int, int> skins = new Dictionary<int, int>();
         float alertTimer;
+        int plantSync;
         readonly Dictionary<(int, int), float> alerted = new Dictionary<(int, int), float>();
         readonly Dictionary<int, float> remoteDriveUntil = new Dictionary<int, float>();
         readonly HashSet<int> pendingWelcome = new HashSet<int>();
@@ -209,6 +210,8 @@ namespace MarAberto
                 return;
             }
 
+            // Quem hospeda: bichos, destroços e eventos iguais para todos.
+            UpdateEntities(dt);
             // Quem hospeda: jangadas, relógio, combustível e salvar.
             foreach (var kv in remoteDriveUntil)
                 if (Time.time > kv.Value && Rafts.TryGetValue(kv.Key, out var rr) && (game.Player == null || game.Player.Driving != rr)) rr.Driven = false;
@@ -228,10 +231,19 @@ namespace MarAberto
                 if (fuelTimer <= 0)
                 {
                     fuelTimer = 3f;
+                    plantSync++;
                     foreach (var kv in Pieces)
                     {
                         var m = kv.Value != null ? kv.Value.GetComponent<RaftMotor>() : null;
                         if (m != null && m.Running) link.Broadcast(new NetWriter(Msg.MotorFuel).Int(kv.Key).Float(m.Fuel));
+                        if (kv.Value == null) continue;
+                        // Plantas e redes: de vez em quando (todos veem a mesma idade e a mesma rede).
+                        if (plantSync % 5 == 0)
+                        {
+                            var cr = kv.Value.GetComponent<Crop>(); if (cr != null) link.Broadcast(new NetWriter(Msg.MotorFuel).Int(kv.Key).Float(cr.Age));
+                            var sp = kv.Value.GetComponent<Sapling>(); if (sp != null) link.Broadcast(new NetWriter(Msg.MotorFuel).Int(kv.Key).Float(sp.Age));
+                        }
+                        var nc = kv.Value.GetComponent<NetCatcher>(); if (nc != null && nc.Dirty) { nc.Dirty = false; link.Broadcast(new NetWriter(Msg.MotorFuel).Int(kv.Key).Float(nc.Count)); }
                     }
                 }
             }
@@ -289,6 +301,8 @@ namespace MarAberto
                 if (m != null) ps.fuel = m.Fuel;
                 var sap = bp.GetComponent<Sapling>();
                 if (sap != null) ps.fuel = sap.Age;
+                var crop = bp.GetComponent<Crop>();
+                if (crop != null) ps.fuel = crop.Age;
                 var heli = bp.GetComponent<Helicopter>();
                 if (heli != null) { ps.fuel = heli.Fuel; ps.flags = heli.HasGun ? 1 : 0; }
                 var c = bp.GetComponent<Chest>();
@@ -439,7 +453,13 @@ namespace MarAberto
                 case Msg.MotorFuel when !server:
                 {
                     int id = m.Int(); float f = m.Float();
-                    if (Pieces.TryGetValue(id, out var bp) && bp != null) { var mo = bp.GetComponent<RaftMotor>(); if (mo != null) mo.Fuel = f; }
+                    if (Pieces.TryGetValue(id, out var bp) && bp != null)
+                    {
+                        var mo = bp.GetComponent<RaftMotor>(); if (mo != null) mo.Fuel = f;
+                        var cr = bp.GetComponent<Crop>(); if (cr != null) cr.Age = Mathf.Max(cr.Age, f);
+                        var sp = bp.GetComponent<Sapling>(); if (sp != null) sp.Age = Mathf.Max(sp.Age, f);
+                        var nc = bp.GetComponent<NetCatcher>(); if (nc != null) nc.RemoteCount = Mathf.RoundToInt(f);
+                    }
                     break;
                 }
                 case Msg.TreeFelled:
@@ -596,6 +616,9 @@ namespace MarAberto
                     if (server) link.Broadcast(new NetWriter(Msg.Ping).Str(who).Vec(at), m.From);
                     break;
                 }
+                default:
+                    HandleWorld(m, server);
+                    break;
             }
         }
 
@@ -620,6 +643,7 @@ namespace MarAberto
                     if (f.tree) fw.Vec(Vector3.right);
                     link.SendTo(id, fw);
                 }
+            SendEntities(id);
             link.SendTo(id, w); // por último: o cliente só começa depois de receber o mundo
         }
 
@@ -657,9 +681,10 @@ namespace MarAberto
             Quaternion rot = raft != null ? Quaternion.Inverse(raft.transform.rotation) * bp.transform.rotation : bp.transform.rotation;
             var m = bp.GetComponent<RaftMotor>();
             var sap = bp.GetComponent<Sapling>();
+            var crop = bp.GetComponent<Crop>();
             var hc = bp.GetComponent<Helicopter>();
             if (hc != null) return new NetWriter(Msg.PiecePlaced).Int(id).Int((int)bp.Kind).Int(raft != null ? raft.Id : -1).Vec(pos).Rot(rot).Str(bp.Owner).Float(hc.Fuel);
-            return new NetWriter(Msg.PiecePlaced).Int(id).Int((int)bp.Kind).Int(raft != null ? raft.Id : -1).Vec(pos).Rot(rot).Str(bp.Owner).Float(m != null ? m.Fuel : sap != null ? sap.Age : 0f);
+            return new NetWriter(Msg.PiecePlaced).Int(id).Int((int)bp.Kind).Int(raft != null ? raft.Id : -1).Vec(pos).Rot(rot).Str(bp.Owner).Float(m != null ? m.Fuel : sap != null ? sap.Age : crop != null ? crop.Age : 0f);
         }
 
         /// <summary>Construir: quem hospeda cria e avisa todos; o cliente pede para quem hospeda.</summary>
@@ -713,6 +738,8 @@ namespace MarAberto
             if (m != null) m.Fuel = fuel;
             var sap = go.GetComponent<Sapling>();
             if (sap != null) sap.Age = fuel;
+            var crop = go.GetComponent<Crop>();
+            if (crop != null) crop.Age = fuel;
             var heli = go.GetComponent<Helicopter>();
             if (heli != null) heli.Fuel = fuel;
             var c = go.GetComponent<Chest>();
@@ -1022,11 +1049,11 @@ namespace MarAberto
         // ---------- PvP e território ----------
 
         /// <summary>Acertou outro jogador.</summary>
-        public static void HitPlayer(RemotePlayer target, float amount)
+        public static void HitPlayer(RemotePlayer target, float amount, string from = null)
         {
             var n = Instance;
             if (n == null || n.link == null) return;
-            var w = new NetWriter(Msg.Damage).Int(target.Id).Float(amount).Str(NetConfig.PlayerName);
+            var w = new NetWriter(Msg.Damage).Int(target.Id).Float(amount).Str(from ?? NetConfig.PlayerName);
             if (n.mode == NetMode.Client) n.link.SendToServer(w); else n.link.SendTo(target.Id, w);
         }
 

@@ -18,6 +18,7 @@ namespace MarAberto
         public static readonly List<RemotePlayer> All = new List<RemotePlayer>();
         public int Id;
         public string PlayerName;
+        public bool IsSwimming => swimming;
         Vector3 netPos;
         float netYaw, netPitch;
         bool hasState, swimming, driving;

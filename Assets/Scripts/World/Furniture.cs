@@ -270,19 +270,37 @@ namespace MarAberto
         readonly System.Collections.Generic.List<FlotsamKind> caught = new System.Collections.Generic.List<FlotsamKind>();
         float timer;
 
-        public string Prompt => caught.Count > 0 ? "Pegar da rede (" + caught.Count + ")" : "Rede coletora (vazia)";
+        public int RemoteCount;      // no cliente: quanto a rede tem (quem hospeda avisa)
+        public bool Dirty;
+        public int Count => NetGame.IsAuthority ? caught.Count : RemoteCount;
+        public string Prompt => Count > 0 ? "Pegar da rede (" + Count + ")" : "Rede coletora (vazia)";
         public bool CanInteract => true;
 
         public void Interact(PlayerController player)
         {
-            if (caught.Count == 0) { Game.Instance.Hud.Toast("A rede pega o que a correnteza trouxer para perto.", Hud.Info); return; }
-            foreach (var k in caught) FlotsamItem.Give(k);
-            caught.Clear();
+            if (Count == 0) { Game.Instance.Hud.Toast("A rede pega o que a correnteza trouxer para perto.", Hud.Info); return; }
             Sfx.Play(Sfx.SmallSplash, transform.position, 0.5f);
+            if (!NetGame.IsAuthority)
+            {
+                var bp = GetComponent<BuildPiece>();
+                if (bp != null) NetGame.NetTake(bp.Id);
+                RemoteCount = 0;
+                return;
+            }
+            TakeFor(0);
+        }
+
+        /// <summary>Quem hospeda entrega o que a rede juntou para um jogador (0 = ele mesmo).</summary>
+        public void TakeFor(int player)
+        {
+            foreach (var k in caught) NetGame.Give(player, 0, (int)k, 0);
+            caught.Clear();
+            Dirty = true;
         }
 
         void Update()
         {
+            if (!NetGame.IsAuthority) return;   // quem hospeda decide o que a rede pega
             timer -= Time.deltaTime;
             if (timer > 0) return;
             timer = 0.4f;
@@ -298,6 +316,7 @@ namespace MarAberto
                 if (Mathf.Abs(local.x) < 1.3f && Mathf.Abs(local.z) < 1.1f)
                 {
                     caught.Add(f.Kind);
+                    Dirty = true;
                     Destroy(f.gameObject);
                     if (caught.Count >= Max) break;
                 }

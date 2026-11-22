@@ -6,7 +6,7 @@ namespace MarAberto
     public enum FlotsamKind { Tabua, Folhas, Galhos, Barril, Garrafa }
 
     /// <summary>Destroço boiando: a correnteza traz perto da jangada. Puxe com o gancho ou pegue nadando (E).</summary>
-    public class FlotsamItem : MonoBehaviour, IInteractable
+    public class FlotsamItem : MonoBehaviour, IInteractable, INetEnt
     {
         public static readonly List<FlotsamItem> All = new List<FlotsamItem>();
         public FlotsamKind Kind;
@@ -16,6 +16,32 @@ namespace MarAberto
 
         void OnEnable() => All.Add(this);
         void OnDisable() => All.Remove(this);
+        void OnDestroy() { if (NetGame.IsAuthority) NetGame.Unregister(this, false); else NetGame.Forget(this); }
+
+        // Igual para todos: quem hospeda cria; a correnteza leva igual em todo PC (e corrige a posição de vez em quando).
+        public int NetId { get; set; }
+        public int EntType => 0;
+        public int EntSub => (int)Kind;
+        public bool Moving => false;
+        public Vector3 NetPos => transform.position;
+        public float NetYaw => transform.eulerAngles.y;
+        public int NetState => 0;
+        public float NetHp => 0f;
+        public GameObject Go => this != null ? gameObject : null;
+        public void ApplyState(Vector3 pos, float yaw, int state, float hp)
+        {
+            if (Hooked) return;
+            Vector3 p = transform.position;
+            transform.position = new Vector3(pos.x, p.y, pos.z);
+        }
+        public void RemoteGone(bool dead) => Destroy(gameObject);
+
+        /// <summary>Quem hospeda entrega para quem pediu.</summary>
+        public void TakeFor(int player)
+        {
+            NetGame.Give(player, 0, (int)Kind, 0);
+            Destroy(gameObject);
+        }
 
         static Color C(float r, float g, float b) => new Color(r, g, b, 1f);
 
@@ -89,8 +115,9 @@ namespace MarAberto
 
         public void Collect()
         {
-            Give(Kind);
             Sfx.Play(Sfx.SmallSplash, transform.position, 0.5f);
+            if (NetGame.IsClient && NetId != 0) { NetGame.EntTake(NetId); Destroy(gameObject); return; }   // quem hospeda manda o item
+            Give(Kind);
             Destroy(gameObject);
         }
 
@@ -167,27 +194,36 @@ namespace MarAberto
             float sp = 0.7f + (Weather.Instance != null ? Weather.Instance.Storm * 0.8f : 0f);
             Current = new Vector3(Mathf.Cos(turn), 0, Mathf.Sin(turn)) * sp;
 
+            // Só quem hospeda cria e apaga destroços (para todos os jogadores).
+            if (!NetGame.IsAuthority) return;
             timer -= Time.deltaTime;
             if (timer > 0) return;
             timer = 1.5f;
-            Vector3 p = g.Player.transform.position;
+            var players = NetGame.Targets();
             for (int i = FlotsamItem.All.Count - 1; i >= 0; i--)
             {
                 var f = FlotsamItem.All[i];
-                if (f != null && !f.Hooked && (f.transform.position - p).sqrMagnitude > 140f * 140f) Destroy(f.gameObject);
+                if (f != null && !f.Hooked && NetGame.NearestDistance(f.transform.position) > 140f) Destroy(f.gameObject);
             }
-            if (FlotsamItem.All.Count >= 16) return;
-            // Só no mar aberto, longe da praia.
-            var isl = g.World.IslandAt(p);
-            if (isl != null && isl.Height(p.x, p.z) > -6f) return;
-            Vector3 dir = Current.sqrMagnitude > 0.01f ? Current.normalized : Vector3.forward;
-            Vector3 side = Vector3.Cross(Vector3.up, dir);
-            Vector3 sp2 = p - dir * Random.Range(35f, 80f) + side * Random.Range(-35f, 35f);
-            var near = g.World.IslandAt(sp2);
-            if (near != null && near.Height(sp2.x, sp2.z) > -1f) return;
-            float r = Random.value;
-            var k = r < 0.35f ? FlotsamKind.Tabua : r < 0.6f ? FlotsamKind.Folhas : r < 0.85f ? FlotsamKind.Galhos : r < 0.965f ? FlotsamKind.Barril : FlotsamKind.Garrafa;
-            FlotsamItem.Spawn(k, new Vector3(sp2.x, 0, sp2.z));
+            foreach (var t in players.ToArray())
+            {
+                Vector3 p = t.Pos;
+                int near = 0;
+                foreach (var f in FlotsamItem.All) if (f != null && (f.transform.position - p).sqrMagnitude < 140f * 140f) near++;
+                if (near >= 16) continue;
+                // Só no mar aberto, longe da praia.
+                var isl = g.World.IslandAt(p);
+                if (isl != null && isl.Height(p.x, p.z) > -6f) continue;
+                Vector3 dir = Current.sqrMagnitude > 0.01f ? Current.normalized : Vector3.forward;
+                Vector3 side = Vector3.Cross(Vector3.up, dir);
+                Vector3 sp2 = p - dir * Random.Range(35f, 80f) + side * Random.Range(-35f, 35f);
+                var ni = g.World.IslandAt(sp2);
+                if (ni != null && ni.Height(sp2.x, sp2.z) > -1f) continue;
+                float r = Random.value;
+                var k = r < 0.35f ? FlotsamKind.Tabua : r < 0.6f ? FlotsamKind.Folhas : r < 0.85f ? FlotsamKind.Galhos : r < 0.965f ? FlotsamKind.Barril : FlotsamKind.Garrafa;
+                var item = FlotsamItem.Spawn(k, new Vector3(sp2.x, Ocean.HeightAt(sp2.x, sp2.z), sp2.z));
+                NetGame.Register(item);
+            }
         }
     }
 
