@@ -74,6 +74,31 @@ namespace MarAberto
             }
         }
 
+        static Material Variant(string key, float gloss, float metal, float brushScale = 0.9f)
+        {
+            if (cache.TryGetValue(key, out var m) && m != null) return m;
+            m = new Material(Find("MarAberto/LowPoly", "Diffuse")) { name = key };
+            m.SetFloat("_Glossiness", gloss);
+            m.SetFloat("_Metallic", metal);
+            m.SetFloat("_BrushScale", brushScale);
+            cache[key] = m;
+            return m;
+        }
+
+        /// <summary>Material de cada item (metal no cobre e no ferro, brilho no carvão e na pérola).</summary>
+        public static Material ForItem(ItemType t)
+        {
+            switch (t)
+            {
+                case ItemType.Cobre: return Variant("ItemCobre", 0.62f, 0.75f, 2.5f);
+                case ItemType.Ferro: return Variant("ItemFerro", 0.5f, 0.45f, 2.5f);
+                case ItemType.Carvao: return Variant("ItemCarvao", 0.62f, 0.05f, 2.5f);
+                case ItemType.Perola: return Variant("ItemPerola", 0.92f, 0.1f, 2.5f);
+                case ItemType.Concha: return Variant("ItemConcha", 0.55f, 0f, 2.5f);
+                default: return Variant("ItemComum", 0.15f, 0f, 2.5f);
+            }
+        }
+
         public static Material Water => Get("Water", "MarAberto/Water", "Transparent/Diffuse");
 
         public static Material Sky => Get("Sky", "MarAberto/Sky", "Skybox/Procedural");

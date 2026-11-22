@@ -51,7 +51,7 @@ namespace MarAberto
             go.transform.rotation = Quaternion.Euler(Random.Range(-20f, 20f), Random.Range(0f, 360f), Random.Range(-20f, 20f));
             go.AddComponent<MeshFilter>().sharedMesh = ItemModels.Get(stack.Type);
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = Mats.LowPoly;
+            mr.sharedMaterial = Mats.ForItem(stack.Type);
             // Caixa do tamanho do modelo: não sai rolando como uma bola.
             var mesh = ItemModels.Get(stack.Type);
             var col = go.AddComponent<BoxCollider>();

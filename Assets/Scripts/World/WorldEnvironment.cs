@@ -34,6 +34,7 @@ namespace MarAberto
             sun.shadowBias = 0.04f;
             sun.shadowNormalBias = 0.3f;
             RenderSettings.sun = sun;
+            sun.cullingMask = ~(1 << Layers.Icons); // os ícones têm luz própria
 
             RenderSettings.skybox = Mats.Sky;
             var brush = Resources.Load<Texture2D>("Textures/pinceladas");

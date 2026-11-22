@@ -4,6 +4,7 @@ Shader "MarAberto/LowPoly"
     {
         _Color ("Cor", Color) = (1,1,1,1)
         _Glossiness ("Brilho", Range(0,1)) = 0.08
+        _Metallic ("Metal", Range(0,1)) = 0
         _Detail ("Detalhe do terreno", Range(0,1)) = 0
         _BrushScale ("Tamanho da pincelada", Float) = 0.9
     }
@@ -26,6 +27,7 @@ Shader "MarAberto/LowPoly"
 
         fixed4 _Color;
         half _Glossiness;
+        half _Metallic;
         half _Detail;
         float _BrushScale;
 
@@ -49,7 +51,7 @@ Shader "MarAberto/LowPoly"
             }
 
             o.Albedo = albedo;
-            o.Metallic = 0;
+            o.Metallic = _Metallic;
             o.Smoothness = _Glossiness;
             o.Alpha = 1;
 

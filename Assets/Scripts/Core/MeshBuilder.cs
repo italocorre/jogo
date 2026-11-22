@@ -110,6 +110,63 @@ namespace MarAberto
         }
 
         /// <summary>
+        /// Tubo contínuo e liso ao longo de uma curva (sem emendas): troncos, cabos, pontas de picareta.
+        /// radii[i] é o raio no ponto i; flatten achata a seção (x = largura, y = altura) no plano do tubo.
+        /// </summary>
+        public void AddTube(IList<Vector3> pts, IList<float> radii, int sides, System.Func<int, float, Color> colorFn,
+            Vector2? flatten = null, bool capStart = true, bool capEnd = true, Vector3? upHint = null)
+        {
+            int n = pts.Count;
+            if (n < 2) return;
+            Vector2 fl = flatten ?? Vector2.one;
+            var tangents = new Vector3[n];
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 a = pts[Mathf.Max(i - 1, 0)], b = pts[Mathf.Min(i + 1, n - 1)];
+                tangents[i] = (b - a).normalized;
+            }
+            // Referencial que "acompanha" a curva sem torcer (transporte paralelo).
+            var normalsR = new Vector3[n];
+            Vector3 hint = upHint ?? (Mathf.Abs(Vector3.Dot(tangents[0], Vector3.up)) > 0.9f ? Vector3.forward : Vector3.up);
+            normalsR[0] = Vector3.Cross(tangents[0], Vector3.Cross(hint, tangents[0])).normalized;
+            for (int i = 1; i < n; i++)
+            {
+                Vector3 nPrev = normalsR[i - 1];
+                Vector3 nNew = nPrev - tangents[i] * Vector3.Dot(nPrev, tangents[i]);
+                normalsR[i] = nNew.sqrMagnitude > 1e-8f ? nNew.normalized : nPrev;
+            }
+            var ring = new Vector3[n, sides];
+            var rn = new Vector3[n, sides];
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 N = normalsR[i], B = Vector3.Cross(tangents[i], N);
+                for (int k = 0; k < sides; k++)
+                {
+                    float a = k / (float)sides * Mathf.PI * 2f;
+                    float cx = Mathf.Cos(a), cy = Mathf.Sin(a);
+                    Vector3 off = (B * cx * fl.x + N * cy * fl.y) * radii[i];
+                    ring[i, k] = pts[i] + off;
+                    rn[i, k] = (B * cx / Mathf.Max(0.01f, fl.x) + N * cy / Mathf.Max(0.01f, fl.y)).normalized;
+                }
+            }
+            for (int i = 0; i < n - 1; i++)
+            {
+                float t0 = i / (float)(n - 1), t1 = (i + 1) / (float)(n - 1);
+                for (int k = 0; k < sides; k++)
+                {
+                    int k1 = (k + 1) % sides;
+                    Color c00 = colorFn(i, t0), c10 = colorFn(i + 1, t1);
+                    AddSmoothTri(ring[i, k], ring[i + 1, k], ring[i + 1, k1], rn[i, k], rn[i + 1, k], rn[i + 1, k1], c00, c10, c10);
+                    AddSmoothTri(ring[i, k], ring[i + 1, k1], ring[i, k1], rn[i, k], rn[i + 1, k1], rn[i, k1], c00, c10, c00);
+                }
+            }
+            if (capStart && radii[0] > 0.001f)
+                for (int k = 0; k < sides; k++) AddTri(pts[0], ring[0, k], ring[0, (k + 1) % sides], colorFn(0, 0));
+            if (capEnd && radii[n - 1] > 0.001f)
+                for (int k = 0; k < sides; k++) AddTri(pts[n - 1], ring[n - 1, (k + 1) % sides], ring[n - 1, k], colorFn(n - 1, 1));
+        }
+
+        /// <summary>
         /// Rocha / bolha orgânica: esfera deformada por ruído, com sombreamento SUAVE
         /// (nada de facetas) e cor por vértice.
         /// </summary>

@@ -99,6 +99,7 @@ namespace MarAberto
             }
             heldRenderer.enabled = true;
             heldFilter.sharedMesh = ItemModels.Get(t);
+            heldRenderer.sharedMaterial = Mats.ForItem(t);
             if (Items.Get(t).IsTool)
             {
                 held.localPosition = new Vector3(0, -0.02f, 0);

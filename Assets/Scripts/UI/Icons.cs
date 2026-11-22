@@ -41,6 +41,23 @@ namespace MarAberto
                 cam.allowHDR = false;
                 cam.transform.position = new Vector3(0, 1000f, -5f);
                 cam.transform.rotation = Quaternion.identity;
+
+                // Luz de estúdio só para os ícones (não depende da hora do dia).
+                Light L(string n, Color c, float i, Vector3 euler)
+                {
+                    var lg = new GameObject(n) { hideFlags = HideFlags.HideAndDontSave };
+                    var l = lg.AddComponent<Light>();
+                    l.type = LightType.Directional;
+                    l.color = c;
+                    l.intensity = i;
+                    l.cullingMask = 1 << Layers.Icons;
+                    l.shadows = LightShadows.None;
+                    lg.transform.rotation = Quaternion.Euler(euler);
+                    return l;
+                }
+                L("IconeChave", new Color(1f, 0.95f, 0.86f), 1.25f, new Vector3(40, -35, 0));
+                L("IconeRecorte", new Color(0.75f, 0.85f, 1f), 0.9f, new Vector3(20, 160, 0));
+                L("IconePreenche", new Color(0.9f, 0.88f, 1f), 0.35f, new Vector3(-30, 30, 0));
             }
 
             var mesh = ItemModels.Get(t);
@@ -48,11 +65,11 @@ namespace MarAberto
             obj.hideFlags = HideFlags.HideAndDontSave;
             obj.layer = Layers.Icons;
             obj.AddComponent<MeshFilter>().sharedMesh = mesh;
-            obj.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            obj.AddComponent<MeshRenderer>().sharedMaterial = Mats.ForItem(t);
             Quaternion rot = Items.Get(t).IsTool
                 ? Quaternion.Euler(0, 0, -40) * Quaternion.Euler(0, 90, 0)
-                : t == ItemType.Concha || t == ItemType.FragmentoMapa ? Quaternion.Euler(-55, 0, 0) * Quaternion.Euler(0, 20, 0)
-                : Quaternion.Euler(-20, 0, 0) * Quaternion.Euler(0, 35, 0);
+                : t == ItemType.Concha || t == ItemType.FragmentoMapa ? Quaternion.Euler(-60, 0, 0) * Quaternion.Euler(0, 15, 0)
+                : Quaternion.Euler(-28, 0, 0) * Quaternion.Euler(0, 30, 0);
             obj.transform.rotation = rot;
             // Centraliza pelo tamanho da malha.
             var b = mesh.bounds;
