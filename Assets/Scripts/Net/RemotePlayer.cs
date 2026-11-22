@@ -40,6 +40,8 @@ namespace MarAberto
         Transform model;
         string clipIdle, clipWalk, clipPunch, clipHit, clipSit;
         float actionUntil, swingT = -1f;
+        int sizeChecks = 4;
+        SkinnedMeshRenderer mainSkin;
         Transform rightArm;
 
         public static RemotePlayer Create(int id, string name, int skin = 0)
@@ -88,6 +90,33 @@ namespace MarAberto
                 Vector3 lo = r.transform.TransformPoint(mb.min), hi = r.transform.TransformPoint(mb.max);
                 float hh = Mathf.Abs(hi.y - lo.y);
                 if (hh > h) { h = hh; minY = Mathf.Min(lo.y, hi.y); }
+            }
+            // O que aparece na tela segue os OSSOS (o esqueleto pode estar em centímetros e a malha em outra escala).
+            // Então mede pela cabeça e pelo pé do esqueleto; se não achar, usa a malha.
+            Transform headEnd = null, headB = null, footL = null, footR = null;
+            foreach (var t in inst.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == "Head_end") headEnd = t;
+                else if (t.name == "Head") headB = t;
+                else if (t.name == "LeftFoot") footL = t;
+                else if (t.name == "RightFoot") footR = t;
+            }
+            Transform top = headEnd != null ? headEnd : headB;
+            if (top != null && (footL != null || footR != null))
+            {
+                float footY = Mathf.Min(footL != null ? footL.position.y : float.MaxValue, footR != null ? footR.position.y : float.MaxValue);
+                float hb = top.position.y - footY;
+                if (hb > 0.0001f)
+                {
+                    // Topo da cabeça ~1,75 m; tornozelo ~0,08 m do chão.
+                    float target = headEnd != null ? 1.67f : 1.45f;
+                    float k = target / hb;
+                    float baseY = model.position.y;
+                    model.localScale *= k;
+                    float footAfter = baseY + (footY - baseY) * k;
+                    model.position += Vector3.up * (transform.position.y + 0.08f - footAfter);
+                    h = 0f;   // já ajustado
+                }
             }
             if (h > 0.01f)
             {
@@ -152,8 +181,30 @@ namespace MarAberto
             swingT = 0f;   // golpe: o braço direito desce (feito por código, por cima da animação)
         }
 
+        /// <summary>Confere o tamanho real na tela (já com o esqueleto) e corrige se estiver errado.</summary>
+        void CheckSize()
+        {
+            if (sizeChecks <= 0 || model == null || !hasState) return;
+            if (swimming || driving) return;   // deitado/sentado engana a medida
+            if (mainSkin == null) mainSkin = GetComponentInChildren<SkinnedMeshRenderer>();
+            if (mainSkin == null) { sizeChecks = 0; return; }
+            sizeChecks--;
+            Bounds b = mainSkin.bounds;
+            float hgt = b.size.y;
+            if (hgt > 0.0001f && (hgt < 1.2f || hgt > 2.4f))
+            {
+                model.localScale *= 1.75f / hgt;
+                sizeChecks = Mathf.Max(sizeChecks, 2);   // confere de novo e acerta o pé
+                return;
+            }
+            // Pé no chão.
+            float off = transform.position.y - b.min.y;
+            if (Mathf.Abs(off) > 0.03f && Mathf.Abs(off) < 3f) model.position += Vector3.up * off;
+        }
+
         void LateUpdate()
         {
+            CheckSize();
             if (swingT < 0 || rightArm == null) return;
             swingT += Time.deltaTime / 0.45f;
             if (swingT >= 1f) { swingT = -1f; return; }
