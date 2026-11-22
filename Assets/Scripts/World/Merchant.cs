@@ -57,70 +57,98 @@ namespace MarAberto
             var red = C(0.85f, 0.25f, 0.22f);
             var cream = C(0.97f, 0.92f, 0.80f);
 
-            var mb = new MeshBuilder();
+            var mb = new MeshBuilder();     // pano do toldo (cor por vértice)
+            var planks = new MeshBuilder(); // madeira com textura
+            var poles = new MeshBuilder();
+            Color W(float k) => new Color(k, k, k, 1f);
             // Chão de tábuas
-            for (int i = 0; i < 7; i++)
-                mb.AddBox(new Vector3(-1.95f + i * 0.65f, 0.05f, -0.6f), new Vector3(0.6f, 0.1f, 3.4f), Quaternion.identity, i % 2 == 0 ? wood : woodDark * 1.15f);
+            for (int i = 0; i < 13; i++)
+                planks.AddBoxUV(new Vector3(-2.05f + i * 0.34f, 0.06f, -0.6f), new Vector3(0.32f, 0.08f, 3.4f), Quaternion.Euler(0, (Noise.Hash(i, 2) - 0.5f) * 1.5f, 0), W(0.85f + Noise.Hash(i, 7) * 0.25f), 0.5f);
+            // Vigas sob o piso
+            foreach (float z in new[] { -2.1f, -0.6f, 0.9f })
+                poles.AddTube(new[] { new Vector3(-2.2f, -0.05f, z), new Vector3(2.2f, -0.05f, z) }, new[] { 0.08f, 0.08f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
             // Postes
             foreach (var p in new[] { new Vector3(-2.1f, 0, 0.9f), new Vector3(2.1f, 0, 0.9f), new Vector3(-2.1f, 0, -2.1f), new Vector3(2.1f, 0, -2.1f) })
-                mb.AddCylinder(p, p + Vector3.up * (p.z > 0 ? 2.6f : 3.1f), 0.09f, 0.08f, 6, woodDark);
-            // Toldo listrado (inclinado para a frente)
-            int stripes = 8;
+                poles.AddTube(new[] { p - Vector3.up * 0.4f, p + Vector3.up * (p.z > 0 ? 2.6f : 3.1f) }, new[] { 0.1f, 0.085f }, 10, (i, t) => Color.white, null, false, true, null, 0.6f, 1f);
+            // Travessas do toldo
+            poles.AddTube(new[] { new Vector3(-2.3f, 2.58f, 0.9f), new Vector3(2.3f, 2.58f, 0.9f) }, new[] { 0.06f, 0.06f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+            poles.AddTube(new[] { new Vector3(-2.3f, 3.08f, -2.1f), new Vector3(2.3f, 3.08f, -2.1f) }, new[] { 0.06f, 0.06f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+            // Toldo listrado de lona (inclinado para a frente, com leve barriga)
+            int stripes = 8, rows = 6;
             for (int i = 0; i < stripes; i++)
             {
                 float x0 = -2.4f + i * 4.8f / stripes, x1 = x0 + 4.8f / stripes;
-                Color c = i % 2 == 0 ? red : cream;
-                Vector3 a = new Vector3(x0, 3.15f, -2.4f), b = new Vector3(x0, 2.55f, 1.3f);
-                Vector3 cc = new Vector3(x1, 2.55f, 1.3f), d = new Vector3(x1, 3.15f, -2.4f);
-                mb.AddQuad(a, d, cc, b, c * 0.8f);   // embaixo
-                mb.AddQuad(b, cc, d, a, c);          // em cima
-                // Franja ondulada
-                Vector3 fa = new Vector3(x0, 2.55f, 1.3f), fb = new Vector3(x1, 2.55f, 1.3f), fm = new Vector3((x0 + x1) / 2, 2.3f, 1.31f);
+                Color c = i % 2 == 0 ? C(0.70f, 0.20f, 0.17f) : C(0.86f, 0.80f, 0.68f);
+                for (int r = 0; r < rows; r++)
+                {
+                    float t0 = r / (float)rows, t1 = (r + 1) / (float)rows;
+                    Vector3 A(float x, float t) => new Vector3(x, Mathf.Lerp(3.15f, 2.6f, t) - Mathf.Sin(t * Mathf.PI) * 0.12f, Mathf.Lerp(-2.4f, 1.3f, t));
+                    mb.AddQuad(A(x0, t0), A(x1, t0), A(x1, t1), A(x0, t1), c * 0.75f);
+                    mb.AddQuad(A(x0, t1), A(x1, t1), A(x1, t0), A(x0, t0), c);
+                }
+                Vector3 fa = new Vector3(x0, 2.6f, 1.3f), fb = new Vector3(x1, 2.6f, 1.3f), fm = new Vector3((x0 + x1) / 2, 2.38f, 1.31f);
                 mb.AddTri(fa, fb, fm, c);
                 mb.AddTri(fb, fa, fm, c * 0.85f);
             }
-            // Caixotes e barril
-            mb.AddBox(new Vector3(-2.7f, 0.35f, 0.3f), new Vector3(0.7f, 0.7f, 0.7f), Quaternion.Euler(0, 12, 0), wood);
-            mb.AddBox(new Vector3(-2.65f, 0.95f, 0.25f), new Vector3(0.5f, 0.5f, 0.5f), Quaternion.Euler(0, -8, 0), woodDark * 1.2f);
-            mb.AddBox(new Vector3(2.75f, 0.3f, -0.4f), new Vector3(0.6f, 0.6f, 0.6f), Quaternion.Euler(0, 30, 0), wood);
-            mb.AddCylinder(new Vector3(2.7f, 0, 0.6f), new Vector3(2.7f, 0.9f, 0.6f), 0.35f, 0.35f, 9, woodDark * 1.1f);
-            mb.AddCylinder(new Vector3(2.7f, 0.25f, 0.6f), new Vector3(2.7f, 0.32f, 0.6f), 0.37f, 0.37f, 9, C(0.35f, 0.35f, 0.38f), false);
-            mb.AddCylinder(new Vector3(2.7f, 0.62f, 0.6f), new Vector3(2.7f, 0.69f, 0.6f), 0.37f, 0.37f, 9, C(0.35f, 0.35f, 0.38f), false);
-            // Mercadorias em cima do caixote: minérios coloridos
-            mb.AddRock(new Vector3(-2.7f, 0.85f, 0.45f), 0.12f, 3, _ => C(0.9f, 0.5f, 0.25f), 0.2f);
-            mb.AddRock(new Vector3(-2.55f, 1.28f, 0.2f), 0.1f, 4, _ => C(0.2f, 0.2f, 0.22f), 0.2f);
-            // Lanterna pendurada
-            mb.AddCylinder(new Vector3(1.6f, 2.55f, 1.0f), new Vector3(1.6f, 2.38f, 1.0f), 0.01f, 0.01f, 6, C(0.2f, 0.2f, 0.2f), false);
-            mb.AddSphere(new Vector3(1.6f, 2.22f, 1.0f), new Vector3(0.11f, 0.15f, 0.11f), C(1f, 0.86f, 0.5f), 2);
-            mb.AddCylinder(new Vector3(1.6f, 2.36f, 1.0f), new Vector3(1.6f, 2.42f, 1.0f), 0.09f, 0.05f, 10, C(0.25f, 0.22f, 0.2f));
-            mb.AddCylinder(new Vector3(1.6f, 2.04f, 1.0f), new Vector3(1.6f, 2.09f, 1.0f), 0.1f, 0.1f, 10, C(0.25f, 0.22f, 0.2f));
 
             var go = new GameObject("Barraca");
             go.transform.SetParent(root, false);
-            var mesh = mb.Build("Barraca");
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshFilter>().sharedMesh = mb.Build("Toldo");
             go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
             var bcol = go.AddComponent<BoxCollider>();
             bcol.center = new Vector3(0, 0.05f, -0.6f);
-            bcol.size = new Vector3(4.4f, 0.1f, 3.4f);
+            bcol.size = new Vector3(4.4f, 0.12f, 3.4f);
+            var pl = new GameObject("Tabuas"); pl.transform.SetParent(go.transform, false);
+            pl.AddComponent<MeshFilter>().sharedMesh = planks.Build("TabuasBarraca");
+            pl.AddComponent<MeshRenderer>().sharedMaterial = Mats.Planks;
+            var po = new GameObject("Postes"); po.transform.SetParent(go.transform, false);
+            po.AddComponent<MeshFilter>().sharedMesh = poles.Build("PostesBarraca");
+            po.AddComponent<MeshRenderer>().sharedMaterial = Mats.Poles;
+
+            // Props realistas
+            GameObject Prop(string id, Vector3 local, float yaw, float size, int part = -1)
+                => ModelLibrary.Spawn(id, root.TransformPoint(local), root.rotation * Quaternion.Euler(0, yaw, 0), size, ModelLibrary.Fit.Height, part, ModelLibrary.Col.Box, go.transform);
+            Prop("wooden_crate_01", new Vector3(-2.75f, 0f, 0.3f), 12f, 0.7f);
+            Prop("wooden_crate_01", new Vector3(-2.7f, 0.7f, 0.25f), -20f, 0.5f);
+            Prop("wooden_barrels_01", new Vector3(2.75f, 0f, 0.5f), 40f, 1.0f, 0);
+            Prop("wooden_barrels_01", new Vector3(2.8f, 0f, -0.6f), 0f, 1.0f, 1);
+            Prop("treasure_chest", new Vector3(-1.4f, 0.1f, -1.9f), 180f, 0.55f);
+            var lantern = ModelLibrary.Spawn("wooden_lantern_01", root.TransformPoint(new Vector3(1.6f, 2.0f, 1.0f)), root.rotation, 0.4f, ModelLibrary.Fit.Height, -1, ModelLibrary.Col.None, go.transform);
+            if (lantern != null)
+            {
+                var lgo = new GameObject("LuzLanterna");
+                lgo.transform.SetParent(lantern.transform, false);
+                lgo.transform.localPosition = Vector3.up * 0.18f;
+                var light = lgo.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = new Color(1f, 0.72f, 0.4f);
+                light.range = 6f;
+                light.intensity = 1.2f;
+                light.shadows = LightShadows.None;
+            }
 
             // Balcão (separado, para ser clicável)
             var cmb = new MeshBuilder();
-            cmb.AddBox(new Vector3(0, 0.55f, 0.6f), new Vector3(3.6f, 1.0f, 0.7f), Quaternion.identity, wood);
-            cmb.AddBox(new Vector3(0, 1.08f, 0.62f), new Vector3(3.8f, 0.08f, 0.85f), Quaternion.identity, woodDark * 1.2f);
-            for (int i = 0; i < 5; i++)
-                cmb.AddBox(new Vector3(-1.6f + i * 0.8f, 0.55f, 0.96f), new Vector3(0.06f, 0.95f, 0.02f), Quaternion.identity, woodDark);
-            // Moedas e conchas no balcão
-            for (int i = 0; i < 6; i++)
-                cmb.AddCylinder(new Vector3(0.6f + i * 0.03f, 1.12f + i * 0.025f, 0.6f), new Vector3(0.6f + i * 0.03f, 1.14f + i * 0.025f, 0.6f), 0.07f, 0.07f, 8, C(1f, 0.8f, 0.25f));
+            for (int i = 0; i < 4; i++)
+                cmb.AddBoxUV(new Vector3(0, 0.18f + i * 0.25f, 0.95f), new Vector3(3.6f, 0.24f, 0.05f), Quaternion.identity, W(0.8f + Noise.Hash(i, 4) * 0.25f), 0.5f);
+            cmb.AddBoxUV(new Vector3(-1.78f, 0.55f, 0.6f), new Vector3(0.05f, 1.0f, 0.7f), Quaternion.identity, W(0.85f), 0.5f);
+            cmb.AddBoxUV(new Vector3(1.78f, 0.55f, 0.6f), new Vector3(0.05f, 1.0f, 0.7f), Quaternion.identity, W(0.85f), 0.5f);
+            for (int i = 0; i < 3; i++)
+                cmb.AddBoxUV(new Vector3(0, 1.08f, 0.35f + i * 0.28f), new Vector3(3.8f, 0.07f, 0.27f), Quaternion.identity, W(0.75f + i * 0.1f), 0.5f);
             var counter = new GameObject("Balcao");
             counter.transform.SetParent(root, false);
-            var cmesh = cmb.Build("Balcao");
-            counter.AddComponent<MeshFilter>().sharedMesh = cmesh;
-            counter.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            counter.AddComponent<MeshFilter>().sharedMesh = cmb.Build("Balcao");
+            counter.AddComponent<MeshRenderer>().sharedMaterial = Mats.Planks;
             var cc2 = counter.AddComponent<BoxCollider>();
             cc2.center = new Vector3(0, 0.55f, 0.62f);
             cc2.size = new Vector3(3.8f, 1.1f, 0.85f);
+            // Moedas no balcão
+            var coins = new MeshBuilder();
+            for (int i = 0; i < 6; i++)
+                coins.AddCylinder(new Vector3(0.6f + i * 0.03f, 1.12f + i * 0.02f, 0.6f), new Vector3(0.6f + i * 0.03f, 1.135f + i * 0.02f, 0.6f), 0.07f, 0.07f, 14, C(1f, 0.8f, 0.3f));
+            var cg = new GameObject("Moedas"); cg.transform.SetParent(counter.transform, false);
+            cg.AddComponent<MeshFilter>().sharedMesh = coins.Build("Moedas");
+            cg.AddComponent<MeshRenderer>().sharedMaterial = Mats.ForItem(ItemType.Cobre);
         }
 
         void BuildCharacter()

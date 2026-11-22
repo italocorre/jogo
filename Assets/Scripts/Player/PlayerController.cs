@@ -374,7 +374,20 @@ namespace MarAberto
         void Respawn()
         {
             if (Driving != null) StopDriving();
-            Game.Instance.Hud.Toast("Você desmaiou e acordou na praia...", Hud.Bad);
+            var game = Game.Instance;
+            // Perde tudo: fica uma mochila no lugar, que qualquer jogador pode pegar.
+            Vector3 deathPos = transform.position;
+            if (deathPos.y < -60f) deathPos.y = -30f;
+            var items = game.Inventory.TakeAll();
+            int coins = game.TakeAllCoins();
+            if (items.Count > 0 || coins > 0)
+            {
+                LostBackpack.Spawn(deathPos + Vector3.up * 0.4f, items, coins);
+                game.Hud.Toast("Você desmaiou e perdeu tudo! Sua mochila ficou onde você caiu.", Hud.Bad);
+            }
+            else game.Hud.Toast("Você desmaiou e acordou na praia...", Hud.Bad);
+            // Garante uma picareta para não travar.
+            if (game.Inventory.Count(ItemType.PicaretaPedra) == 0) game.Inventory.Add(ItemType.PicaretaPedra, 1, false);
             Health = MaxHealth;
             Oxygen = MaxOxygen;
             Teleport(spawnPos, spawnLook);

@@ -89,8 +89,8 @@ namespace MarAberto.EditorTools
             Vector3 m = island.MerchantPos;
             Vector3 toSpawn = island.SpawnPoint - m; toSpawn.y = 0; toSpawn.Normalize();
             Shot("02_mercador", m + toSpawn * 4.2f + Vector3.up * 1.65f, m + Vector3.up * 1.35f, 0.42f);
-            Vector3 sea = c + dockDir * 190f + side * 40f; sea.y = 3f;
-            Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 12f, 0.62f);
+            Vector3 sea = c + dockDir * 430f + side * 90f; sea.y = 3f;
+            Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 35f, 0.62f);
             Vector3 dockEye = island.DockEnd + Vector3.up * 1.65f - dockDir * 4f - side * 0.6f;
             Shot("04_barco", dockEye, boat.transform.position + Vector3.up * 0.2f, 0.45f);
             var reef = island.Reefs[0];
@@ -98,8 +98,15 @@ namespace MarAberto.EditorTools
             Vector3 reefEye = rc + new Vector3(12f, 0, 8f); reefEye.y = reef.Height(reefEye.x, reefEye.z) + 3.5f;
             Shot("05_recife_fundo", reefEye, rc + Vector3.down * 14f, 0.45f);
             Shot("06_por_do_sol", spawnEye, spawnEye + island.SpawnLook * 10f, 0.715f);
-            Vector3 hill = c + side * 30f; hill.y = island.Height(hill.x, hill.z) + 1.7f;
-            Shot("07_grama_e_arvores", hill, hill + (dockDir + side * 0.5f).normalized * 10f + Vector3.down * 1.5f, 0.38f);
+            Vector3 hill = c + dockDir * 120f + side * 25f; hill.y = island.Height(hill.x, hill.z) + 1.7f;
+            Shot("07_floresta_e_montanhas", hill, c + Vector3.up * 45f, 0.38f);
+            Vector3 palmEye = island.SpawnPoint + Vector3.up * 0.6f - side * 3f;
+            Shot("15_coqueiros", palmEye, palmEye - side * 10f + Vector3.up * 5f, 0.36f);
+            // Mochila deixada ao desmaiar
+            Vector3 bpPos = island.SpawnPoint + island.SpawnLook * 3f; bpPos.y = island.Height(bpPos.x, bpPos.z);
+            var lost = LostBackpack.Spawn(bpPos, new[] { new ItemStack(ItemType.Cobre, 4) }, 20);
+            Shot("16_mochila_perdida", bpPos - island.SpawnLook * 2.2f + Vector3.up * 1.3f + side * 0.5f, bpPos + Vector3.up * 0.25f, 0.42f);
+            UnityEngine.Object.DestroyImmediate(lost.gameObject);
             Vector3 buoyView = rc + (c - rc).normalized * 22f + Vector3.up * 2.5f;
             Shot("08_boia_do_recife", buoyView, rc + Vector3.up * 1f, 0.5f);
             Shot("09_noite", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.up * 1f, 0.95f);

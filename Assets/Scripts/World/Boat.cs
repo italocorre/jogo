@@ -105,6 +105,8 @@ namespace MarAberto
             Color brass = C(0.90f, 0.70f, 0.32f);
 
             var mb = new MeshBuilder();
+            var wood = new MeshBuilder();
+            Color tBottom = C(0.95f, 0.38f, 0.30f), tPaint = C(0.42f, 0.62f, 0.90f), tStripe = C(1f, 0.92f, 0.62f), tIn = C(1f, 0.95f, 0.9f);
             int sections = 28;
             float z0 = -2.4f, z1 = 2.75f;
             int K = profile.Length;
@@ -130,22 +132,25 @@ namespace MarAberto
                 {
                     for (int k = 0; k < K - 1; k++)
                     {
-                        Color col = k <= 2 ? bottom : k == 4 ? stripe : paint;
+                        // Casco de tábuas pintadas (textura de madeira x cor da tinta).
+                        Color col = k <= 2 ? tBottom : k == 4 ? tStripe : tPaint;
                         Vector3 a = P[s, k], b = P[s + 1, k], c = P[s + 1, k + 1], d = P[s, k + 1];
                         Vector3 na = N[s, k], nb = N[s + 1, k], nc = N[s + 1, k + 1], nd = N[s, k + 1];
+                        float u0 = a.z * 0.45f, u1 = b.z * 0.45f, v0 = k * 0.25f, v1 = (k + 1) * 0.25f;
+                        Vector2 ua = new Vector2(u0, v0), ub = new Vector2(u1, v0), uc = new Vector2(u1, v1), ud = new Vector2(u0, v1);
                         if (side > 0)
                         {
-                            mb.AddSmoothTri(a, d, c, na, nd, nc, col, col, col);
-                            mb.AddSmoothTri(a, c, b, na, nc, nb, col, col, col);
-                            mb.AddSmoothTri(a, b, c, -na, -nb, -nc, woodIn, woodIn, woodIn);
-                            mb.AddSmoothTri(a, c, d, -na, -nc, -nd, woodIn, woodIn, woodIn);
+                            wood.AddTriUV(a, d, c, na, nd, nc, ua, ud, uc, col, col, col);
+                            wood.AddTriUV(a, c, b, na, nc, nb, ua, uc, ub, col, col, col);
+                            wood.AddTriUV(a, b, c, -na, -nb, -nc, ua, ub, uc, tIn, tIn, tIn);
+                            wood.AddTriUV(a, c, d, -na, -nc, -nd, ua, uc, ud, tIn, tIn, tIn);
                         }
                         else
                         {
-                            mb.AddSmoothTri(a, b, c, na, nb, nc, col, col, col);
-                            mb.AddSmoothTri(a, c, d, na, nc, nd, col, col, col);
-                            mb.AddSmoothTri(a, d, c, -na, -nd, -nc, woodIn, woodIn, woodIn);
-                            mb.AddSmoothTri(a, c, b, -na, -nc, -nb, woodIn, woodIn, woodIn);
+                            wood.AddTriUV(a, b, c, na, nb, nc, ua, ub, uc, col, col, col);
+                            wood.AddTriUV(a, c, d, na, nc, nd, ua, uc, ud, col, col, col);
+                            wood.AddTriUV(a, d, c, -na, -nd, -nc, ua, ud, uc, tIn, tIn, tIn);
+                            wood.AddTriUV(a, c, b, -na, -nc, -nb, ua, uc, ub, tIn, tIn, tIn);
                         }
                     }
                     // Amurada arredondada
@@ -162,9 +167,9 @@ namespace MarAberto
             }
             // Piso de tábuas e bancos
             for (int i = 0; i < 7; i++)
-                mb.AddBox(new Vector3(-0.6f + i * 0.2f, -0.13f, -0.1f), new Vector3(0.19f, 0.05f, 4.0f), Quaternion.identity, i % 2 == 0 ? woodIn : woodIn * 0.9f);
-            mb.AddBox(new Vector3(0, 0.22f, 0.7f), new Vector3(1.85f, 0.07f, 0.42f), Quaternion.identity, woodDark * 1.25f);
-            mb.AddBox(new Vector3(0, 0.22f, -1.75f), new Vector3(1.55f, 0.07f, 0.5f), Quaternion.identity, woodDark * 1.25f);
+                wood.AddBoxUV(new Vector3(-0.6f + i * 0.2f, -0.13f, -0.1f), new Vector3(0.19f, 0.05f, 4.0f), Quaternion.identity, i % 2 == 0 ? tIn : C(0.88f, 0.84f, 0.8f), 0.5f);
+            wood.AddBoxUV(new Vector3(0, 0.22f, 0.7f), new Vector3(1.85f, 0.07f, 0.42f), Quaternion.identity, C(0.8f, 0.76f, 0.72f), 0.5f);
+            wood.AddBoxUV(new Vector3(0, 0.22f, -1.75f), new Vector3(1.55f, 0.07f, 0.5f), Quaternion.identity, C(0.8f, 0.76f, 0.72f), 0.5f);
             // Caldeira a vapor (popa) com chaminé de latão
             Color iron = C(0.18f, 0.18f, 0.2f);
             mb.AddCylinder(new Vector3(0, -0.1f, -1.05f), new Vector3(0, 0.55f, -1.05f), 0.3f, 0.3f, 18, iron);
@@ -181,6 +186,10 @@ namespace MarAberto
             hull.transform.SetParent(transform, false);
             hull.AddComponent<MeshFilter>().sharedMesh = mb.Build("Casco");
             hull.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            var planks = new GameObject("Tabuas");
+            planks.transform.SetParent(hull.transform, false);
+            planks.AddComponent<MeshFilter>().sharedMesh = wood.Build("CascoTabuas");
+            planks.AddComponent<MeshRenderer>().sharedMaterial = Mats.Planks;
 
             var pmb = new MeshBuilder();
             for (int i = 0; i < 3; i++)

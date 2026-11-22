@@ -14,6 +14,45 @@ namespace MarAberto
         readonly List<Vector3> normals = new List<Vector3>();
         readonly List<Color> colors = new List<Color>();
         readonly List<int> tris = new List<int>();
+        readonly List<Vector2> uvs = new List<Vector2>();
+        bool hasUV;
+
+        /// <summary>UV padrão dos próximos triângulos sem UV explícita (projeção planar opcional).</summary>
+        void PadUV(int count) { for (int k = 0; k < count; k++) uvs.Add(Vector2.zero); }
+
+        /// <summary>Triângulo com normais e UVs próprias (para objetos texturizados).</summary>
+        public void AddTriUV(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector2 ua, Vector2 ub, Vector2 uc, Color ca, Color cb, Color cc)
+        {
+            hasUV = true;
+            int i = verts.Count;
+            verts.Add(a); verts.Add(b); verts.Add(c);
+            normals.Add(na); normals.Add(nb); normals.Add(nc);
+            colors.Add(ca); colors.Add(cb); colors.Add(cc);
+            uvs.Add(ua); uvs.Add(ub); uvs.Add(uc);
+            tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
+        }
+
+        /// <summary>Caixa com UV por face (texturas de madeira etc.). uvScale = repetições por metro.</summary>
+        public void AddBoxUV(Vector3 center, Vector3 size, Quaternion rot, Color col, float uvScale = 1f)
+        {
+            Vector3 h = size * 0.5f;
+            Vector3 P(float x, float y, float z) => center + rot * new Vector3(x * h.x, y * h.y, z * h.z);
+            void Face(Vector3 a, Vector3 b, Vector3 c, Vector3 d, float w, float hh)
+            {
+                Vector3 n = Vector3.Cross(b - a, c - a).normalized;
+                Vector2 ua = Vector2.zero, ub = new Vector2(0, hh * uvScale), uc = new Vector2(w * uvScale, hh * uvScale), ud = new Vector2(w * uvScale, 0);
+                AddTriUV(a, b, c, n, n, n, ua, ub, uc, col, col, col);
+                AddTriUV(a, c, d, n, n, n, ua, uc, ud, col, col, col);
+            }
+            Vector3 p000 = P(-1, -1, -1), p100 = P(1, -1, -1), p010 = P(-1, 1, -1), p110 = P(1, 1, -1);
+            Vector3 p001 = P(-1, -1, 1), p101 = P(1, -1, 1), p011 = P(-1, 1, 1), p111 = P(1, 1, 1);
+            Face(p000, p010, p110, p100, size.x, size.y);
+            Face(p101, p111, p011, p001, size.x, size.y);
+            Face(p001, p011, p010, p000, size.z, size.y);
+            Face(p100, p110, p111, p101, size.z, size.y);
+            Face(p010, p011, p111, p110, size.x, size.z);
+            Face(p001, p000, p100, p101, size.x, size.z);
+        }
 
         public int VertexCount => verts.Count;
 
@@ -32,6 +71,7 @@ namespace MarAberto
             verts.Add(a); verts.Add(b); verts.Add(c);
             normals.Add(n); normals.Add(n); normals.Add(n);
             colors.Add(ca); colors.Add(cb); colors.Add(cc);
+            PadUV(3);
             tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
         }
 
@@ -42,6 +82,7 @@ namespace MarAberto
             verts.Add(a); verts.Add(b); verts.Add(c);
             normals.Add(na); normals.Add(nb); normals.Add(nc);
             colors.Add(ca); colors.Add(cb); colors.Add(cc);
+            PadUV(3);
             tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
         }
 
@@ -54,6 +95,7 @@ namespace MarAberto
             verts.Add(a); verts.Add(b); verts.Add(c);
             normals.Add(n); normals.Add(n); normals.Add(n);
             colors.Add(col); colors.Add(col); colors.Add(col);
+            PadUV(3);
             tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
         }
 
@@ -114,7 +156,7 @@ namespace MarAberto
         /// radii[i] é o raio no ponto i; flatten achata a seção (x = largura, y = altura) no plano do tubo.
         /// </summary>
         public void AddTube(IList<Vector3> pts, IList<float> radii, int sides, System.Func<int, float, Color> colorFn,
-            Vector2? flatten = null, bool capStart = true, bool capEnd = true, Vector3? upHint = null)
+            Vector2? flatten = null, bool capStart = true, bool capEnd = true, Vector3? upHint = null, float uvPerMeter = 1f, float uRepeat = 1f)
         {
             int n = pts.Count;
             if (n < 2) return;
@@ -149,15 +191,21 @@ namespace MarAberto
                     rn[i, k] = (B * cx / Mathf.Max(0.01f, fl.x) + N * cy / Mathf.Max(0.01f, fl.y)).normalized;
                 }
             }
+            // V = comprimento acumulado (para texturas como casca de árvore).
+            var vlen = new float[n];
+            for (int i = 1; i < n; i++) vlen[i] = vlen[i - 1] + Vector3.Distance(pts[i - 1], pts[i]) * uvPerMeter;
             for (int i = 0; i < n - 1; i++)
             {
                 float t0 = i / (float)(n - 1), t1 = (i + 1) / (float)(n - 1);
                 for (int k = 0; k < sides; k++)
                 {
                     int k1 = (k + 1) % sides;
+                    float u0 = k / (float)sides * uRepeat, u1 = (k + 1) / (float)sides * uRepeat;
                     Color c00 = colorFn(i, t0), c10 = colorFn(i + 1, t1);
-                    AddSmoothTri(ring[i, k], ring[i + 1, k], ring[i + 1, k1], rn[i, k], rn[i + 1, k], rn[i + 1, k1], c00, c10, c10);
-                    AddSmoothTri(ring[i, k], ring[i + 1, k1], ring[i, k1], rn[i, k], rn[i + 1, k1], rn[i, k1], c00, c10, c00);
+                    AddTriUV(ring[i, k], ring[i + 1, k], ring[i + 1, k1], rn[i, k], rn[i + 1, k], rn[i + 1, k1],
+                        new Vector2(u0, vlen[i]), new Vector2(u0, vlen[i + 1]), new Vector2(u1, vlen[i + 1]), c00, c10, c10);
+                    AddTriUV(ring[i, k], ring[i + 1, k1], ring[i, k1], rn[i, k], rn[i + 1, k1], rn[i, k1],
+                        new Vector2(u0, vlen[i]), new Vector2(u1, vlen[i + 1]), new Vector2(u1, vlen[i]), c00, c10, c00);
                 }
             }
             if (capStart && radii[0] > 0.001f)
@@ -268,7 +316,9 @@ namespace MarAberto
             m.SetVertices(verts);
             m.SetNormals(normals);
             m.SetColors(colors);
+            if (hasUV) m.SetUVs(0, uvs);
             m.SetTriangles(tris, 0);
+            if (hasUV) m.RecalculateTangents();
             m.RecalculateBounds();
             return m;
         }

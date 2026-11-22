@@ -30,7 +30,7 @@ namespace MarAberto
             sun = sgo.AddComponent<Light>();
             sun.type = LightType.Directional;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.6f;
+            sun.shadowStrength = 0.82f;
             sun.shadowBias = 0.04f;
             sun.shadowNormalBias = 0.3f;
             RenderSettings.sun = sun;
@@ -39,7 +39,7 @@ namespace MarAberto
             RenderSettings.skybox = Mats.Sky;
             var brush = Resources.Load<Texture2D>("Textures/pinceladas");
             if (brush != null) Shader.SetGlobalTexture("_MA_Brush", brush);
-            Shader.SetGlobalFloat("_MA_BrushAmount", brush != null ? 0.85f : 0f);
+            Shader.SetGlobalFloat("_MA_BrushAmount", 0f); // visual realista: sem pinceladas
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
@@ -73,7 +73,7 @@ namespace MarAberto
             float day = Mathf.Clamp01((elev + 0.08f) / 0.3f);      // 0 noite, 1 dia
             float golden = Mathf.Clamp01(1f - Mathf.Abs(elev - 0.08f) / 0.25f) * day;
 
-            Color dayTop = Hex("#3A82C4"), dayHor = Hex("#E4DCC6");
+            Color dayTop = Hex("#2F78C8"), dayHor = Hex("#CFE1EE");
             Color nightTop = Hex("#121630"), nightHor = Hex("#3A3560");
             Color sunsetHor = Hex("#F4A07A");
             Color top = Color.Lerp(nightTop, dayTop, day);
@@ -85,7 +85,7 @@ namespace MarAberto
             {
                 sun.transform.rotation = Quaternion.LookRotation(-sunDir);
                 sun.color = sunCol;
-                sun.intensity = Mathf.Lerp(0f, 1.2f, day);
+                sun.intensity = Mathf.Lerp(0f, 1.4f, day);
             }
             else
             {
@@ -96,10 +96,10 @@ namespace MarAberto
                 sun.intensity = 0.22f;
             }
 
-            // Luz ambiente quente em cima e lilás embaixo (sombras arroxeadas, como em pintura).
-            RenderSettings.ambientSkyColor = Color.Lerp(Hex("#2A2C55"), Hex("#E9D3B8"), day);
-            RenderSettings.ambientEquatorColor = Color.Lerp(Hex("#1E2040"), Color.Lerp(Hex("#B9A8A6"), sunsetHor, golden * 0.4f), day);
-            RenderSettings.ambientGroundColor = Color.Lerp(Hex("#14122A"), Hex("#7C6C98"), day);
+            // Luz ambiente natural: céu azulado em cima, horizonte neutro, chão quente (luz refletida da areia/terra).
+            RenderSettings.ambientSkyColor = Color.Lerp(Hex("#1C2240"), Hex("#9DB8D8"), day);
+            RenderSettings.ambientEquatorColor = Color.Lerp(Hex("#161A30"), Color.Lerp(Hex("#A9B2B6"), sunsetHor, golden * 0.4f), day);
+            RenderSettings.ambientGroundColor = Color.Lerp(Hex("#0E0E18"), Hex("#6B5E4C"), day);
 
             Shader.SetGlobalColor(skyTopId, top);
             Shader.SetGlobalColor(skyHorId, hor);
@@ -126,8 +126,9 @@ namespace MarAberto
             else
             {
                 RenderSettings.fogColor = hor;
-                RenderSettings.fogStartDistance = 260f;
-                RenderSettings.fogEndDistance = 1800f;
+                // Névoa atmosférica: montanhas distantes ficam azuladas (dá profundidade).
+                RenderSettings.fogStartDistance = 90f;
+                RenderSettings.fogEndDistance = 1500f;
             }
             if (cam != null) cam.clearFlags = CameraUnderwater ? CameraClearFlags.SolidColor : CameraClearFlags.Skybox;
         }

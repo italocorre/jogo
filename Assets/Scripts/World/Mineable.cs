@@ -13,6 +13,7 @@ namespace MarAberto
         public float RespawnTime = 90f;
 
         MeshRenderer rend;
+        GameObject visual;
         Collider col;
         float respawnAt = -1;
         float shake;
@@ -89,36 +90,58 @@ namespace MarAberto
                 baseScale = Vector3.one;
                 return;
             }
-            mb.AddRock(Vector3.up * radius * 0.35f, radius, seed, n =>
+            // Rocha realista (Poly Haven) + cristais/veios do minério.
+            visual = new GameObject("Visual");
+            visual.transform.SetParent(transform, false);
+            Color tint = Color.white;
+            switch (Type)
             {
-                if (Type == ItemType.Pedra)
-                    return Color.Lerp(stone, stone * 0.82f, Noise.Perlin3(n.x * 2 + ox, n.y * 2, n.z * 2));
-                float k = Noise.Perlin3(n.x * 2.6f + ox, n.y * 2.6f, n.z * 2.6f);
-                return k > 0.52f ? oreColor : stone;
-            }, 0.3f);
+                case ItemType.Carvao: tint = new Color(0.45f, 0.43f, 0.42f); break;
+                case ItemType.Cobre: tint = new Color(0.92f, 0.82f, 0.74f); break;
+                case ItemType.Ferro: tint = new Color(0.85f, 0.70f, 0.62f); break;
+            }
+            if (Underwater) tint *= new Color(0.85f, 0.95f, 0.95f);
+            int parts = Mathf.Max(1, ModelLibrary.PartCount("rock_moss_set_01"));
+            var rock = ModelLibrary.Spawn("rock_moss_set_01", transform.position - Vector3.up * radius * 0.2f, Quaternion.Euler(0, (float)rng.NextDouble() * 360f, 0),
+                radius * 2.1f, ModelLibrary.Fit.Max, rng.Next(parts), ModelLibrary.Col.None, visual.transform, tint == Color.white ? (Color?)null : tint);
+            if (rock == null)
+            {
+                mb.AddRock(Vector3.up * radius * 0.35f, radius, seed, n => stone, 0.3f);
+            }
             if (Type != ItemType.Pedra)
             {
-                // Cristais do minério saindo da rocha.
-                int crystals = 4 + rng.Next(4);
-                for (int i = 0; i < crystals; i++)
+                // Aglomerados de cristais saindo da rocha: dá para saber de longe que é minério.
+                Color cc = oreColor;
+                int clusters = 3 + rng.Next(3);
+                for (int k = 0; k < clusters; k++)
                 {
-                    Vector3 d = new Vector3((float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() - 0.5f).normalized;
-                    d.y = Mathf.Abs(d.y) * 0.8f + 0.2f;
-                    d.Normalize();
-                    Vector3 basePos = Vector3.up * radius * 0.35f + Vector3.Scale(d * radius * 0.8f, new Vector3(1f, 0.75f, 1f));
-                    float len = radius * (0.25f + (float)rng.NextDouble() * 0.3f);
-                    mb.AddCylinder(basePos - d * 0.05f, basePos + d * len, radius * 0.14f, 0.01f, 5, Color.Lerp(oreColor, Color.white, (float)rng.NextDouble() * 0.25f));
+                    float a = (float)rng.NextDouble() * Mathf.PI * 2f;
+                    Vector3 cpos = new Vector3(Mathf.Cos(a) * radius * 0.7f, radius * (0.35f + (float)rng.NextDouble() * 0.45f), Mathf.Sin(a) * radius * 0.7f);
+                    Vector3 outward = new Vector3(cpos.x, radius * 0.6f, cpos.z).normalized;
+                    int n = 3 + rng.Next(4);
+                    for (int i = 0; i < n; i++)
+                    {
+                        Vector3 d = (outward + new Vector3((float)rng.NextDouble() - 0.5f, (float)rng.NextDouble() * 0.6f, (float)rng.NextDouble() - 0.5f) * 0.9f).normalized;
+                        float len = radius * (0.25f + (float)rng.NextDouble() * 0.35f);
+                        float w = radius * (0.07f + (float)rng.NextDouble() * 0.06f);
+                        Vector3 b = cpos - d * w;
+                        mb.AddCylinder(b, b + d * len * 0.8f, w, w * 0.9f, 6, Color.Lerp(cc * 0.8f, cc, (float)rng.NextDouble()));
+                        mb.AddCylinder(b + d * len * 0.8f, b + d * len, w * 0.9f, 0.005f, 6, Color.Lerp(cc, Color.white, 0.3f));
+                    }
                 }
             }
-            var mf = gameObject.AddComponent<MeshFilter>();
-            mf.sharedMesh = mb.Build("Rocha");
-            rend = gameObject.AddComponent<MeshRenderer>();
-            rend.sharedMaterial = Mats.Ore;
+            if (mb.VertexCount > 0)
+            {
+                var cgo = new GameObject("Cristais");
+                cgo.transform.SetParent(visual.transform, false);
+                cgo.AddComponent<MeshFilter>().sharedMesh = mb.Build("Cristais");
+                var cr = cgo.AddComponent<MeshRenderer>();
+                cr.sharedMaterial = rock == null ? Mats.Ore : Mats.ForItem(Type);
+            }
             var sc = gameObject.AddComponent<SphereCollider>();
-            sc.center = Vector3.up * radius * 0.35f;
+            sc.center = Vector3.up * radius * 0.4f;
             sc.radius = radius * 0.95f;
             col = sc;
-            transform.rotation = Quaternion.Euler(0, (float)rng.NextDouble() * 360f, 0);
             baseScale = Vector3.one;
         }
 
@@ -166,9 +189,15 @@ namespace MarAberto
             }
             if (Underwater && rng.NextDouble() < 0.1) Drop(ItemType.FragmentoMapa, 1);
 
-            rend.enabled = false;
+            SetVisible(false);
             col.enabled = false;
             respawnAt = Time.time + RespawnTime;
+        }
+
+        void SetVisible(bool v)
+        {
+            if (visual != null) visual.SetActive(v);
+            if (rend != null) rend.enabled = v;
         }
 
         void Update()
@@ -177,7 +206,7 @@ namespace MarAberto
             {
                 respawnAt = -1;
                 Health = MaxHealth;
-                rend.enabled = true;
+                SetVisible(true);
                 col.enabled = true;
                 transform.localScale = Vector3.one * 0.2f;
             }

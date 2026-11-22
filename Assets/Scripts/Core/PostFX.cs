@@ -15,12 +15,12 @@ namespace MarAberto
         public float Knee = 0.6f;
         public float BloomIntensity = 0.2f;
         public float Exposure = 0.95f;
-        public float Saturation = 1.08f;
-        public float Contrast = 0.98f;
-        public float Vignette = 0.6f;
-        public float Warmth = 0.05f;
+        public float Saturation = 1.0f;
+        public float Contrast = 1.04f;
+        public float Vignette = 0.35f;
+        public float Warmth = 0.02f;
         public Color Lift = new Color(0.016f, 0.008f, 0.026f);
-        public float PaperGrain = 0.11f;
+        public float PaperGrain = 0f;
 
         Material mat;
         static readonly int paramsId = Shader.PropertyToID("_Params");

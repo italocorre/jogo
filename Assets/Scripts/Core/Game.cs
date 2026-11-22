@@ -180,6 +180,13 @@ namespace MarAberto
 
         // ---------- Economia ----------
 
+        public int TakeAllCoins()
+        {
+            int n = Coins;
+            Coins = 0;
+            return n;
+        }
+
         public void AddCoins(int n)
         {
             Coins += n;

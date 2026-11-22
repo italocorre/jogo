@@ -27,7 +27,7 @@ namespace MarAberto
             var r = new System.Random(seed);
             // Direções espalhadas; o primeiro fica mais perto e tem boia.
             float baseAng = (float)r.NextDouble() * 360f;
-            float[] dists = { 400f, 480f, 570f, 660f };
+            float[] dists = { 520f, 600f, 690f, 780f };
             for (int i = 0; i < dists.Length; i++)
             {
                 float a = (baseAng + i * 97f + (float)r.NextDouble() * 30f) * Mathf.Deg2Rad;
@@ -236,16 +236,16 @@ namespace MarAberto
             var go = new GameObject("Boia");
             go.transform.SetParent(transform, false);
             go.transform.localPosition = Vector3.zero;
-            var mb = new MeshBuilder();
-            Color red = C(0.85f, 0.18f, 0.15f), white = C(0.95f, 0.93f, 0.88f);
-            mb.AddSphere(new Vector3(0, -0.2f, 0), new Vector3(0.7f, 0.55f, 0.7f), red, 3);
-            mb.AddCylinder(new Vector3(0, 0.2f, 0), new Vector3(0, 1.2f, 0), 0.45f, 0.25f, 16, white, red);
-            mb.AddCylinder(new Vector3(0, 1.2f, 0), new Vector3(0, 2.3f, 0), 0.05f, 0.05f, 8, C(0.3f, 0.3f, 0.32f));
-            // Bandeirinha
-            mb.AddTri(new Vector3(0, 2.3f, 0), new Vector3(0.7f, 2.1f, 0), new Vector3(0, 1.9f, 0), C(1f, 0.85f, 0.25f));
-            mb.AddTri(new Vector3(0, 2.3f, 0), new Vector3(0, 1.9f, 0), new Vector3(0.7f, 2.1f, 0), C(1f, 0.85f, 0.25f));
-            go.AddComponent<MeshFilter>().sharedMesh = mb.Build("Boia");
-            go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            // Boia de sinalização realista (Poly Haven); parte dela fica submersa.
+            var model = ModelLibrary.Spawn("lateral_sea_marker", go.transform.position - Vector3.up * 0.9f, Quaternion.identity, 3.6f, ModelLibrary.Fit.Height, -1, ModelLibrary.Col.None, go.transform);
+            if (model == null)
+            {
+                var mb = new MeshBuilder();
+                mb.AddSphere(new Vector3(0, -0.2f, 0), new Vector3(0.7f, 0.55f, 0.7f), C(0.85f, 0.18f, 0.15f), 3);
+                mb.AddCylinder(new Vector3(0, 0.2f, 0), new Vector3(0, 1.2f, 0), 0.45f, 0.25f, 16, C(0.95f, 0.93f, 0.88f), C(0.85f, 0.18f, 0.15f));
+                go.AddComponent<MeshFilter>().sharedMesh = mb.Build("Boia");
+                go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+            }
             go.AddComponent<Buoy>();
             var col = go.AddComponent<CapsuleCollider>();
             col.radius = 0.6f;

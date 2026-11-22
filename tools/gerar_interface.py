@@ -149,7 +149,52 @@ def paper():
     save(big, TX, 'papel.png')
 
 
+def palm_frond():
+    # Folha de palmeira: talo central e folíolos finos e compridos dos dois lados. Cor + recorte.
+    W, H, S = 512, 1024, 2
+    col = Image.new('RGB', (W * S, H * S), (40, 70, 30))
+    alpha = Image.new('L', (W * S, H * S), 0)
+    dc, da = ImageDraw.Draw(col), ImageDraw.Draw(alpha)
+    rnd = random.Random(3)
+    cx = W * S / 2
+    n = 64
+    for i in range(n):
+        t = 0.04 + i / n * 0.94
+        y = H * S * (1 - t)
+        L = W * S * 0.49 * (math.sin(min(1, t * 1.1) * math.pi) ** 0.45) * (0.88 + rnd.random() * 0.12)
+        wdt = 7 * S * (1 - t * 0.5)
+        for side in (-1, 1):
+            ang = math.radians(66 + rnd.uniform(-6, 6))
+            tipx = cx + side * L * math.sin(ang)
+            tipy = y - L * math.cos(ang)
+            mx, my = (cx + tipx) / 2, (y + tipy) / 2
+            nx, ny = -(tipy - y), (tipx - cx)
+            ln = math.hypot(nx, ny) or 1
+            nx, ny = nx / ln * wdt, ny / ln * wdt
+            poly = [(cx, y), (mx + nx, my + ny), (tipx, tipy), (mx - nx, my - ny)]
+            g = rnd.uniform(0.85, 1.15)
+            base = (int(52 * g), int(98 * g), int(34 * g))
+            tip = (int(118 * g), int(150 * g), int(60 * g))
+            k = t * 0.6 + rnd.random() * 0.2
+            c = tuple(int(base[j] + (tip[j] - base[j]) * k) for j in range(3))
+            dc.polygon(poly, fill=c)
+            da.polygon(poly, fill=255)
+            # nervura do folíolo
+            dc.line([(cx, y), (tipx, tipy)], fill=tuple(min(255, int(v * 1.25)) for v in c), width=S)
+    # talo central
+    for yy in range(0, H * S, 2):
+        t = 1 - yy / (H * S)
+        w = int((6 - t * 4) * S)
+        dc.line([(cx - w, yy), (cx + w, yy)], fill=(110, 120, 60))
+        da.line([(cx - w, yy), (cx + w, yy)], fill=255)
+    col = col.resize((W, H), Image.LANCZOS)
+    alpha = alpha.resize((W, H), Image.LANCZOS)
+    col.save(os.path.join(TX, 'palmeira_folha_diff.png'))
+    alpha.save(os.path.join(TX, 'palmeira_folha_alpha.png'))
+
+
 glass_panel()
+palm_frond()
 glass_slot()
 bars()
 key_box()

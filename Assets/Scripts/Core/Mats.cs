@@ -34,16 +34,52 @@ namespace MarAberto
         public static Material Foliage => Get("Foliage", "MarAberto/Foliage", "Diffuse");
 
         /// <summary>Terreno: LowPoly com variação de cor e areia molhada.</summary>
+        public static Texture2D Ground(string name) => Resources.Load<Texture2D>("Textures/Chao/" + name);
+
+        /// <summary>Terreno realista: areia, grama, terra e rocha misturadas pela cor do vértice.</summary>
         public static Material Terrain
         {
             get
             {
                 if (cache.TryGetValue("Terrain", out var m) && m != null) return m;
-                m = new Material(Find("MarAberto/LowPoly", "Diffuse")) { name = "Terrain" };
-                m.SetFloat("_Detail", 1f);
-                m.SetFloat("_BrushScale", 0.28f);
-                m.SetFloat("_Glossiness", 0.05f);
+                var sh = Shader.Find("MarAberto/Terrain");
+                if (sh == null)
+                {
+                    m = new Material(Find("MarAberto/LowPoly", "Diffuse")) { name = "Terrain" };
+                    cache["Terrain"] = m;
+                    return m;
+                }
+                m = new Material(sh) { name = "Terrain" };
+                m.SetTexture("_Sand", Ground("coast_sand_01_diff")); m.SetTexture("_SandN", Ground("coast_sand_01_nor"));
+                m.SetTexture("_Grass", Ground("aerial_grass_rock_diff")); m.SetTexture("_GrassN", Ground("aerial_grass_rock_nor"));
+                m.SetTexture("_Ground", Ground("forrest_ground_01_diff")); m.SetTexture("_GroundN", Ground("forrest_ground_01_nor"));
+                m.SetTexture("_Rock", Ground("rock_06_diff")); m.SetTexture("_RockN", Ground("rock_06_nor"));
                 cache["Terrain"] = m;
+                return m;
+            }
+        }
+
+        static Material TexturedPBR(string key, string diffPath, string norPath, float gloss, bool vertexColor = false)
+        {
+            if (cache.TryGetValue(key, out var m) && m != null) return m;
+            m = ModelLibrary.Custom(key, Resources.Load<Texture2D>(diffPath), Resources.Load<Texture2D>(norPath), gloss, vertexColor);
+            cache[key] = m;
+            return m;
+        }
+
+        /// <summary>Tábuas de madeira (píer, barraca, barco). Cor do vértice tinge a madeira.</summary>
+        public static Material Planks => TexturedPBR("Tabuas", "Models/modular_wooden_pier/textures/modular_wooden_pier_planks_diff_1k", "Models/modular_wooden_pier/textures/modular_wooden_pier_planks_nor_gl_1k", 0.12f, true);
+        public static Material Poles => TexturedPBR("Estacas", "Models/modular_wooden_pier/textures/modular_wooden_pier_poles_diff_1k", "Models/modular_wooden_pier/textures/modular_wooden_pier_poles_nor_gl_1k", 0.1f, true);
+        public static Material Bark => TexturedPBR("Casca", "Textures/Chao/bark_brown_02_diff", "Textures/Chao/bark_brown_02_nor", 0.08f, true);
+
+        public static Material PalmLeaves
+        {
+            get
+            {
+                if (cache.TryGetValue("FolhaPalmeira", out var m) && m != null) return m;
+                m = ModelLibrary.Custom("FolhaPalmeira", Resources.Load<Texture2D>("Textures/palmeira_folha_diff"), null, 0.3f, true,
+                    Resources.Load<Texture2D>("Textures/palmeira_folha_alpha"), 1f);
+                cache["FolhaPalmeira"] = m;
                 return m;
             }
         }

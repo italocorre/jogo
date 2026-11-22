@@ -8,11 +8,90 @@ namespace MarAberto
     {
         static readonly Dictionary<ItemType, Mesh> cache = new Dictionary<ItemType, Mesh>();
 
+        static readonly Dictionary<ItemType, Material> mats = new Dictionary<ItemType, Material>();
+
         public static Mesh Get(ItemType t)
         {
             if (cache.TryGetValue(t, out var m) && m != null) return m;
-            m = Build(t);
+            m = FromModel(t, out var mat);
+            if (m != null) mats[t] = mat;
+            else m = Build(t);
             cache[t] = m;
+            return m;
+        }
+
+        /// <summary>Material do item: realista quando vem de um modelo da Poly Haven.</summary>
+        public static Material Material(ItemType t)
+        {
+            Get(t);
+            return mats.TryGetValue(t, out var m) && m != null ? m : Mats.ForItem(t);
+        }
+
+        /// <summary>Itens que usam modelos realistas (Poly Haven, CC0).</summary>
+        static Mesh FromModel(ItemType t, out Material mat)
+        {
+            mat = null;
+            string id; float size; bool tool = false;
+            switch (t)
+            {
+                case ItemType.PicaretaPedra: id = "picke_dirty_01"; size = 0.68f; tool = true; break;
+                case ItemType.Concha: id = "lambis_shell"; size = 0.2f; break;
+                case ItemType.Pedra: id = "stone_01"; size = 0.24f; break;
+                default: return null;
+            }
+            var src = ModelLibrary.BakedMesh(id, out mat);
+            if (src == null || mat == null) return null;
+            var verts = src.vertices;
+            var norms = src.normals;
+            var tans = src.tangents;
+            Bounds b = src.bounds;
+            Quaternion rot = Quaternion.identity;
+            if (tool)
+            {
+                // Cabo no eixo Y (cabeça em cima), cabeça no eixo Z, como a picareta do jogo.
+                Vector3 s = b.size;
+                int longAxis = s.x >= s.y && s.x >= s.z ? 0 : s.y >= s.z ? 1 : 2;
+                rot = longAxis == 0 ? Quaternion.Euler(0, 0, 90) : longAxis == 2 ? Quaternion.Euler(-90, 0, 0) : Quaternion.identity;
+                // Descobre de que lado do cabo fica a cabeça (o lado mais largo).
+                float minY = float.MaxValue, maxY = float.MinValue;
+                foreach (var v in verts) { float y = (rot * (v - b.center)).y; minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y); }
+                float topW = 0, botW = 0; float span = maxY - minY;
+                foreach (var v in verts)
+                {
+                    var p = rot * (v - b.center);
+                    float w = new Vector2(p.x, p.z).magnitude;
+                    if (p.y > maxY - span * 0.2f) topW = Mathf.Max(topW, w);
+                    if (p.y < minY + span * 0.2f) botW = Mathf.Max(botW, w);
+                }
+                if (botW > topW) rot = Quaternion.Euler(180, 0, 0) * rot;
+                // Cabeça no eixo Z: se ela estiver no X, gira 90° em Y.
+                float hx = 0, hz = 0;
+                foreach (var v in verts)
+                {
+                    var p = rot * (v - b.center);
+                    if (p.y > span * 0.3f) { hx = Mathf.Max(hx, Mathf.Abs(p.x)); hz = Mathf.Max(hz, Mathf.Abs(p.z)); }
+                }
+                if (hx > hz) rot = Quaternion.Euler(0, 90, 0) * rot;
+            }
+            // Aplica giro, escala e centraliza (base do cabo em y = -0.27 para a picareta; centro para os demais).
+            Bounds nb = new Bounds();
+            for (int i = 0; i < verts.Length; i++)
+            {
+                verts[i] = rot * (verts[i] - b.center);
+                if (i == 0) nb = new Bounds(verts[i], Vector3.zero); else nb.Encapsulate(verts[i]);
+            }
+            float cur = tool ? nb.size.y : Mathf.Max(nb.size.x, Mathf.Max(nb.size.y, nb.size.z));
+            float k = cur > 1e-5f ? size / cur : 1f;
+            Vector3 offset = tool ? new Vector3(-nb.center.x, -nb.min.y, -nb.center.z) * k + new Vector3(0, -0.27f, 0) : -nb.center * k;
+            for (int i = 0; i < verts.Length; i++) verts[i] = verts[i] * k + offset;
+            for (int i = 0; i < norms.Length; i++) norms[i] = rot * norms[i];
+            for (int i = 0; i < tans.Length; i++) { var tv = rot * new Vector3(tans[i].x, tans[i].y, tans[i].z); tans[i] = new Vector4(tv.x, tv.y, tv.z, tans[i].w); }
+            var m = Object.Instantiate(src);
+            m.name = "Item_" + t;
+            m.vertices = verts;
+            if (norms.Length == verts.Length) m.normals = norms;
+            if (tans.Length == verts.Length) m.tangents = tans;
+            m.RecalculateBounds();
             return m;
         }
 

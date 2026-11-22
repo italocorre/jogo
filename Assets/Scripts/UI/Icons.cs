@@ -65,7 +65,7 @@ namespace MarAberto
             obj.hideFlags = HideFlags.HideAndDontSave;
             obj.layer = Layers.Icons;
             obj.AddComponent<MeshFilter>().sharedMesh = mesh;
-            obj.AddComponent<MeshRenderer>().sharedMaterial = Mats.ForItem(t);
+            obj.AddComponent<MeshRenderer>().sharedMaterial = ItemModels.Material(t);
             Quaternion rot = Items.Get(t).IsTool
                 ? Quaternion.Euler(0, 0, -40) * Quaternion.Euler(0, 90, 0)
                 : t == ItemType.Concha || t == ItemType.FragmentoMapa ? Quaternion.Euler(-60, 0, 0) * Quaternion.Euler(0, 15, 0)

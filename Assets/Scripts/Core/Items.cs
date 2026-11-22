@@ -88,6 +88,19 @@ namespace MarAberto
             for (int i = 0; i < size; i++) Slots[i] = ItemStack.Empty;
         }
 
+        /// <summary>Esvazia tudo e devolve o que havia (usado ao desmaiar).</summary>
+        public List<ItemStack> TakeAll()
+        {
+            var list = new List<ItemStack>();
+            for (int i = 0; i < Slots.Length; i++)
+            {
+                if (!Slots[i].IsEmpty) list.Add(Slots[i]);
+                Slots[i] = ItemStack.Empty;
+            }
+            OnChanged?.Invoke();
+            return list;
+        }
+
         public int Size => Slots.Length;
 
         public void Resize(int size)
