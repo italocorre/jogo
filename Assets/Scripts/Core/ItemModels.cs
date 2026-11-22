@@ -442,6 +442,32 @@ namespace MarAberto
                     mb.AddCylinder(new Vector3(0, 0.6f, 0), new Vector3(0, 0.3f, 0.04f), 0.002f, 0.002f, 4, line, false);
                     break;
                 }
+                case ItemType.Metralhadora:
+                {
+                    // Arma: corpo de metal escuro, cano, coronha de madeira, carregador.
+                    Color metal = C(0.18f, 0.18f, 0.2f), wood = C(0.45f, 0.3f, 0.18f);
+                    mb.AddBox(new Vector3(0, 0, 0), new Vector3(0.07f, 0.08f, 0.3f), Quaternion.identity, metal);
+                    mb.AddCylinder(new Vector3(0, 0.01f, 0.15f), new Vector3(0, 0.01f, 0.42f), 0.016f, 0.014f, 10, metal);
+                    mb.AddCylinder(new Vector3(0, 0.01f, 0.2f), new Vector3(0, 0.01f, 0.32f), 0.026f, 0.026f, 10, metal * 1.2f);
+                    mb.AddBox(new Vector3(0, -0.02f, -0.22f), new Vector3(0.05f, 0.09f, 0.18f), Quaternion.Euler(10, 0, 0), wood);
+                    mb.AddBox(new Vector3(0, -0.09f, 0.03f), new Vector3(0.04f, 0.12f, 0.05f), Quaternion.Euler(-12, 0, 0), metal);
+                    mb.AddBox(new Vector3(0, -0.07f, -0.07f), new Vector3(0.035f, 0.08f, 0.04f), Quaternion.Euler(15, 0, 0), wood);
+                    break;
+                }
+                case ItemType.Municao:
+                {
+                    // Caixinha com balas de latão.
+                    Color box = C(0.3f, 0.35f, 0.22f), brass = C(0.88f, 0.68f, 0.3f), tip = C(0.75f, 0.5f, 0.3f);
+                    mb.AddBox(new Vector3(0, -0.02f, 0), new Vector3(0.16f, 0.06f, 0.1f), Quaternion.identity, box);
+                    for (int i = 0; i < 4; i++)
+                        for (int j = 0; j < 2; j++)
+                        {
+                            Vector3 b = new Vector3(-0.055f + i * 0.037f, 0.01f, -0.022f + j * 0.044f);
+                            mb.AddCylinder(b, b + Vector3.up * 0.05f, 0.012f, 0.012f, 8, brass);
+                            mb.AddCylinder(b + Vector3.up * 0.05f, b + Vector3.up * 0.075f, 0.012f, 0.003f, 8, tip);
+                        }
+                    break;
+                }
                 case ItemType.Madeira:
                 {
                     // Tora com casca e anéis no corte.

@@ -88,7 +88,7 @@ Shader "MarAberto/Water"
                 // Normal das ondas + ondinhas de detalhe.
                 float3 n = normalize(i.normal);
                 // Ondinhas em várias escalas (perto e longe), para o mar não ficar liso.
-                float detail = saturate(1.0 - camDist / 600.0) * 0.32 + 0.04;
+                float detail = saturate(1.0 - camDist / 500.0) * 0.17 + 0.025;
                 float2 uv = i.wpos.xz;
                 float e = 0.12 + camDist * 0.002;
                 float h0 = DetailHeight(uv, _MA_Time);
@@ -97,7 +97,7 @@ Shader "MarAberto/Water"
                 n = normalize(n + float3(h0 - hx, 0, h0 - hz) / e * detail);
                 float2 uvB = uv * 0.08;
                 float b0 = MA_ValueNoise(uvB + _MA_Time * 0.03), bx = MA_ValueNoise(uvB + float2(0.05, 0) + _MA_Time * 0.03), bz = MA_ValueNoise(uvB + float2(0, 0.05) + _MA_Time * 0.03);
-                n = normalize(n + float3(b0 - bx, 0, b0 - bz) * 6.0);
+                n = normalize(n + float3(b0 - bx, 0, b0 - bz) * 2.5);
 
                 float3 sunDir = normalize(_MA_SunDir.xyz);
                 float light = lerp(0.1, 1.0, _MA_Day);
@@ -146,7 +146,7 @@ Shader "MarAberto/Water"
                 // Brilho do sol: ponto forte e nítido + faixa de reflexo larga.
                 float3 hv = normalize(sunDir + v);
                 float nh = saturate(dot(n, hv));
-                float spec = pow(nh, 900.0) * 6.0 + pow(nh, 120.0) * 0.35;
+                float spec = pow(nh, 1400.0) * 2.5 * saturate(1.0 - camDist / 250.0) + pow(nh, 180.0) * 0.18;
                 col += _MA_SunColor.rgb * spec * sunUp;
 
                 // Espuma: só uma linha fina e quebrada na beira (e um pouco nas cristas fortes), acesa pela luz do momento.
