@@ -280,6 +280,14 @@ namespace MarAberto
                 Description = "Junta água limpa: rápido quando chove, devagar no tempo bom. E para pegar.", Cost = L((Gra, 4), (Fol, 6), (Cor, 2)) });
             Add(new Recipe { Id = "rede", Name = "Rede coletora", Category = CraftCategory.Jangada, Piece = PieceKind.Rede, IconOverride = Cor, StartUnlocked = true,
                 Description = "Na borda da jangada: pega sozinha os destroços que passam. E para pegar o que juntou.", Cost = L((Cor, 4), (Gra, 4), (Mad, 1)) });
+            Add(new Recipe { Id = "nadadeiras", Name = "Nadadeiras", Category = CraftCategory.Itens, Output = ItemType.Nadadeiras, Station = Station.Bancada,
+                Description = "Basta ter na mochila: nada 45% mais rápido.", Cost = L((ItemType.Couro, 3), (Cor, 2)), Research = L((ItemType.Couro, 2)) });
+            Add(new Recipe { Id = "mascara", Name = "Máscara de mergulho", Category = CraftCategory.Itens, Output = ItemType.Mascara, Station = Station.Bancada,
+                Description = "Basta ter na mochila: enxerga muito mais longe debaixo d'água.", Cost = L((ItemType.LingoteCobre, 1), (ItemType.Couro, 1), (ItemType.Concha, 2)), Research = L((ItemType.LingoteCobre, 1), (ItemType.Concha, 2)) });
+            Add(new Recipe { Id = "tanque", Name = "Tanque de oxigênio", Category = CraftCategory.Itens, Output = ItemType.TanqueOxigenio, Station = Station.Fundicao,
+                Description = "Basta ter na mochila: o fôlego debaixo d'água dura 2,5x mais.", Cost = L((ItemType.LingoteFerro, 4), (ItemType.LingoteCobre, 2), (Cor, 1)), Research = L((ItemType.LingoteFerro, 4)) });
+            Add(new Recipe { Id = "lanterna", Name = "Lanterna de mergulho", Category = CraftCategory.Itens, Output = ItemType.LanternaMergulho, Station = Station.Bancada,
+                Description = "Na mão, ilumina para onde você olha. Funciona debaixo d'água.", Cost = L((ItemType.LingoteCobre, 2), (ItemType.LingoteFerro, 1), (Car, 2)), Research = L((ItemType.LingoteCobre, 2), (Car, 2)) });
             Add(new Recipe { Id = "gancho", Name = "Gancho", Category = CraftCategory.Ferramentas, Output = ItemType.Gancho, StartUnlocked = true,
                 Description = "Jogue no mar e puxe os destroços que a correnteza traz (tábuas, folhas, galhos e barris).", Cost = L((Gra, 2), (Cor, 3), (ItemType.Pedra, 1)) });
             Add(new Recipe { Id = "vara", Name = "Vara de pescar", Category = CraftCategory.Comida, Output = ItemType.VaraPescar, StartUnlocked = true,

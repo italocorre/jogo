@@ -40,6 +40,7 @@ namespace MarAberto
         MeshFilter heldFilter;
         MeshRenderer heldRenderer;
         TorchLight torch;
+        Light diveLight;
         ItemType shownType = (ItemType)(-1);
         float swingT = -1f;
         bool impactDone;
@@ -134,6 +135,7 @@ namespace MarAberto
             {
                 heldRenderer.enabled = false;
                 if (torch != null) torch.gameObject.SetActive(false);
+                if (diveLight != null) diveLight.enabled = false;
                 return;
             }
             heldRenderer.enabled = true;
@@ -141,6 +143,20 @@ namespace MarAberto
             heldRenderer.sharedMaterial = ItemModels.Material(t);
             if (torch == null && t == ItemType.Tocha) torch = TorchLight.Attach(held, new Vector3(0, 0.33f, 0));
             if (torch != null) torch.gameObject.SetActive(t == ItemType.Tocha);
+            if (diveLight == null && t == ItemType.LanternaMergulho)
+            {
+                var lg = new GameObject("LuzLanterna");
+                lg.transform.SetParent(player.Cam.transform, false);
+                lg.transform.localPosition = new Vector3(0.15f, -0.1f, 0.3f);
+                diveLight = lg.AddComponent<Light>();
+                diveLight.type = LightType.Spot;
+                diveLight.spotAngle = 55f;
+                diveLight.range = 30f;
+                diveLight.intensity = 2.6f;
+                diveLight.color = new Color(0.95f, 0.97f, 1f);
+                diveLight.shadows = LightShadows.None;
+            }
+            if (diveLight != null) diveLight.enabled = t == ItemType.LanternaMergulho;
             if (Items.Get(t).IsTool || t == ItemType.Tocha)
             {
                 held.localPosition = new Vector3(0, -0.02f, 0);

@@ -553,6 +553,41 @@ namespace MarAberto
                     mb.AddCylinder(new Vector3(0, -0.12f, 0), new Vector3(0, -0.09f, 0), 0.19f, 0.19f, 12, trim);                 // cinto
                     break;
                 }
+                case ItemType.Nadadeiras:
+                {
+                    Color rub = C(0.15f, 0.35f, 0.5f), dark = C(0.08f, 0.1f, 0.12f);
+                    foreach (float x in new[] { -0.07f, 0.07f })
+                    {
+                        mb.AddRock(new Vector3(x, 0.03f, -0.06f), 0.06f, 61, n => dark, 0.05f, new Vector3(0.9f, 0.7f, 1.4f), 1);   // sapatilha
+                        mb.AddBox(new Vector3(x, 0.02f, 0.12f), new Vector3(0.11f, 0.012f, 0.26f), Quaternion.identity, rub);            // pá
+                    }
+                    break;
+                }
+                case ItemType.TanqueOxigenio:
+                {
+                    Color body = C(0.85f, 0.75f, 0.25f), metal = C(0.35f, 0.35f, 0.38f);
+                    mb.AddCylinder(new Vector3(0, -0.2f, 0), new Vector3(0, 0.15f, 0), 0.08f, 0.08f, 14, body);
+                    mb.AddSphere(new Vector3(0, 0.15f, 0), new Vector3(0.08f, 0.05f, 0.08f), body, 2);
+                    mb.AddSphere(new Vector3(0, -0.2f, 0), new Vector3(0.08f, 0.04f, 0.08f), body, 2);
+                    mb.AddCylinder(new Vector3(0, 0.19f, 0), new Vector3(0, 0.25f, 0), 0.02f, 0.02f, 8, metal);
+                    mb.AddCylinder(new Vector3(-0.04f, 0.24f, 0), new Vector3(0.04f, 0.24f, 0), 0.015f, 0.015f, 6, metal);
+                    break;
+                }
+                case ItemType.Mascara:
+                {
+                    Color rub = C(0.1f, 0.12f, 0.14f), glass = C(0.55f, 0.75f, 0.85f);
+                    mb.AddRock(new Vector3(0, 0, 0), 0.09f, 71, n => n.z > 0.3f ? glass : rub, 0.02f, new Vector3(1.3f, 0.8f, 0.5f), 2);
+                    mb.AddCylinder(new Vector3(-0.12f, 0, -0.02f), new Vector3(0.12f, 0, -0.02f), 0.012f, 0.012f, 6, rub);
+                    break;
+                }
+                case ItemType.LanternaMergulho:
+                {
+                    Color body = C(0.2f, 0.22f, 0.25f), lens = C(1f, 0.95f, 0.75f);
+                    mb.AddCylinder(new Vector3(0, -0.12f, 0), new Vector3(0, 0.08f, 0), 0.028f, 0.028f, 10, body);
+                    mb.AddCylinder(new Vector3(0, 0.08f, 0), new Vector3(0, 0.13f, 0), 0.028f, 0.045f, 10, body);
+                    mb.AddCylinder(new Vector3(0, 0.13f, 0), new Vector3(0, 0.135f, 0), 0.042f, 0.042f, 10, lens);
+                    break;
+                }
                 case ItemType.Municao:
                 {
                     // Caixinha com balas de latão.

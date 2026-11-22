@@ -142,7 +142,8 @@ namespace MarAberto
             {
                 Vector3 fwd = Cam.transform.forward;
                 Vector3 right = Cam.transform.right;
-                Vector3 wish = (fwd * input.z + right * input.x) * SwimSpeed * (run ? 1.45f : 1f);
+                float fins = Game.Instance.Inventory.Count(ItemType.Nadadeiras) > 0 ? 1.45f : 1f;
+                Vector3 wish = (fwd * input.z + right * input.x) * SwimSpeed * fins * (run ? 1.45f : 1f);
                 if (jump) wish.y += SwimSpeed * 0.9f;
                 if (dive) wish.y -= SwimSpeed * 0.9f;
                 if (!dive && pos.y + 1.4f > water - 0.6f && !HeadUnderwater) wish.y = Mathf.Max(wish.y, (water - 1.35f - pos.y) * 2.5f);
@@ -247,7 +248,8 @@ namespace MarAberto
         {
             if (HeadUnderwater)
             {
-                Oxygen = Mathf.Max(0, Oxygen - MaxOxygen / OxygenSeconds * dt);
+                float tank = Game.Instance.Inventory.Count(ItemType.TanqueOxigenio) > 0 ? 2.5f : 1f;
+                Oxygen = Mathf.Max(0, Oxygen - MaxOxygen / (OxygenSeconds * tank) * dt);
                 if (Oxygen <= 0) Damage(12f * dt, false);
             }
             else

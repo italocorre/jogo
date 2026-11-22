@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace MarAberto
 {
-    public enum FlotsamKind { Tabua, Folhas, Galhos, Barril }
+    public enum FlotsamKind { Tabua, Folhas, Galhos, Barril, Garrafa }
 
     /// <summary>Destroço boiando: a correnteza traz perto da jangada. Puxe com o gancho ou pegue nadando (E).</summary>
     public class FlotsamItem : MonoBehaviour, IInteractable
@@ -53,6 +53,16 @@ namespace MarAberto
                         }
                         mb.AddCylinder(new Vector3(-0.05f, 0.03f, -0.05f), new Vector3(0.05f, 0.03f, 0.05f), 0.045f, 0.045f, 6, C(0.75f, 0.68f, 0.5f)); // amarrado
                         break;
+                    case FlotsamKind.Garrafa:
+                    {
+                        Color glass = C(0.35f, 0.6f, 0.45f), paper = C(0.92f, 0.86f, 0.7f);
+                        mb.AddCylinder(new Vector3(0, 0, -0.14f), new Vector3(0, 0, 0.08f), 0.055f, 0.055f, 10, glass);
+                        mb.AddCylinder(new Vector3(0, 0, 0.08f), new Vector3(0, 0, 0.15f), 0.055f, 0.02f, 10, glass);
+                        mb.AddCylinder(new Vector3(0, 0, 0.15f), new Vector3(0, 0, 0.2f), 0.02f, 0.02f, 8, glass);
+                        mb.AddCylinder(new Vector3(0, 0, 0.2f), new Vector3(0, 0, 0.23f), 0.021f, 0.018f, 8, C(0.55f, 0.4f, 0.25f)); // rolha
+                        mb.AddCylinder(new Vector3(0, 0, -0.1f), new Vector3(0, 0, 0.06f), 0.03f, 0.03f, 8, paper);           // bilhete
+                        break;
+                    }
                     default:
                         Color wood = C(0.48f, 0.32f, 0.18f), band = C(0.3f, 0.3f, 0.32f);
                         mb.AddCylinder(new Vector3(0, 0, -0.4f), new Vector3(0, 0, 0.4f), 0.3f, 0.3f, 14, wood);
@@ -73,7 +83,7 @@ namespace MarAberto
 
         public string Prompt => "Pegar " + Name;
         public bool CanInteract => true;
-        public string Name => Kind == FlotsamKind.Tabua ? "tábuas" : Kind == FlotsamKind.Folhas ? "folhas" : Kind == FlotsamKind.Galhos ? "galhos" : "barril (saque)";
+        public string Name => Kind == FlotsamKind.Tabua ? "tábuas" : Kind == FlotsamKind.Folhas ? "folhas" : Kind == FlotsamKind.Galhos ? "galhos" : Kind == FlotsamKind.Garrafa ? "garrafa com mensagem" : "barril (saque)";
 
         public void Interact(PlayerController player) => Collect();
 
@@ -93,6 +103,19 @@ namespace MarAberto
                 case FlotsamKind.Tabua: inv.Add(ItemType.Madeira, Random.Range(1, 3)); break;
                 case FlotsamKind.Folhas: inv.Add(ItemType.Folha, Random.Range(2, 4)); break;
                 case FlotsamKind.Galhos: inv.Add(ItemType.Graveto, Random.Range(2, 4)); break;
+                case FlotsamKind.Garrafa:
+                {
+                    // Um mapa rabiscado: revela a ilha escondida mais perto.
+                    var g = Game.Instance;
+                    var isl = g.World != null && g.Player != null ? g.World.NearestHidden(g.Player.transform.position) : null;
+                    if (isl != null)
+                    {
+                        isl.Revealed = true;
+                        g.Hud.Toast("Garrafa com mensagem: \"Terra à vista...\" — " + isl.IslandName + " marcada no mapa (M)!", Hud.Gold);
+                    }
+                    else inv.Add(ItemType.FragmentoMapa, 1);
+                    break;
+                }
                 default:
                     // Barril: 3 achados sorteados.
                     for (int i = 0; i < 3; i++)
@@ -160,7 +183,7 @@ namespace MarAberto
             var near = g.World.IslandAt(sp2);
             if (near != null && near.Height(sp2.x, sp2.z) > -1f) return;
             float r = Random.value;
-            var k = r < 0.36f ? FlotsamKind.Tabua : r < 0.62f ? FlotsamKind.Folhas : r < 0.88f ? FlotsamKind.Galhos : FlotsamKind.Barril;
+            var k = r < 0.35f ? FlotsamKind.Tabua : r < 0.6f ? FlotsamKind.Folhas : r < 0.85f ? FlotsamKind.Galhos : r < 0.965f ? FlotsamKind.Barril : FlotsamKind.Garrafa;
             FlotsamItem.Spawn(k, new Vector3(sp2.x, 0, sp2.z));
         }
     }

@@ -60,6 +60,10 @@ namespace MarAberto
         Couro,
         ArmaduraCouro,
         ArmaduraFerro,
+        Nadadeiras,
+        TanqueOxigenio,
+        Mascara,
+        LanternaMergulho,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca, Gancho, Besta, Pistola }
@@ -156,6 +160,14 @@ namespace MarAberto
             SetRarity(ItemType.ArmaduraCouro, 1);
             Def(ItemType.ArmaduraFerro, "Armadura de Ferro", "Na mochila, protege: -45% de dano recebido.", new Color(0.6f, 0.6f, 0.62f), 0, 1);
             SetRarity(ItemType.ArmaduraFerro, 2);
+            Def(ItemType.Nadadeiras, "Nadadeiras", "Na mochila: nada 45% mais rápido.", new Color(0.25f, 0.45f, 0.6f), 0, 1);
+            SetRarity(ItemType.Nadadeiras, 1);
+            Def(ItemType.TanqueOxigenio, "Tanque de Oxigênio", "Na mochila: fôlego debaixo d'água dura 2,5x mais.", new Color(0.8f, 0.75f, 0.3f), 0, 1);
+            SetRarity(ItemType.TanqueOxigenio, 2);
+            Def(ItemType.Mascara, "Máscara de Mergulho", "Na mochila: enxerga muito mais longe debaixo d'água.", new Color(0.4f, 0.6f, 0.7f), 0, 1);
+            SetRarity(ItemType.Mascara, 1);
+            Def(ItemType.LanternaMergulho, "Lanterna de Mergulho", "Na mão: ilumina para onde você olha (ótima no fundo do mar e à noite).", new Color(0.9f, 0.8f, 0.4f), 0, 1);
+            SetRarity(ItemType.LanternaMergulho, 1);
             Def(ItemType.CarneAssada, "Carne Assada", "Assada na fogueira: mata bem a fome e cura.", new Color(0.55f, 0.3f, 0.18f), 6, 20);
             SetFood(ItemType.CarneAssada, 45f, 0f, 15f);
             Def(ItemType.PeixeCru, "Peixe (cru)", "Pescado com a vara. Melhor assar na fogueira.", new Color(0.6f, 0.7f, 0.8f), 2, 20);

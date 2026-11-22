@@ -134,7 +134,9 @@ namespace MarAberto
                 float depth = Mathf.Clamp01(-cam.transform.position.y / 35f);
                 RenderSettings.fogColor = Color.Lerp(Hex("#2A9FA8"), Hex("#0A3552"), depth) * Mathf.Lerp(0.25f, 1f, day);
                 RenderSettings.fogStartDistance = 2f;
-                RenderSettings.fogEndDistance = Mathf.Lerp(70f, 30f, depth);
+                bool mask = Game.Instance != null && Game.Instance.Inventory != null && Game.Instance.Inventory.Count(ItemType.Mascara) > 0;
+                RenderSettings.fogEndDistance = Mathf.Lerp(70f, 30f, depth) * (mask ? 1.9f : 1f);
+                if (mask) RenderSettings.fogStartDistance = 6f;
                 if (cam != null) cam.backgroundColor = RenderSettings.fogColor;
             }
             else
