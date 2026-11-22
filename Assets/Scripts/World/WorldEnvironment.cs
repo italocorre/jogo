@@ -52,6 +52,7 @@ namespace MarAberto
             QualitySettings.antiAliasing = 4;
             // VSync ligado: os quadros saem no ritmo do monitor (liso, sem tranco nem rasgo na imagem).
             QualitySettings.vSyncCount = 1;
+            GameSettings.Apply(camera);   // a escolha do jogador (menu de pausa) vale por cima
             Tick(0f);
         }
 

@@ -60,7 +60,8 @@ namespace MarAberto
         public void Setup(bool preview)
         {
             Instance = this;
-            Application.targetFrameRate = -1; // quem manda é o VSync (ritmo do monitor)
+            GameSettings.Load();
+            Application.targetFrameRate = GameSettings.VSync ? -1 : 240; // com VSync quem manda é o ritmo do monitor
             Inventory = new Inventory(Inventory.HotbarSize + 12);
 
             if (!preview)

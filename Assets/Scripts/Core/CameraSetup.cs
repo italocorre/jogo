@@ -21,6 +21,7 @@ namespace MarAberto
             dists[Layers.Props] = 300f;
             cam.layerCullDistances = dists;
             cam.layerCullSpherical = true;
+            GameSettings.Apply(cam);
             if (cam.GetComponent<PostFX>() == null) cam.gameObject.AddComponent<PostFX>();
         }
     }

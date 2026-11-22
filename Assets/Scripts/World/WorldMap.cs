@@ -166,7 +166,7 @@ namespace MarAberto
                 }
                 if (!isl.Generated && !isl.Generating && !busy && dist < GenerateDistance)
                     StartCoroutine(GenerateOne(isl));
-                if (isl.Generated) isl.SetDetailVisible(dist < HideDistance);
+                if (isl.Generated) isl.SetDetailVisible(dist < HideDistance * GameSettings.DetailMul);
             }
         }
 

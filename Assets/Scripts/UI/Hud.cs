@@ -506,7 +506,8 @@ namespace MarAberto
             UIKit.Img(pauseWin, "Fio", UIKit.Hairline, null, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -252), new Vector2(600, 4));
 
             var col = UIKit.Panel(pauseWin, "Coluna").rectTransform;
-            col.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -300), new Vector2(520, 520));
+            col.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-280, -300), new Vector2(520, 520));
+            BuildGraphicsColumn();
             var cont = UIKit.Btn(col, "Continuar", "CONTINUAR", () => SetPanel(Panel.None), 28);
             ((RectTransform)cont.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(420, 64));
             sensSlider = MakeSlider(col, "Sensibilidade do mouse", -130, 0.3f, 6f, game.Player != null ? game.Player.MouseSensitivity : 2f, v => { if (game.Player != null) game.Player.MouseSensitivity = v; });
@@ -517,6 +518,49 @@ namespace MarAberto
             var cheats = UIKit.Txt(col, "Atalhos", "Teste:  <color=#FFD27A>F1</color> materiais + receitas  ·  <color=#FFD27A>F2</color> barco  ·  <color=#FFD27A>F3</color> ir ao recife\n<color=#FFD27A>F4</color> avançar hora  ·  <color=#FFD27A>F5</color> itens  ·  <color=#FFD27A>F6</color> curar  ·  <color=#FFD27A>F7</color> FPS",
                 UIKit.Body, 17, UIKit.Muted, TextAnchor.MiddleCenter);
             cheats.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(500, 50));
+        }
+
+        // ---------- Gráficos ----------
+        readonly List<Image> qualityBtns = new List<Image>();
+        Text vsyncLabel;
+
+        void BuildGraphicsColumn()
+        {
+            GameSettings.Load();
+            var col = UIKit.Panel(pauseWin, "Graficos").rectTransform;
+            col.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(280, -300), new Vector2(520, 520));
+            UIKit.Txt(col, "Titulo", "GRÁFICOS", UIKit.BodyBold, 16, UIKit.Label, TextAnchor.MiddleLeft)
+                .rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -30), new Vector2(420, 26));
+            qualityBtns.Clear();
+            for (int i = 0; i < 4; i++)
+            {
+                int q = i;
+                var b = UIKit.Btn(col, "Qualidade" + i, GameSettings.QualityNames[i], () => { GameSettings.Quality = q; ApplyGraphics(); }, 18);
+                ((RectTransform)b.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-157 + i * 105, -76), new Vector2(100, 46));
+                qualityBtns.Add((Image)b.targetGraphic);
+            }
+            MakeSlider(col, "Distância de visão", -130, 0.5f, 1.5f, GameSettings.ViewDistance, v => { GameSettings.ViewDistance = v; ApplyGraphics(); });
+            MakeSlider(col, "Campo de visão (FOV)", -210, 60f, 100f, GameSettings.Fov, v => { GameSettings.Fov = v; ApplyGraphics(); });
+            var vs = UIKit.Btn(col, "VSync", "", () => { GameSettings.VSync = !GameSettings.VSync; ApplyGraphics(); }, 20);
+            ((RectTransform)vs.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -300), new Vector2(420, 52));
+            vsyncLabel = vs.GetComponentInChildren<Text>();
+            UIKit.Txt(col, "Dica", "Travando? Use BAIXA ou MÉDIA e diminua a distância de visão.\nVSync ligado = imagem lisa no ritmo do monitor.\nF7 mostra o FPS.",
+                UIKit.Body, 17, UIKit.Muted, TextAnchor.UpperCenter).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -372), new Vector2(460, 90));
+            RefreshGraphicsUI();
+        }
+
+        void ApplyGraphics()
+        {
+            GameSettings.Apply(game.Player != null ? game.Player.Cam : Camera.main);
+            GameSettings.Save();
+            RefreshGraphicsUI();
+        }
+
+        void RefreshGraphicsUI()
+        {
+            for (int i = 0; i < qualityBtns.Count; i++)
+                qualityBtns[i].color = i == GameSettings.Quality ? new Color(1f, 0.85f, 0.45f, 1f) : Color.white;
+            if (vsyncLabel != null) vsyncLabel.text = "VSYNC: " + (GameSettings.VSync ? "LIGADO" : "DESLIGADO");
         }
 
         // ---------- Abrir / fechar ----------
