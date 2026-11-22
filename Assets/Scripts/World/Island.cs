@@ -147,7 +147,6 @@ namespace MarAberto
             BuildSeabedLife();
             PlaceOres();
             PlaceLoot();
-            Merchant.Create(transform, MerchantPos, SpawnPoint);
             Reefs = Reef.CreateAll(transform.parent, transform.position, Seed);
         }
 
@@ -373,10 +372,8 @@ namespace MarAberto
 
         void BuildPalms()
         {
-            var trunks = new MeshBuilder();
-            var leaves = new MeshBuilder();
-            var nuts = new MeshBuilder();
-            var parent = new GameObject("CoqueirosColisao").transform;
+            // Cada coqueiro é um objeto próprio (pode ser cortado com o machado).
+            var parent = new GameObject("Coqueiros").transform;
             parent.SetParent(transform, false);
             int count = 0;
             for (int i = 0; i < 1400 && count < 110; i++)
@@ -387,19 +384,36 @@ namespace MarAberto
                 float height = R(7f, 13f);
                 Vector3 outward = new Vector3(p.x - transform.position.x, 0, p.z - transform.position.z).normalized;
                 Vector3 lean = (outward * R(0.5f, 1f) + new Vector3(R(-0.5f, 0.5f), 0, R(-0.5f, 0.5f))).normalized * R(1.5f, 4f);
-                Vector3 top = PalmTrunk(trunks, p - Vector3.up * 0.4f, height, lean);
+
+                var trunks = new MeshBuilder();
+                var leaves = new MeshBuilder();
+                var nuts = new MeshBuilder();
+                Vector3 top = PalmTrunk(trunks, -Vector3.up * 0.4f, height, lean);
                 PalmCrown(leaves, nuts, top);
 
-                var cgo = new GameObject("Coqueiro");
-                cgo.transform.SetParent(parent, false);
-                cgo.transform.position = p + Vector3.up * (height * 0.3f) + lean * 0.1f;
-                var cap = cgo.AddComponent<CapsuleCollider>();
-                cap.radius = 0.3f;
-                cap.height = height * 0.6f;
+                var palm = new GameObject("Coqueiro");
+                palm.transform.SetParent(parent, false);
+                palm.transform.position = p;
+                void Part(string n, MeshBuilder mb, Material m, bool shadows)
+                {
+                    var g = new GameObject(n);
+                    g.transform.SetParent(palm.transform, false);
+                    g.AddComponent<MeshFilter>().sharedMesh = mb.Build(n);
+                    var mr = g.AddComponent<MeshRenderer>();
+                    mr.sharedMaterial = m;
+                    mr.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+                }
+                Part("Tronco", trunks, Mats.Bark, true);
+                Part("Folhas", leaves, Mats.PalmLeaves, true);
+                Part("Cocos", nuts, Mats.LowPoly, false);
+                var cap = palm.AddComponent<CapsuleCollider>();
+                cap.radius = 0.32f;
+                cap.height = height * 0.7f;
+                cap.center = Vector3.up * (height * 0.35f) + lean * 0.15f;
+                var ch = palm.AddComponent<Choppable>();
+                ch.DisplayName = "Coqueiro";
+                ch.MaxHealth = 5f; ch.Wood = 3; ch.Leaves = 4; ch.Sticks = 1; ch.Coconuts = rng.Next(0, 3);
             }
-            Attach("Troncos", trunks, Mats.Bark);
-            Attach("FolhasCoqueiros", leaves, Mats.PalmLeaves);
-            Attach("Cocos", nuts, Mats.LowPoly);
         }
 
         Vector3 PalmTrunk(MeshBuilder mb, Vector3 basePos, float height, Vector3 lean)
@@ -483,6 +497,9 @@ namespace MarAberto
                     SetLayer(t, Layers.Props);
                     var cap = t.AddComponent<CapsuleCollider>();
                     cap.radius = 0.35f; cap.height = 4f; cap.center = new Vector3(0, 2f, 0);
+                    var ch = t.AddComponent<Choppable>();
+                    ch.DisplayName = "Árvore";
+                    ch.MaxHealth = 7f; ch.Wood = 5; ch.Leaves = 2; ch.Sticks = 3;
                 }
             }
             if (ModelLibrary.Has("fern_02"))
@@ -735,11 +752,38 @@ namespace MarAberto
                 Spot(ItemType.Concha, p + Vector3.up * 0.04f, 180f);
             }
             int stones = 0;
-            for (int i = 0; i < 600 && stones < 22; i++)
+            for (int i = 0; i < 1200 && stones < 45; i++)
             {
                 if (!RandomLandPoint(1f, 40f, 0.75f, out var p)) continue;
                 stones++;
                 Spot(ItemType.Pedra, p + Vector3.up * 0.1f, 200f);
+            }
+            // Gravetos e folhas caídos perto das árvores e coqueiros.
+            for (int i = 0; i < palmBases.Count; i++)
+            {
+                Vector3 b = palmBases[i];
+                Vector3 p = b + new Vector3(R(-2.5f, 2.5f), 0, R(-2.5f, 2.5f));
+                p.y = Height(p.x, p.z) + 0.1f;
+                if (p.y > 0.5f) Spot(i % 2 == 0 ? ItemType.Folha : ItemType.Graveto, p, 240f);
+            }
+            for (int i = 0; i < treeSpots.Count; i++)
+            {
+                Vector3 b = treeSpots[i];
+                Vector3 p = b + new Vector3(R(-3f, 3f), 0, R(-3f, 3f));
+                p.y = Height(p.x, p.z) + 0.1f;
+                if (p.y > 0.5f) Spot(ItemType.Graveto, p, 240f);
+            }
+            // Kit inicial perto de onde o jogador acorda (dá para fazer machado e picareta logo).
+            ItemType[] kit = { ItemType.Pedra, ItemType.Pedra, ItemType.Pedra, ItemType.Pedra, ItemType.Pedra,
+                ItemType.Graveto, ItemType.Graveto, ItemType.Graveto, ItemType.Graveto,
+                ItemType.Folha, ItemType.Folha, ItemType.Folha, ItemType.Folha, ItemType.Folha, ItemType.Folha };
+            for (int i = 0; i < kit.Length; i++)
+            {
+                float a = i * 2.4f + R(0, 0.5f), r = R(3f, 9f);
+                Vector3 p = SpawnPoint + new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r);
+                p.y = Height(p.x, p.z) + 0.1f;
+                if (p.y < 0.4f) continue;
+                Spot(kit[i], p, 150f);
             }
             for (int i = 0; i < palmBases.Count; i += 2)
             {

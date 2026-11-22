@@ -37,8 +37,8 @@ namespace MarAberto
         public Ocean Ocean { get; private set; }
         public Boat Boat { get; private set; }
         public int Coins { get; private set; }
-        public int BackpackLevel { get; private set; }
-        public int OxygenLevel { get; private set; }
+        public int BackpackLevel { get; set; }
+        public int OxygenLevel { get; set; }
 
         AudioSource oceanAudio, underAudio, music;
         AudioLowPassFilter lowPass;
@@ -90,9 +90,9 @@ namespace MarAberto
             music.loop = false;
             music.volume = MusicVolume;
 
-            // Começa só com a picareta.
-            Inventory.Add(ItemType.PicaretaPedra, 1, false);
+            // Começa de mãos vazias: coleta pedras, gravetos e folhas e fabrica as ferramentas no Tab.
             Inventory.Selected = 0;
+            Crafting.Init(this);
 
             Hud = gameObject.AddComponent<Hud>();
             Hud.Init(this);
@@ -101,8 +101,8 @@ namespace MarAberto
         void Start()
         {
             Icons.RenderAll();
-            Hud.Toast("Bem-vindo à Ilha do Porto!", Hud.Gold);
-            Hud.Toast("Fale com o mercador na barraca listrada.", Hud.Info);
+            Hud.Toast("Você acordou numa ilha deserta...", Hud.Gold);
+            Hud.Toast("Pegue pedras, gravetos e folhas no chão e abra o Tab para fabricar.", Hud.Info);
             musicGap = 6f;
         }
 
@@ -124,7 +124,13 @@ namespace MarAberto
         {
             if (Input.GetKeyDown(KeyCode.F7)) showFps = !showFps;
             if (Player == null || Hud.AnyPanelOpen) return;
-            if (Input.GetKeyDown(KeyCode.F1)) { AddCoins(500); Hud.Toast("Teste: +500 moedas", Hud.Gold); }
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                foreach (var t in new[] { ItemType.Madeira, ItemType.Graveto, ItemType.Folha, ItemType.Corda, ItemType.Pedra, ItemType.Carvao, ItemType.Cobre, ItemType.Ferro })
+                    Inventory.Add(t, 15, false);
+                Crafting.UnlockAll();
+                Hud.Toast("Teste: materiais e todas as receitas", Hud.Gold);
+            }
             if (Input.GetKeyDown(KeyCode.F2))
             {
                 GiveBoat();

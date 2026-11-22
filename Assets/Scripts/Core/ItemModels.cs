@@ -103,6 +103,11 @@ namespace MarAberto
                 case ItemType.Coco: return 0.16f;
                 case ItemType.PicaretaPedra: return 0.35f;
                 case ItemType.Tocha: return 0.3f;
+                case ItemType.MachadoPedra: return 0.35f;
+                case ItemType.Lanca: return 0.5f;
+                case ItemType.Madeira: return 0.2f;
+                case ItemType.Graveto: return 0.2f;
+                case ItemType.Folha: return 0.2f;
                 case ItemType.FragmentoMapa: return 0.16f;
                 case ItemType.Perola: return 0.07f;
                 case ItemType.Concha: return 0.1f;
@@ -261,6 +266,77 @@ namespace MarAberto
                 case ItemType.PicaretaPedra:
                     Tools.AddPickaxe(mb, 1, -0.25f);
                     break;
+                case ItemType.Madeira:
+                {
+                    // Tora com casca e anéis no corte.
+                    Color bark = C(0.38f, 0.27f, 0.17f), barkDark = C(0.28f, 0.19f, 0.12f), ring = C(0.82f, 0.66f, 0.45f);
+                    mb.AddCylinder(new Vector3(-0.2f, 0, 0), new Vector3(0.2f, 0, 0), 0.075f, 0.07f, 12, bark, barkDark, false);
+                    mb.AddCylinder(new Vector3(-0.205f, 0, 0), new Vector3(-0.2f, 0, 0), 0.07f, 0.075f, 12, ring);
+                    mb.AddCylinder(new Vector3(0.2f, 0, 0), new Vector3(0.205f, 0, 0), 0.07f, 0.066f, 12, ring);
+                    mb.AddCylinder(new Vector3(0.02f, 0.05f, 0.03f), new Vector3(0.05f, 0.11f, 0.07f), 0.015f, 0.006f, 6, barkDark); // galhinho
+                    break;
+                }
+                case ItemType.Graveto:
+                {
+                    Color w = C(0.56f, 0.42f, 0.27f), wd = C(0.42f, 0.30f, 0.19f);
+                    mb.AddCylinder(new Vector3(-0.2f, 0, 0), new Vector3(0.0f, 0.012f, 0.01f), 0.016f, 0.014f, 6, wd, w);
+                    mb.AddCylinder(new Vector3(0.0f, 0.012f, 0.01f), new Vector3(0.2f, 0.0f, -0.01f), 0.014f, 0.01f, 6, w, wd);
+                    mb.AddCylinder(new Vector3(0.05f, 0.012f, 0.01f), new Vector3(0.12f, 0.03f, 0.08f), 0.008f, 0.004f, 5, w); // ramo
+                    break;
+                }
+                case ItemType.Folha:
+                {
+                    // Folha de coqueiro: talo e folíolos.
+                    Color stem = C(0.55f, 0.55f, 0.25f), leaf = C(0.30f, 0.55f, 0.18f), leafDark = C(0.20f, 0.42f, 0.13f);
+                    mb.AddCylinder(new Vector3(-0.22f, 0, 0), new Vector3(0.22f, 0.02f, 0), 0.008f, 0.003f, 5, stem);
+                    for (int i = 0; i < 9; i++)
+                    {
+                        float x = -0.17f + i * 0.045f;
+                        float len = 0.12f * (1f - Mathf.Abs(i - 4) / 6f);
+                        for (int sd = -1; sd <= 1; sd += 2)
+                        {
+                            Vector3 a = new Vector3(x, 0.005f, 0), b = new Vector3(x + 0.03f, -0.01f, sd * len), c = new Vector3(x + 0.045f, 0.005f, 0);
+                            mb.AddTri(a, b, c, i % 2 == 0 ? leaf : leafDark);
+                            mb.AddTri(a, c, b, leafDark);
+                        }
+                    }
+                    break;
+                }
+                case ItemType.Corda:
+                {
+                    // Rolo de corda: anéis empilhados.
+                    Color rope = C(0.78f, 0.66f, 0.44f), ropeDark = C(0.62f, 0.51f, 0.33f);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float y = i * 0.022f, r = 0.085f - (i % 2) * 0.006f;
+                        int seg = 16;
+                        for (int k = 0; k < seg; k++)
+                        {
+                            float a0 = k * Mathf.PI * 2f / seg, a1 = (k + 1) * Mathf.PI * 2f / seg;
+                            mb.AddCylinder(new Vector3(Mathf.Cos(a0) * r, y, Mathf.Sin(a0) * r), new Vector3(Mathf.Cos(a1) * r, y, Mathf.Sin(a1) * r), 0.013f, 0.013f, 6, k % 2 == 0 ? rope : ropeDark, false);
+                        }
+                    }
+                    mb.AddCylinder(new Vector3(0.085f, 0.07f, 0), new Vector3(0.14f, 0.03f, 0.05f), 0.012f, 0.01f, 6, rope); // ponta solta
+                    break;
+                }
+                case ItemType.MachadoPedra:
+                {
+                    // Cabo no eixo Y; lâmina de pedra lascada amarrada com corda (cabeça no eixo Z).
+                    Color wood = C(0.55f, 0.38f, 0.22f), stone = C(0.50f, 0.49f, 0.47f), stoneDark = C(0.38f, 0.37f, 0.36f), rope = C(0.72f, 0.60f, 0.40f);
+                    mb.AddCylinder(new Vector3(0, -0.27f, 0), new Vector3(0, 0.33f, 0), 0.022f, 0.02f, 8, wood);
+                    mb.AddRock(new Vector3(0, 0.27f, 0.07f), 0.07f, 21, n => n.z > 0.3f ? stone : stoneDark, 0.18f, new Vector3(0.35f, 1.1f, 1.3f));
+                    for (int i = 0; i < 3; i++)
+                        mb.AddCylinder(new Vector3(0, 0.22f + i * 0.03f, -0.005f), new Vector3(0, 0.235f + i * 0.03f, -0.005f), 0.03f, 0.03f, 8, rope);
+                    break;
+                }
+                case ItemType.Lanca:
+                {
+                    Color wood = C(0.58f, 0.42f, 0.25f), stone = C(0.45f, 0.44f, 0.43f), rope = C(0.72f, 0.60f, 0.40f);
+                    mb.AddCylinder(new Vector3(0, -0.45f, 0), new Vector3(0, 0.45f, 0), 0.016f, 0.014f, 7, wood);
+                    mb.AddRock(new Vector3(0, 0.52f, 0), 0.05f, 31, _ => stone, 0.1f, new Vector3(0.45f, 1.9f, 0.25f));
+                    mb.AddCylinder(new Vector3(0, 0.42f, 0), new Vector3(0, 0.47f, 0), 0.022f, 0.022f, 8, rope);
+                    break;
+                }
                 case ItemType.Tocha:
                 {
                     // Cabo de madeira com pano enrolado e piche no topo (a chama é colocada por TorchLight).

@@ -88,7 +88,7 @@ namespace MarAberto.EditorTools
             Shot("01_praia", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.down * 0.8f, 0.40f);
             Vector3 m = island.MerchantPos;
             Vector3 toSpawn = island.SpawnPoint - m; toSpawn.y = 0; toSpawn.Normalize();
-            Shot("02_mercador", m + toSpawn * 4.2f + Vector3.up * 1.65f, m + Vector3.up * 1.35f, 0.42f);
+            Shot("02_kit_inicial", spawnEye, spawnEye + island.SpawnLook * 4f + Vector3.down * 1.4f, 0.42f);
             Vector3 sea = c + dockDir * 430f + side * 90f; sea.y = 3f;
             Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 35f, 0.62f);
             Vector3 dockEye = island.DockEnd + Vector3.up * 1.65f - dockDir * 4f - side * 0.6f;
@@ -114,6 +114,9 @@ namespace MarAberto.EditorTools
             // Interface
             if (hands != null) hands.gameObject.SetActive(true);
             var inv = game.Inventory;
+            inv.Add(ItemType.MachadoPedra, 1, false);
+            inv.Add(ItemType.PicaretaPedra, 1, false);
+            inv.Selected = 0;
             inv.Add(ItemType.Cobre, 12, false);
             inv.Add(ItemType.Carvao, 5, false);
             inv.Add(ItemType.Concha, 7, false);
@@ -127,9 +130,9 @@ namespace MarAberto.EditorTools
             Shot("10_interface", spawnEye, spawnEye + island.SpawnLook * 10f + Vector3.down * 1.2f, 0.42f, true);
             game.Hud.PreviewPanel(1);
             Shot("11_mochila", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
-            var merchant = UnityEngine.Object.FindAnyObjectByType<Merchant>();
-            game.Hud.PreviewPanel(2, merchant);
-            Shot("12_loja", m + toSpawn * 4.2f + Vector3.up * 1.65f, m + Vector3.up * 1.35f, 0.42f, true);
+            inv.Add(ItemType.Graveto, 6, false); inv.Add(ItemType.Pedra, 6, false); inv.Add(ItemType.Folha, 9, false); inv.Add(ItemType.Madeira, 4, false);
+            game.Hud.PreviewCraft(CraftCategory.Ferramentas);
+            Shot("12_tab_fabricar", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
             game.Hud.PreviewPanel(3);
             Shot("13_pausa", spawnEye, spawnEye + island.SpawnLook * 10f, 0.42f, true);
             game.Hud.PreviewPanel(0);

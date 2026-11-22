@@ -12,6 +12,25 @@ namespace MarAberto
         public float SwingTime = 0.55f;
 
         public Mineable Target { get; private set; }
+        public Choppable TargetTree { get; private set; }
+        public ToolKind Kind { get; private set; }
+        /// <summary>Alvo mirado (rocha ou árvore) para a barra de vida no HUD.</summary>
+        public bool HasTarget => (Target != null && !Target.IsBroken) || (TargetTree != null && !TargetTree.IsDown);
+        public string TargetLabel => Target != null ? Target.DisplayName : TargetTree != null ? TargetTree.DisplayName : "";
+        public float TargetFrac => Target != null ? Target.Health / Target.MaxHealth : TargetTree != null ? TargetTree.Health / TargetTree.MaxHealth : 0f;
+        public string TargetWarning
+        {
+            get
+            {
+                if (Target != null)
+                {
+                    if (Kind != ToolKind.Picareta) return "use a picareta";
+                    if (ToolTier < Target.RequiredTier) return "precisa de picareta nível " + Target.RequiredTier;
+                }
+                if (TargetTree != null && Kind != ToolKind.Machado) return "use o machado";
+                return null;
+            }
+        }
         public int ToolTier { get; private set; }
 
         PlayerController player;
@@ -130,12 +149,17 @@ namespace MarAberto
             ShowItem(type);
             var def = type == ItemType.Nada ? null : Items.Get(type);
             ToolTier = def != null && def.IsTool ? def.ToolTier : 0;
+            Kind = def != null ? def.Kind : ToolKind.Nenhuma;
 
             root.gameObject.SetActive(!driving);
 
             Target = null;
+            TargetTree = null;
             if (ToolTier > 0 && Physics.Raycast(cam.position, cam.forward, out var hit, Range, mask, QueryTriggerInteraction.Ignore))
+            {
                 Target = hit.collider.GetComponentInParent<Mineable>();
+                if (Target == null) TargetTree = hit.collider.GetComponentInParent<Choppable>();
+            }
 
             bool wantSwing = ToolTier > 0 && !driving && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButton(0);
             if (swingT < 0 && wantSwing)
@@ -200,10 +224,20 @@ namespace MarAberto
             if (!Physics.Raycast(cam.position, cam.forward, out var hit, Range, mask, QueryTriggerInteraction.Ignore))
                 return;
             var m = hit.collider.GetComponentInParent<Mineable>();
-            if (m != null)
+            var tree = m == null ? hit.collider.GetComponentInParent<Choppable>() : null;
+            if (m != null && Kind == ToolKind.Picareta)
             {
                 if (!m.Hit(1f, ToolTier, hit.point, hit.normal))
                     Game.Instance.Hud.Toast("Picareta fraca demais! Precisa de uma melhor.", Hud.Bad);
+            }
+            else if (tree != null && Kind == ToolKind.Machado)
+            {
+                tree.Hit(1f, hit.point, hit.normal, cam.position);
+            }
+            else if (m != null || tree != null)
+            {
+                Sfx.Play(Sfx.Clank, hit.point, 0.5f);
+                Game.Instance.Hud.Toast(m != null ? "Para minerar, use a picareta." : "Para cortar, use o machado.", Hud.Bad);
             }
             else
             {

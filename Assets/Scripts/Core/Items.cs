@@ -17,7 +17,15 @@ namespace MarAberto
         PicaretaPedra,
         Perola,
         Tocha,
+        Madeira,
+        Graveto,
+        Folha,
+        Corda,
+        MachadoPedra,
+        Lanca,
     }
+
+    public enum ToolKind { Nenhuma, Picareta, Machado, Arma }
 
     public class ItemDef
     {
@@ -30,6 +38,7 @@ namespace MarAberto
         public bool IsTool;
         public int ToolTier;
         public int Rarity; // 0 comum, 1 incomum, 2 rara
+        public ToolKind Kind;
     }
 
     public static class Items
@@ -56,6 +65,15 @@ namespace MarAberto
             SetRarity(ItemType.FragmentoMapa, 2);
             Def(ItemType.Tocha, "Tocha", "Ilumina à noite quando está na mão (ou largada no chão).", new Color(1f, 0.6f, 0.2f), 0, 10);
             Def(ItemType.PicaretaPedra, "Picareta de Pedra", "Quebra rochas, carvão e cobre (nível 1).", new Color(0.6f, 0.6f, 0.58f), 0, 1, true, 1);
+            defs[ItemType.PicaretaPedra].Kind = ToolKind.Picareta;
+            Def(ItemType.MachadoPedra, "Machado de Pedra", "Corta árvores e coqueiros: dá madeira e folhas.", new Color(0.55f, 0.5f, 0.45f), 0, 1, true, 1);
+            defs[ItemType.MachadoPedra].Kind = ToolKind.Machado;
+            Def(ItemType.Lanca, "Lança", "Arma simples para se defender de peixes e de outros jogadores.", new Color(0.6f, 0.5f, 0.4f), 0, 1, true, 1);
+            defs[ItemType.Lanca].Kind = ToolKind.Arma;
+            Def(ItemType.Madeira, "Madeira", "Toras de árvore. Base de quase toda construção.", new Color(0.55f, 0.38f, 0.22f), 1, 30);
+            Def(ItemType.Graveto, "Graveto", "Galho seco. Cabos de ferramentas e tochas.", new Color(0.6f, 0.45f, 0.28f), 1, 40);
+            Def(ItemType.Folha, "Folha", "Folha de coqueiro. Vira corda e telhado.", new Color(0.35f, 0.6f, 0.2f), 1, 40);
+            Def(ItemType.Corda, "Corda", "Trançada com folhas. Amarra tudo.", new Color(0.75f, 0.65f, 0.45f), 1, 30);
         }
 
         public static ItemDef Get(ItemType t) => defs[t];

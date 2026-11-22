@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace MarAberto
 {
     /// <summary>Interface "Latão e vidro": HUD, bússola em faixa, mochila com abas, loja e pausa.</summary>
-    public class Hud : MonoBehaviour
+    public partial class Hud : MonoBehaviour
     {
         // Cores dos avisos (texto claro sobre vidro escuro)
         public static readonly Color Good = UIKit.Hex("#9BE39A");
@@ -15,7 +15,7 @@ namespace MarAberto
         public static readonly Color Gold = UIKit.Hex("#FFD27A");
 
         enum Panel { None, Backpack, Shop, Pause }
-        enum Tab { Bag, Boat, Map }
+        enum Tab { Bag, Craft, Boat, Map }
 
         Game game;
         Panel panel = Panel.None;
@@ -46,6 +46,7 @@ namespace MarAberto
 
         // Janelas
         RectTransform dim, backpackWin, shopWin, pauseWin, bpGrid, bpBagView, bpBoatView, bpMapView, sellList, buyList;
+        Text bpHint;
         Text bpInfoName, bpInfoRarity, bpInfoDesc, bpInfoValue, bpInfoCount, bpBoatText, bpMapText, shopQuote, shopCoins, bpCount;
         RawImage bpInfoIcon;
         Image bpInfoGlow;
@@ -148,8 +149,9 @@ namespace MarAberto
             UIKit.Img(coins, "Dobrao", UIKit.Coin, null, false).rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(14, 0), new Vector2(40, 40));
             coinsText = UIKit.Txt(coins, "Valor", "0", UIKit.Title, 34, UIKit.Gold, TextAnchor.MiddleRight);
             coinsText.rectTransform.Fill(64, 2, 18, 2);
+            coins.gameObject.SetActive(false); // sem moedas: tudo é pesquisado e fabricado no Tab
             clockText = UIKit.Txt(root, "Relogio", "", UIKit.BodyBold, 19, UIKit.Cream, TextAnchor.MiddleRight);
-            clockText.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -94), new Vector2(300, 26));
+            clockText.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -30), new Vector2(300, 26));
 
             // Vida e fôlego (inferior esquerdo)
             vitals = UIKit.Panel(root, "Vitais").rectTransform;
@@ -244,12 +246,12 @@ namespace MarAberto
             dim.Fill();
             dim.GetComponent<Image>().raycastTarget = true;
 
-            backpackWin = Window("Mochila", new Vector2(1140, 640));
+            backpackWin = Window("Mochila", new Vector2(1400, 760));
             // Abas
-            var tabs = UIKit.Rect(backpackWin, "Abas").Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(1140, 66));
-            UIKit.Img(tabs, "Linha", UIKit.White, new Color(UIKit.Brass.r, UIKit.Brass.g, UIKit.Brass.b, 0.35f)).rectTransform.Place(new Vector2(0, 0), new Vector2(0, 0), Vector2.zero, new Vector2(1140, 1));
-            string[] names = { "MOCHILA", "BARCO", "MAPA" };
-            for (int i = 0; i < 3; i++)
+            var tabs = UIKit.Rect(backpackWin, "Abas").Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(1400, 66));
+            UIKit.Img(tabs, "Linha", UIKit.White, new Color(UIKit.Brass.r, UIKit.Brass.g, UIKit.Brass.b, 0.35f)).rectTransform.Place(new Vector2(0, 0), new Vector2(0, 0), Vector2.zero, new Vector2(1400, 1));
+            string[] names = { "MOCHILA", "FABRICAR", "BARCO", "MAPA" };
+            for (int i = 0; i < names.Length; i++)
             {
                 int idx = i;
                 var btnImg = UIKit.Img(tabs, "Aba" + i, UIKit.White, new Color(0, 0, 0, 0.001f));
@@ -298,6 +300,9 @@ namespace MarAberto
             bpInfoCount = UIKit.Txt(s2, "V", "", UIKit.BodyBold, 19, Color.white, TextAnchor.MiddleRight);
             bpInfoCount.rectTransform.Fill();
 
+            // Aba Fabricar
+            BuildCraft(body);
+
             // Aba Barco
             bpBoatView = UIKit.Rect(body, "VistaBarco").Fill();
             bpBoatText = UIKit.Txt(bpBoatView, "Texto", "", UIKit.Body, 24, UIKit.Text, TextAnchor.UpperLeft);
@@ -307,7 +312,7 @@ namespace MarAberto
             bpMapText = UIKit.Txt(bpMapView, "Texto", "", UIKit.Body, 24, UIKit.Text, TextAnchor.UpperLeft);
             bpMapText.rectTransform.Fill(10, 10, 10, 10);
 
-            var hint = UIKit.Txt(backpackWin, "Dica", "Arraste para organizar  ·  botão direito larga no chão  ·  os atalhos ficam embaixo",
+            var hint = bpHint = UIKit.Txt(backpackWin, "Dica", "Arraste para organizar  ·  botão direito larga no chão  ·  os atalhos ficam embaixo",
                 UIKit.Body, 18, UIKit.Muted, TextAnchor.MiddleCenter);
             hint.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 24), new Vector2(1000, 28));
             RebuildBackpackSlots();
@@ -323,6 +328,9 @@ namespace MarAberto
                 tabLines[i].gameObject.SetActive(on);
             }
             bpBagView.gameObject.SetActive(tab == Tab.Bag);
+            craftView.gameObject.SetActive(tab == Tab.Craft);
+            if (bpHint != null) bpHint.gameObject.SetActive(tab == Tab.Bag);
+            craftVersion = -1;
             bpBoatView.gameObject.SetActive(tab == Tab.Boat);
             bpMapView.gameObject.SetActive(tab == Tab.Map);
         }
@@ -498,7 +506,7 @@ namespace MarAberto
             musicSlider = MakeSlider(col, "Música", -290, 0f, 0.6f, game.MusicVolume, v => game.MusicVolume = v);
             var quit = UIKit.Btn(col, "Sair", "SAIR DO JOGO", () => Application.Quit(), 26);
             ((RectTransform)quit.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -380), new Vector2(420, 60));
-            var cheats = UIKit.Txt(col, "Atalhos", "Teste:  <color=#FFD27A>F1</color> +500 moedas  ·  <color=#FFD27A>F2</color> barco  ·  <color=#FFD27A>F3</color> ir ao recife\n<color=#FFD27A>F4</color> avançar hora  ·  <color=#FFD27A>F5</color> itens  ·  <color=#FFD27A>F6</color> curar  ·  <color=#FFD27A>F7</color> FPS",
+            var cheats = UIKit.Txt(col, "Atalhos", "Teste:  <color=#FFD27A>F1</color> materiais + receitas  ·  <color=#FFD27A>F2</color> barco  ·  <color=#FFD27A>F3</color> ir ao recife\n<color=#FFD27A>F4</color> avançar hora  ·  <color=#FFD27A>F5</color> itens  ·  <color=#FFD27A>F6</color> curar  ·  <color=#FFD27A>F7</color> FPS",
                 UIKit.Body, 17, UIKit.Muted, TextAnchor.MiddleCenter);
             cheats.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(500, 50));
         }
@@ -717,25 +725,27 @@ namespace MarAberto
             itemName.text = sel.IsEmpty ? "" : UIKit.Spaced(Items.Get(sel.Type).Name);
             itemName.color = new Color(UIKit.Cream.r, UIKit.Cream.g, UIKit.Cream.b, hudOn ? Mathf.Clamp01((2.2f - age) / 0.5f) : 0f);
 
-            var target = game.Hands != null ? game.Hands.Target : null;
+            var hands = game.Hands;
+            bool hasTarget = hands != null && hands.HasTarget;
             var look = p != null ? p.LookTarget : null;
             crosshair.gameObject.SetActive(hudOn && (p == null || p.Driving == null));
-            crosshair.color = (target != null || look != null) ? UIKit.Gold : new Color(1, 1, 1, 0.9f);
-            crosshair.rectTransform.sizeDelta = Vector2.one * ((target != null || look != null) ? 10 : 7);
+            crosshair.color = (hasTarget || look != null) ? UIKit.Gold : new Color(1, 1, 1, 0.9f);
+            crosshair.rectTransform.sizeDelta = Vector2.one * ((hasTarget || look != null) ? 10 : 7);
             promptBox.gameObject.SetActive(hudOn && look != null);
             if (look != null)
             {
                 promptText.text = look.Prompt;
                 promptBox.sizeDelta = new Vector2(Mathf.Clamp(promptText.preferredWidth + 82, 200, 900), 54);
             }
-            bool showTarget = hudOn && target != null && !target.IsBroken;
+            bool showTarget = hudOn && hasTarget;
             targetBox.gameObject.SetActive(showTarget);
             targetBox.anchoredPosition = new Vector2(0, look != null ? -100 : -34);
             if (showTarget)
             {
-                bool weak = game.Hands.ToolTier < target.RequiredTier;
-                targetName.text = UIKit.Spaced(target.DisplayName) + (weak ? "\n<size=17><color=#FF8A70>precisa de picareta nível " + target.RequiredTier + "</color></size>" : "");
-                UIKit.SetFill(targetFill, target.Health / target.MaxHealth);
+                string warn = hands.TargetWarning;
+                bool weak = warn != null;
+                targetName.text = UIKit.Spaced(hands.TargetLabel) + (weak ? "\n<size=17><color=#FF8A70>" + warn + "</color></size>" : "");
+                UIKit.SetFill(targetFill, hands.TargetFrac);
                 ((RectTransform)targetFill.parent).anchoredPosition = new Vector2(0, weak ? -58 : -36);
             }
 
@@ -777,6 +787,7 @@ namespace MarAberto
             toastRoot.anchoredPosition = new Vector2(28, helpBox.gameObject.activeSelf ? -218 : -24);
 
             if (panel == Panel.Backpack) RefreshBackpack(inv);
+            if (panel == Panel.Backpack && tab == Tab.Craft) RefreshCraft();
             if (panel == Panel.Shop && shopVersion != invVersion + game.Coins * 7919)
             {
                 shopVersion = invVersion + game.Coins * 7919;
@@ -826,7 +837,7 @@ namespace MarAberto
 
             var boat = game.Boat;
             if (boat == null)
-                bpBoatText.text = "<color=#FFD27A>Sem barco</color>\n\nCompre o bote a vapor com o Seu Joca, na barraca perto do píer (150 moedas).";
+                bpBoatText.text = "<color=#FFD27A>Sem barco</color>\n\nPesquise e fabrique o bote a vapor na aba FABRICAR (categoria Veículos).";
             else
             {
                 float maxKnots = boat.MotorLevel == 1 ? 11 : boat.MotorLevel == 2 ? 15 : 19;
@@ -835,7 +846,7 @@ namespace MarAberto
                     "Velocidade máxima:  ~" + maxKnots + " nós\n" +
                     "Corda da âncora:  " + Mathf.RoundToInt(boat.RopeLength) + " m\n" +
                     "Âncora:  " + (boat.Anchor == Boat.AnchorState.Set ? "no fundo" : boat.Anchor == Boat.AnchorState.Up ? "recolhida" : "em movimento") + "\n\n" +
-                    "<color=#A9B8BF>Melhorias do motor e da corda: loja do Seu Joca.</color>";
+                    "<color=#A9B8BF>Melhorias do motor e da corda: aba FABRICAR, categoria Jangada.</color>";
             }
             int frags = inv.Count(ItemType.FragmentoMapa);
             int reefs = game.StartIsland != null && game.StartIsland.Reefs != null ? game.StartIsland.Reefs.Count : 0;
