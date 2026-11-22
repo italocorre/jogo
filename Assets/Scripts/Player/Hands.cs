@@ -458,6 +458,14 @@ namespace MarAberto
                 return;
             }
             // Bichos da ilha (caranguejo, javali)
+            var serpent = hit.collider.GetComponentInParent<SeaSerpent>();
+            if (serpent != null)
+            {
+                var h2 = Game.Instance.Inventory.SelectedStack.Type;
+                serpent.Hit(h2 == ItemType.LancaTitanio ? 40f : h2 == ItemType.LancaCobre ? 30f : h2 == ItemType.Lanca ? 20f : Kind == ToolKind.Machado ? 14f : 8f, hit.point);
+                Sfx.Play(Sfx.Hit, hit.point, 0.7f);
+                return;
+            }
             var animal = hit.collider.GetComponentInParent<LandAnimal>();
             if (animal != null)
             {

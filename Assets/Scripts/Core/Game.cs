@@ -115,6 +115,7 @@ namespace MarAberto
                 gameObject.AddComponent<Flotsam>();
                 gameObject.AddComponent<Journal>();
                 gameObject.AddComponent<SeaEvents>();
+                gameObject.AddComponent<SerpentDirector>();
                 Net = gameObject.AddComponent<NetGame>();
                 Net.Init(this);
             }
@@ -186,6 +187,7 @@ namespace MarAberto
                 Weather.Instance.Set(next, true);
                 Hud.Toast("Teste: clima " + next, Hud.Gold);
             }
+            if (Input.GetKeyDown(KeyCode.F9) && SeaSerpent.Active == null) { SeaSerpent.Spawn(Player.transform.position); Hud.Toast("Teste: serpente marinha!", Hud.Bad); }
             if (Input.GetKeyDown(KeyCode.F6)) { Player.Heal(); Player.Consume(100f, 100f, 0f); Hud.Toast("Teste: vida, fôlego, fome e sede cheios", Hud.Gold); }
         }
 

@@ -100,6 +100,8 @@ namespace MarAberto
                         if (sc != null && hitSet.Add(sc)) sc.Hit(80f, hit.point);
                         var la = c.GetComponentInParent<LandAnimal>();
                         if (la != null && hitSet.Add(la)) la.Hit(80f, hit.point);
+                        var ss = c.GetComponentInParent<SeaSerpent>();
+                        if (ss != null && hitSet.Add(ss)) ss.Hit(80f, hit.point);
                     }
                 }
                 else
@@ -111,6 +113,7 @@ namespace MarAberto
                     var sc = hit.collider.GetComponentInParent<SeaCreature>();
                     if (sc != null) sc.Hit(pve, hit.point);
                     hit.collider.GetComponentInParent<LandAnimal>()?.Hit(pve, hit.point);
+                    hit.collider.GetComponentInParent<SeaSerpent>()?.Hit(pve, hit.point);
                 }
             }
             if (ball)

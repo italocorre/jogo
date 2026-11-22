@@ -177,6 +177,8 @@ namespace MarAberto
                 Description = "Feitas na fundição.", Cost = L((ItemType.LingoteFerro, 1), (ItemType.Polvora, 2)), Research = L((ItemType.Polvora, 2)) });
             Add(new Recipe { Id = "armadura_couro", Name = "Armadura de couro", Category = CraftCategory.Armas, Output = ItemType.ArmaduraCouro,
                 Description = "Basta ter na mochila: -25% de dano recebido.", Cost = L((ItemType.Couro, 6), (Cor, 2)), Research = L((ItemType.Couro, 3)) });
+            Add(new Recipe { Id = "armadura_escamas", Name = "Armadura de escamas", Category = CraftCategory.Armas, Output = ItemType.ArmaduraEscamas, Station = Station.Bancada, StartUnlocked = true,
+                Description = "Escamas da serpente marinha: -60% de dano recebido (basta ter na mochila).", Cost = L((ItemType.EscamaSerpente, 6), (ItemType.Couro, 2), (ItemType.LingoteTitanio, 2)) });
             Add(new Recipe { Id = "armadura_ferro", Name = "Armadura de ferro", Category = CraftCategory.Armas, Output = ItemType.ArmaduraFerro, Station = Station.Bancada,
                 Description = "Basta ter na mochila: -45% de dano recebido.", Cost = L((ItemType.LingoteFerro, 8), (ItemType.Couro, 3)), Research = L((ItemType.LingoteFerro, 8), (ItemType.Couro, 2)) });
             Add(new Recipe { Id = "canhao", Name = "Canhão", Category = CraftCategory.Armas, Piece = PieceKind.Canhao, IconOverride = ItemType.BalaCanhao,

@@ -212,6 +212,7 @@ namespace MarAberto
                 if (rp != null) NetGame.HitPlayer(rp, 7f);
                 hit.collider.GetComponentInParent<SeaCreature>()?.Hit(10f, hit.point);
                 hit.collider.GetComponentInParent<LandAnimal>()?.Hit(10f, hit.point);
+                hit.collider.GetComponentInParent<SeaSerpent>()?.Hit(10f, hit.point);
                 Debris.Burst(hit.point, hit.normal, 3, rp != null ? new Color(0.7f, 0.1f, 0.1f) : new Color(0.6f, 0.55f, 0.45f));
             }
             ShowTracer(from, to);

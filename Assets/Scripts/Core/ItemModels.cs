@@ -542,11 +542,18 @@ namespace MarAberto
                     mb.AddRock(Vector3.zero, 0.16f, 41, n => n.y > 0 ? hide : fur, 0.25f, new Vector3(1.2f, 0.12f, 1f), 2);
                     break;
                 }
+                case ItemType.EscamaSerpente:
+                {
+                    for (int i = 0; i < 3; i++)
+                        mb.AddRock(new Vector3(i * 0.05f - 0.05f, i * 0.012f, i * 0.03f), 0.06f, 210 + i, n => n.y > 0 ? C(0.2f, 0.48f, 0.42f) : C(0.75f, 0.7f, 0.5f), 0.05f, new Vector3(1.2f, 0.18f, 1f), 1);
+                    break;
+                }
                 case ItemType.ArmaduraCouro:
                 case ItemType.ArmaduraFerro:
+                case ItemType.ArmaduraEscamas:
                 {
-                    bool iron = t == ItemType.ArmaduraFerro;
-                    Color main = iron ? C(0.58f, 0.58f, 0.6f) : C(0.5f, 0.34f, 0.2f), trim = iron ? C(0.35f, 0.33f, 0.32f) : C(0.32f, 0.22f, 0.14f);
+                    bool iron = t == ItemType.ArmaduraFerro, scale = t == ItemType.ArmaduraEscamas;
+                    Color main = scale ? C(0.18f, 0.44f, 0.38f) : iron ? C(0.58f, 0.58f, 0.6f) : C(0.5f, 0.34f, 0.2f), trim = scale ? C(0.6f, 0.2f, 0.16f) : iron ? C(0.35f, 0.33f, 0.32f) : C(0.32f, 0.22f, 0.14f);
                     mb.AddRock(new Vector3(0, 0, 0), 0.2f, 51, n => main, 0.04f, new Vector3(1.05f, 1.25f, 0.55f), 2);    // tronco
                     foreach (float sx in new[] { -1f, 1f })
                         mb.AddRock(new Vector3(sx * 0.2f, 0.18f, 0), 0.08f, 52, n => trim, 0.05f, new Vector3(1.2f, 0.7f, 1f), 1); // ombreiras

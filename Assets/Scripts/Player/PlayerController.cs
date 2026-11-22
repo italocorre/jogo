@@ -440,6 +440,7 @@ namespace MarAberto
         {
             var inv = Game.Instance != null ? Game.Instance.Inventory : null;
             if (inv == null) return 0f;
+            if (inv.Count(ItemType.ArmaduraEscamas) > 0) return 0.6f;
             if (inv.Count(ItemType.ArmaduraFerro) > 0) return 0.45f;
             if (inv.Count(ItemType.ArmaduraCouro) > 0) return 0.25f;
             return 0f;

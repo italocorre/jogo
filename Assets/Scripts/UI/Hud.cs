@@ -732,6 +732,7 @@ namespace MarAberto
             Refresh();
             UpdateMap();
             UpdateJournal(panel == Panel.None);
+            UpdateBoss(panel == Panel.None);
         }
 
         static float WrapAngle(float a)

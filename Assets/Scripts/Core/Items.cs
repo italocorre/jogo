@@ -70,6 +70,8 @@ namespace MarAberto
         BatataAssada,
         Melancia,
         Ensopado,
+        EscamaSerpente,
+        ArmaduraEscamas,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca, Gancho, Besta, Pistola }
@@ -187,6 +189,10 @@ namespace MarAberto
             Def(ItemType.Ensopado, "Ensopado", "Carne, batata e água na fogueira: a comida mais forte. Cura bastante.", new Color(0.6f, 0.35f, 0.2f), 8, 10);
             SetFood(ItemType.Ensopado, 70f, 15f, 35f);
             SetRarity(ItemType.Ensopado, 1);
+            Def(ItemType.EscamaSerpente, "Escama de Serpente", "Da serpente marinha. Muito dura: vira a melhor armadura.", new Color(0.2f, 0.45f, 0.4f), 20, 20);
+            SetRarity(ItemType.EscamaSerpente, 2);
+            Def(ItemType.ArmaduraEscamas, "Armadura de Escamas", "Na mochila, protege: -60% de dano recebido.", new Color(0.18f, 0.42f, 0.38f), 0, 1);
+            SetRarity(ItemType.ArmaduraEscamas, 2);
             Def(ItemType.CarneAssada, "Carne Assada", "Assada na fogueira: mata bem a fome e cura.", new Color(0.55f, 0.3f, 0.18f), 6, 20);
             SetFood(ItemType.CarneAssada, 45f, 0f, 15f);
             Def(ItemType.PeixeCru, "Peixe (cru)", "Pescado com a vara. Melhor assar na fogueira.", new Color(0.6f, 0.7f, 0.8f), 2, 20);
