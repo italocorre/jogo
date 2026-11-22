@@ -100,6 +100,7 @@ namespace MarAberto
                     m.Rt.anchoredPosition = lp;
                 }
             }
+            UpdateSocial(p, hudOn, ref used);
             for (int i = used; i < navMarkers.Count; i++) navMarkers[i].Rt.gameObject.SetActive(false);
         }
 

@@ -585,8 +585,15 @@ namespace MarAberto
                 case Msg.Chat:
                 {
                     string text = m.Str();
-                    game.Hud.Toast(text, Hud.Info);
+                    game.Hud.AddChat(text);
                     if (server) link.Broadcast(new NetWriter(Msg.Chat).Str(text), m.From);
+                    break;
+                }
+                case Msg.Ping:
+                {
+                    string who = m.Str(); Vector3 at = m.Vec();
+                    game.Hud.AddPing(who, at);
+                    if (server) link.Broadcast(new NetWriter(Msg.Ping).Str(who).Vec(at), m.From);
                     break;
                 }
             }
@@ -957,6 +964,33 @@ namespace MarAberto
                 if (mode == NetMode.Client) link.SendToServer(w); else link.Broadcast(w);
             }
         }
+
+        /// <summary>Mensagem de chat para todos (aparece também aqui).</summary>
+        public static void SendChat(string text)
+        {
+            text = text.Replace("<", "‹").Replace(">", "›");
+            if (text.Length > 120) text = text.Substring(0, 120);
+            string line = "<color=#FFD27A>" + NetConfig.PlayerName + "</color>: " + text;
+            Game.Instance.Hud.AddChat(line);
+            var n = Instance;
+            if (n == null || n.link == null) return;
+            var w = new NetWriter(Msg.Chat).Str(line);
+            if (n.mode == NetMode.Client) n.link.SendToServer(w); else n.link.Broadcast(w);
+        }
+
+        /// <summary>Marca um ponto no mundo para todos ("olha aqui!").</summary>
+        public static void SendPing(Vector3 at)
+        {
+            Game.Instance.Hud.AddPing(NetConfig.PlayerName, at);
+            var n = Instance;
+            if (n == null || n.link == null) return;
+            var w = new NetWriter(Msg.Ping).Str(NetConfig.PlayerName).Vec(at);
+            if (n.mode == NetMode.Client) n.link.SendToServer(w); else n.link.Broadcast(w);
+        }
+
+        /// <summary>Time (clã) de um jogador remoto.</summary>
+        public static string TeamOf(int id) { var n = Instance; return n != null && n.teams.TryGetValue(id, out var t) ? t : ""; }
+        public static bool Online { get { var n = Instance; return n != null && n.link != null; } }
 
         public static void SendProjectile(MarAberto.Projectile.Kind k, Vector3 from, Vector3 vel)
         {

@@ -14,7 +14,7 @@ namespace MarAberto
         public static readonly Color Info = UIKit.Hex("#E8EEF0");
         public static readonly Color Gold = UIKit.Hex("#FFD27A");
 
-        enum Panel { None, Backpack, Shop, Pause, Chest, Build, Map, Journal }
+        enum Panel { None, Backpack, Shop, Pause, Chest, Build, Map, Journal, Chat }
         enum Tab { Bag, Craft, Boat, Map }
 
         Game game;
@@ -697,6 +697,7 @@ namespace MarAberto
 
         void Update()
         {
+            if (UpdateSocialKeys()) { Refresh(); return; }
             if (Input.GetKeyDown(KeyCode.Escape)) SetPanel(panel == Panel.None ? Panel.Pause : Panel.None);
             else if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.I))
             {
