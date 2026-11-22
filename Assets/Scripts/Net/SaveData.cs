@@ -15,6 +15,7 @@ namespace MarAberto
         public Quaternion rot;
         public string owner;
         public float fuel;
+        public int flags;            // helicóptero: 1 = tem metralhadora
         public List<SlotSave> chest = new List<SlotSave>();
     }
 

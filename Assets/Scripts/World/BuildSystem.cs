@@ -127,6 +127,7 @@ namespace MarAberto
                 }
             }
             if (Selected == PieceKind.Bandeira && (newRaft || placeParent != null)) { Reason = "A bandeira vai em terra firme"; return false; }
+            if (Selected == PieceKind.Helicoptero && (newRaft || placeParent != null)) { Reason = "O helicóptero vai em terra firme"; return false; }
             // Não pode entrar dentro de outra peça.
             Vector3 size = Building.Size(Selected) - Vector3.one * 0.12f;
             Vector3 center = placePos + placeRot * new Vector3(0, Building.Size(Selected).y * 0.5f, 0);
@@ -273,6 +274,8 @@ namespace MarAberto
 
         void Dismantle(BuildPiece bp)
         {
+            var hc = bp.GetComponent<Helicopter>();
+            if (hc != null && (hc.Driven || hc.Rotor > 0.05f)) { game.Hud.Toast("Desligue o helicóptero antes.", Hud.Bad); return; }
             if (!string.IsNullOrEmpty(bp.Owner) && bp.Owner != NetConfig.Team && bp.Owner != NetConfig.PlayerName)
             {
                 game.Hud.Toast("Só o dono (" + bp.Owner + ") pode desmontar isto.", Hud.Bad);

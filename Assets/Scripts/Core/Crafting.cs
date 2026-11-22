@@ -151,6 +151,10 @@ namespace MarAberto
                 Description = "Arma simples contra peixes e outros jogadores.", Cost = L((Gra, 3), (Ped, 1), (Cor, 2)), Research = L((Gra, 4), (Ped, 2), (Cor, 2)) });
             Add(new Recipe { Id = "lanca_cobre", Name = "Lança de cobre", Category = CraftCategory.Armas, Output = ItemType.LancaCobre, Station = Station.Bancada,
                 Description = "Mais forte que a de pedra. Feita na bancada.", Cost = L((ItemType.LingoteCobre, 2), (Gra, 3), (Cor, 2)), Research = L((ItemType.LingoteCobre, 3)) });
+            Add(new Recipe { Id = "metralhadora", Name = "Metralhadora", Category = CraftCategory.Armas, Output = ItemType.Metralhadora, Station = Station.Bancada,
+                Description = "Para o helicóptero: segure ela e aperte E no helicóptero para instalar.", Cost = L((ItemType.LingoteFerro, 6), (ItemType.LingoteCobre, 2)), Research = L((ItemType.LingoteFerro, 6)) });
+            Add(new Recipe { Id = "municao", Name = "Munição (20)", Category = CraftCategory.Armas, Output = ItemType.Municao, OutputCount = 20, Station = Station.Bancada,
+                Description = "Balas da metralhadora.", Cost = L((ItemType.LingoteCobre, 1), (Car, 1)), Research = L((ItemType.LingoteCobre, 2)) });
             Add(new Recipe { Id = "arco", Name = "Arco e flechas", Category = CraftCategory.Armas, ComingIn = "Etapa 9", Description = "Ataque à distância." });
             Add(new Recipe { Id = "canhao", Name = "Canhão de jangada", Category = CraftCategory.Armas, ComingIn = "Etapa 9", Description = "Montado na jangada." });
 
@@ -200,7 +204,10 @@ namespace MarAberto
                 Description = "Combustível do motor a gasolina (3 min por galão) e do helicóptero.", Cost = L((Car, 4), (ItemType.Coco, 1)), Research = L((Car, 4), (ItemType.Coco, 2)) });
 
             // ---- Veículos ----
-            Add(new Recipe { Id = "helicoptero", Name = "Helicóptero", Category = CraftCategory.Veiculos, ComingIn = "Etapa 8", Description = "Voa! Usa gasolina e aceita arma montada." });
+            Add(new Recipe { Id = "helicoptero", Name = "Helicóptero", Category = CraftCategory.Veiculos, Piece = PieceKind.Helicoptero, IconOverride = ItemType.Gasolina,
+                Description = "Construa em terra firme com o martelo. Voa com gasolina (E com galão na mão abastece) e aceita metralhadora.",
+                Cost = L((ItemType.LingoteFerro, 20), (ItemType.LingoteCobre, 10), (Mad, 6), (Cor, 4), (ItemType.Gasolina, 2)),
+                Research = L((ItemType.LingoteFerro, 8), (ItemType.LingoteCobre, 6), (ItemType.Gasolina, 4)) });
 
             // ---- Navegação ----
             Add(new Recipe { Id = "receptor", Name = "Receptor", Category = CraftCategory.Navegacao, Output = ItemType.Receptor, Station = Station.Bancada,

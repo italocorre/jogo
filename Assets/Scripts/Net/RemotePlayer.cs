@@ -138,19 +138,19 @@ namespace MarAberto
         {
             Color skin = new Color(0.82f, 0.62f, 0.47f), pants = new Color(0.22f, 0.24f, 0.30f), boots = new Color(0.25f, 0.17f, 0.10f), hat = new Color(0.30f, 0.22f, 0.14f);
             var mb = new MeshBuilder();
-            mb.AddCapsule(new Vector3(-0.11f, 0.42f, 0), new Vector3(0.08f, 0.42f, 0.08f), 0.08f, pants, 10);
-            mb.AddCapsule(new Vector3(0.11f, 0.42f, 0), new Vector3(0.08f, 0.42f, 0.08f), 0.08f, pants, 10);
-            mb.AddCapsule(new Vector3(-0.11f, 0.06f, 0.04f), new Vector3(0.08f, 0.06f, 0.13f), 0.05f, boots, 8);
-            mb.AddCapsule(new Vector3(0.11f, 0.06f, 0.04f), new Vector3(0.08f, 0.06f, 0.13f), 0.05f, boots, 8);
+            mb.AddCapsule(new Vector3(-0.11f, 0.42f - 0.42f, 0), new Vector3(-0.11f, 0.42f + 0.42f, 0), 0.08f, pants, 10);
+            mb.AddCapsule(new Vector3(0.11f, 0.42f - 0.42f, 0), new Vector3(0.11f, 0.42f + 0.42f, 0), 0.08f, pants, 10);
+            mb.AddCapsule(new Vector3(-0.11f, 0.06f - 0.06f, 0.04f), new Vector3(-0.11f, 0.06f + 0.06f, 0.04f), 0.05f, boots, 8);
+            mb.AddCapsule(new Vector3(0.11f, 0.06f - 0.06f, 0.04f), new Vector3(0.11f, 0.06f + 0.06f, 0.04f), 0.05f, boots, 8);
             var bodyGo = new GameObject("Corpo");
             bodyGo.transform.SetParent(transform, false);
             bodyGo.AddComponent<MeshFilter>().sharedMesh = mb.Build("PernasRemoto");
             bodyGo.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
 
             var tb = new MeshBuilder();
-            tb.AddCapsule(new Vector3(0, 1.15f, 0), new Vector3(0.24f, 0.33f, 0.15f), 0.12f, shirt, 12);
-            tb.AddCapsule(new Vector3(-0.3f, 1.1f, 0), new Vector3(0.06f, 0.3f, 0.06f), 0.06f, shirt, 8);
-            tb.AddCapsule(new Vector3(0.3f, 1.1f, 0.05f), new Vector3(0.06f, 0.3f, 0.06f), 0.06f, shirt, 8);
+            tb.AddCapsule(new Vector3(0, 1.15f - 0.33f, 0), new Vector3(0, 1.15f + 0.33f, 0), 0.12f, shirt, 12);
+            tb.AddCapsule(new Vector3(-0.3f, 1.1f - 0.3f, 0), new Vector3(-0.3f, 1.1f + 0.3f, 0), 0.06f, shirt, 8);
+            tb.AddCapsule(new Vector3(0.3f, 1.1f - 0.3f, 0.05f), new Vector3(0.3f, 1.1f + 0.3f, 0.05f), 0.06f, shirt, 8);
             tb.AddSphere(new Vector3(-0.3f, 0.78f, 0), Vector3.one * 0.06f, skin);
             tb.AddSphere(new Vector3(0.3f, 0.8f, 0.1f), Vector3.one * 0.06f, skin);
             body = new GameObject("Tronco").transform;

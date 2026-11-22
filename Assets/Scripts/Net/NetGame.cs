@@ -113,7 +113,12 @@ namespace MarAberto
                 raft.Id = r.id; raft.BoatName = r.name;
                 Rafts[r.id] = raft;
             }
-            foreach (var p in save.pieces) ApplyPlace(p.id, (PieceKind)p.kind, p.raft, p.pos, p.rot, p.owner, p.fuel, p.chest);
+            foreach (var p in save.pieces)
+            {
+                var bp = ApplyPlace(p.id, (PieceKind)p.kind, p.raft, p.pos, p.rot, p.owner, p.fuel, p.chest);
+                var h = bp != null ? bp.GetComponent<Helicopter>() : null;
+                if (h != null) h.HasGun = (p.flags & 1) != 0;
+            }
             foreach (var r in save.rafts) if (Rafts.TryGetValue(r.id, out var raft)) { raft.Recompute(); if (r.anchored) raft.ToggleAnchor(); }
             var me = save.FindPlayer(NetConfig.PlayerName);
             if (me != null) ApplyPlayer(me);
@@ -161,6 +166,7 @@ namespace MarAberto
         void Update()
         {
             if (link != null) Pump();
+            if (link != null && (mode == NetMode.Host || welcomed)) SendHelis();
             float dt = Time.deltaTime;
 
             // Estado do jogador: ~15 vezes por segundo.
@@ -267,6 +273,8 @@ namespace MarAberto
                 if (m != null) ps.fuel = m.Fuel;
                 var sap = bp.GetComponent<Sapling>();
                 if (sap != null) ps.fuel = sap.Age;
+                var heli = bp.GetComponent<Helicopter>();
+                if (heli != null) { ps.fuel = heli.Fuel; ps.flags = heli.HasGun ? 1 : 0; }
                 var c = bp.GetComponent<Chest>();
                 if (c != null && c.Storage != null) ps.chest = WorldSave.Slots(c.Storage);
                 save.pieces.Add(ps);
@@ -521,6 +529,20 @@ namespace MarAberto
                     game.Hud.Toast(m.Str(), Hud.Bad);
                     Sfx.UI(Sfx.Error, 0.6f);
                     break;
+                case Msg.HeliState:
+                {
+                    int id = m.Int(); Vector3 pos = m.Vec(); Quaternion rot = m.Rot(); float rotor = m.Float(), fuel = m.Float(); bool gunOn = m.Bool();
+                    if (Pieces.TryGetValue(id, out var bp) && bp != null) bp.GetComponent<Helicopter>()?.ApplyNet(pos, rot, rotor, fuel, gunOn);
+                    if (server) link.Broadcast(new NetWriter(Msg.HeliState).Int(id).Vec(pos).Rot(rot).Float(rotor).Float(fuel).Bool(gunOn), m.From);
+                    break;
+                }
+                case Msg.Shot:
+                {
+                    Vector3 a = m.Vec(), b = m.Vec();
+                    ShotFx(a, b);
+                    if (server) link.Broadcast(new NetWriter(Msg.Shot).Vec(a).Vec(b), m.From);
+                    break;
+                }
                 case Msg.Chat:
                 {
                     string text = m.Str();
@@ -589,6 +611,8 @@ namespace MarAberto
             Quaternion rot = raft != null ? Quaternion.Inverse(raft.transform.rotation) * bp.transform.rotation : bp.transform.rotation;
             var m = bp.GetComponent<RaftMotor>();
             var sap = bp.GetComponent<Sapling>();
+            var hc = bp.GetComponent<Helicopter>();
+            if (hc != null) return new NetWriter(Msg.PiecePlaced).Int(id).Int((int)bp.Kind).Int(raft != null ? raft.Id : -1).Vec(pos).Rot(rot).Str(bp.Owner).Float(hc.Fuel);
             return new NetWriter(Msg.PiecePlaced).Int(id).Int((int)bp.Kind).Int(raft != null ? raft.Id : -1).Vec(pos).Rot(rot).Str(bp.Owner).Float(m != null ? m.Fuel : sap != null ? sap.Age : 0f);
         }
 
@@ -643,6 +667,8 @@ namespace MarAberto
             if (m != null) m.Fuel = fuel;
             var sap = go.GetComponent<Sapling>();
             if (sap != null) sap.Age = fuel;
+            var heli = go.GetComponent<Helicopter>();
+            if (heli != null) heli.Fuel = fuel;
             var c = go.GetComponent<Chest>();
             if (c != null && chest != null && chest.Count > 0) { if (c.Storage == null) c.Storage = new Inventory(Chest.Size); c.Storage.Load(WorldSave.Stacks(chest)); }
             Pieces[id] = bp;
@@ -860,6 +886,47 @@ namespace MarAberto
         {
             if (bags.TryGetValue(id, out var b) && b != null) Destroy(b.gameObject);
             bags.Remove(id);
+        }
+
+        // ---------- Helicóptero ----------
+
+        float heliTimer;
+        void SendHelis()
+        {
+            heliTimer -= Time.deltaTime;
+            if (heliTimer > 0 || link == null) return;
+            heliTimer = 0.1f;
+            foreach (var kv in Pieces)
+            {
+                if (kv.Value == null) continue;
+                var h = kv.Value.GetComponent<Helicopter>();
+                if (h == null || !h.LocalAuthority) continue;
+                // Parado no chão e sem ninguém mexendo: manda só de vez em quando.
+                bool active = h.Driven || h.Rotor > 0.01f || Time.time - h.lastLocalControl < 5f;
+                if (!active && Time.time - h.lastNetSend < 1.5f) continue;
+                h.lastNetSend = Time.time;
+                var w = new NetWriter(Msg.HeliState).Int(kv.Key).Vec(h.transform.position).Rot(h.transform.rotation).Float(h.Rotor).Float(h.Fuel).Bool(h.HasGun);
+                if (mode == NetMode.Client) link.SendToServer(w); else link.Broadcast(w);
+            }
+        }
+
+        public static void SendShot(Vector3 from, Vector3 to)
+        {
+            var n = Instance;
+            if (n == null || n.link == null) return;
+            var w = new NetWriter(Msg.Shot).Vec(from).Vec(to);
+            if (n.mode == NetMode.Client) n.link.SendToServer(w); else n.link.Broadcast(w);
+        }
+
+        void ShotFx(Vector3 a, Vector3 b)
+        {
+            Sfx.Play(Sfx.Clank, a, 0.35f, 0.2f);
+            Debris.Burst(b, (a - b).normalized, 3, new Color(0.6f, 0.55f, 0.45f));
+            foreach (var kv in Pieces)
+            {
+                var h = kv.Value != null ? kv.Value.GetComponent<Helicopter>() : null;
+                if (h != null && (h.transform.position - a).sqrMagnitude < 25f) { h.ShowTracer(a, b); break; }
+            }
         }
 
         // ---------- PvP e território ----------

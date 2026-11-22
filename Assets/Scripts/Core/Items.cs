@@ -32,6 +32,8 @@ namespace MarAberto
         MudaCoqueiro,
         MudaArvore,
         Gasolina,
+        Metralhadora,
+        Municao,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo }
@@ -99,6 +101,9 @@ namespace MarAberto
             defs[ItemType.MudaArvore].Plant = PieceKind.MudaArvore;
             Def(ItemType.Gasolina, "Gasolina", "Combustível do motor a gasolina e do helicóptero. Feita na refinaria.", new Color(0.85f, 0.2f, 0.15f), 6, 20);
             SetRarity(ItemType.Gasolina, 1);
+            Def(ItemType.Metralhadora, "Metralhadora", "Instale no helicóptero (E com ela na mão). Atira com o clique enquanto pilota.", new Color(0.2f, 0.2f, 0.22f), 0, 1);
+            SetRarity(ItemType.Metralhadora, 2);
+            Def(ItemType.Municao, "Munição", "Balas para a metralhadora do helicóptero.", new Color(0.85f, 0.65f, 0.3f), 1, 200);
             Def(ItemType.Madeira, "Madeira", "Toras de árvore. Base de quase toda construção.", new Color(0.55f, 0.38f, 0.22f), 1, 30);
             Def(ItemType.Graveto, "Graveto", "Galho seco. Cabos de ferramentas e tochas.", new Color(0.6f, 0.45f, 0.28f), 1, 40);
             Def(ItemType.Folha, "Folha", "Folha de coqueiro. Vira corda e telhado.", new Color(0.35f, 0.6f, 0.2f), 1, 40);

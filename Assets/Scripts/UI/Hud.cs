@@ -759,7 +759,7 @@ namespace MarAberto
             if (boat != null)
             {
                 float knots = Mathf.Abs(boat.Speed) * 1.944f;
-                speedText.text = p.Driving != null ? Mathf.RoundToInt(knots) + " NÓS" : "A BORDO";
+                speedText.text = p.Driving != null ? Mathf.RoundToInt(knots) + (boat is Helicopter ? " NÓS  ·  HELICÓPTERO" : " NÓS") : "A BORDO";
                 string anchor;
                 switch (boat.Anchor)
                 {
@@ -769,7 +769,7 @@ namespace MarAberto
                     case Boat.AnchorState.Hanging: anchor = "Âncora solta (não alcança o fundo)"; break;
                     default: anchor = "Âncora recolhida"; break;
                 }
-                anchorText.text = (boat.HasAnchor ? anchor + "   ·   <color=#FFD27A>R</color> âncora" : "Sem âncora") + (p.Driving != null ? "  ·  <color=#FFD27A>E</color> sair" : "") +
+                anchorText.text = (boat.HasAnchor ? anchor + "   ·   <color=#FFD27A>R</color> âncora" : boat is Raft ? "Sem âncora" : "") + (p.Driving != null ? "  ·  <color=#FFD27A>E</color> sair" : "") +
                     (boat.Extra != null ? "\n<color=#CDB98D>" + boat.Extra + "</color>" : "");
             }
 

@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero }
     public enum Station { Nenhuma, Bancada, Fundicao, Refinaria }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -55,13 +55,14 @@ namespace MarAberto
                 case PieceKind.MudaArvore: return "Muda de árvore";
                 case PieceKind.Refinaria: return "Refinaria de gasolina";
                 case PieceKind.MotorGas: return "Motor a gasolina";
+                case PieceKind.Helicoptero: return "Helicóptero";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
             || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
-            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas;
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -85,6 +86,7 @@ namespace MarAberto
                 case PieceKind.MudaArvore: return new Vector3(0.5f, 0.5f, 0.5f);
                 case PieceKind.Refinaria: return new Vector3(1.6f, 2.4f, 1.2f);
                 case PieceKind.MotorGas: return new Vector3(0.9f, 1.1f, 0.9f);
+                case PieceKind.Helicoptero: return new Vector3(2.4f, 2.6f, 7.5f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -108,6 +110,9 @@ namespace MarAberto
             foreach (var c in go.GetComponentsInChildren<Collider>(true)) Object.Destroy(c);
             foreach (var b in go.GetComponentsInChildren<MonoBehaviour>(true)) Object.Destroy(b);
             foreach (var l in go.GetComponentsInChildren<Light>(true)) Object.Destroy(l);
+            foreach (var a in go.GetComponentsInChildren<AudioSource>(true)) Object.Destroy(a);
+            foreach (var lr in go.GetComponentsInChildren<LineRenderer>(true)) Object.Destroy(lr);
+            foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true)) { rb.isKinematic = true; Object.Destroy(rb); }
             foreach (var r in go.GetComponentsInChildren<Renderer>(true))
             {
                 var mats = new Material[r.sharedMaterials.Length];
@@ -238,9 +243,9 @@ namespace MarAberto
                     foreach (var p in new[] { new Vector3(-0.45f, 0, -0.95f), new Vector3(0.45f, 0, -0.95f), new Vector3(-0.45f, 0, 0.95f), new Vector3(0.45f, 0, 0.95f) })
                         poles.AddTube(new[] { p, p + Vector3.up * (p.z > 0 ? 0.7f : 0.45f) }, new[] { 0.05f, 0.05f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
                     planks.AddBoxUV(new Vector3(0, 0.55f, 0.98f), new Vector3(Wd, 0.3f, 0.05f), Quaternion.identity, W(0.7f), 0.5f); // cabeceira
-                    other.AddCapsule(new Vector3(0, 0.36f, -0.05f), new Vector3(Wd * 0.46f, 0.09f, L * 0.45f), 0.08f, C(0.78f, 0.72f, 0.56f), 10); // colchão de palha
-                    other.AddCapsule(new Vector3(0, 0.47f, 0.72f), new Vector3(0.3f, 0.06f, 0.14f), 0.05f, C(0.88f, 0.86f, 0.80f), 10); // travesseiro
-                    other.AddCapsule(new Vector3(0, 0.44f, -0.35f), new Vector3(Wd * 0.48f, 0.05f, L * 0.28f), 0.04f, C(0.45f, 0.20f, 0.18f), 10); // cobertor
+                    other.AddBox(new Vector3(0, 0.36f, -0.05f), new Vector3(Wd * 0.92f, 0.16f, L * 0.9f), Quaternion.identity, C(0.78f, 0.72f, 0.56f)); // colchão de palha
+                    other.AddSphere(new Vector3(0, 0.47f, 0.72f), new Vector3(0.3f, 0.07f, 0.15f), C(0.88f, 0.86f, 0.80f), 2); // travesseiro
+                    other.AddBox(new Vector3(0, 0.455f, -0.35f), new Vector3(Wd * 0.96f, 0.04f, L * 0.56f), Quaternion.identity, C(0.45f, 0.20f, 0.18f)); // cobertor
                     Box(root, new Vector3(0, 0.3f, 0), new Vector3(1.1f, 0.6f, 2.1f));
                     root.AddComponent<Bed>();
                     break;
@@ -291,6 +296,65 @@ namespace MarAberto
                     seat.transform.localPosition = new Vector3(0, 0, -0.85f);
                     Box(root, new Vector3(0, 0.7f, 0), new Vector3(0.9f, 1.4f, 0.4f));
                     root.AddComponent<RaftHelm>();
+                    break;
+                }
+                case PieceKind.Helicoptero:
+                {
+                    // Cabine arredondada, vidro, cauda, esquis, hélice principal e de cauda, e metralhadora (aparece quando instalada).
+                    Color body = C(0.22f, 0.34f, 0.24f), dark = C(0.15f, 0.15f, 0.17f), glass = C(0.55f, 0.75f, 0.85f), stripe = C(0.85f, 0.7f, 0.3f);
+                    other.AddSphere(new Vector3(0, 1.25f, 0.4f), new Vector3(0.95f, 0.85f, 1.7f), body, 3);
+                    other.AddSphere(new Vector3(0, 1.45f, 1.55f), new Vector3(0.85f, 0.7f, 0.75f), glass, 3);
+                    other.AddCylinder(new Vector3(0, 1.45f, -1.1f), new Vector3(0, 1.75f, -4.6f), 0.36f, 0.14f, 12, body);
+                    other.AddCylinder(new Vector3(0, 1.48f, -1.5f), new Vector3(0, 1.62f, -3.0f), 0.38f, 0.3f, 12, stripe, false);
+                    other.AddBox(new Vector3(0, 2.15f, -4.5f), new Vector3(0.08f, 0.9f, 0.55f), Quaternion.Euler(-15, 0, 0), body);
+                    other.AddBox(new Vector3(0, 1.8f, -4.3f), new Vector3(1.2f, 0.06f, 0.35f), Quaternion.identity, body);
+                    foreach (float x in new[] { -0.85f, 0.85f })
+                    {
+                        other.AddCylinder(new Vector3(x, 0.1f, -1.3f), new Vector3(x, 0.1f, 1.6f), 0.05f, 0.05f, 8, dark);
+                        other.AddCylinder(new Vector3(x, 0.1f, 1.6f), new Vector3(x, 0.25f, 1.95f), 0.05f, 0.05f, 8, dark);
+                        other.AddCylinder(new Vector3(x, 0.1f, -0.6f), new Vector3(x * 0.7f, 0.75f, -0.5f), 0.04f, 0.04f, 6, dark);
+                        other.AddCylinder(new Vector3(x, 0.1f, 0.9f), new Vector3(x * 0.7f, 0.75f, 0.9f), 0.04f, 0.04f, 6, dark);
+                    }
+                    other.AddCylinder(new Vector3(0, 2.05f, 0.3f), new Vector3(0, 2.4f, 0.3f), 0.12f, 0.1f, 10, dark); // mastro do rotor
+                    var rotor = new GameObject("Rotor");
+                    rotor.transform.SetParent(root.transform, false);
+                    rotor.transform.localPosition = new Vector3(0, 2.42f, 0.3f);
+                    var rm = new MeshBuilder();
+                    for (int i = 0; i < 4; i++)
+                    {
+                        Quaternion q = Quaternion.Euler(0, i * 90f, 0);
+                        rm.AddBox(q * new Vector3(0, 0, 2.3f), new Vector3(0.28f, 0.04f, 4.4f), q, dark);
+                    }
+                    rm.AddCylinder(new Vector3(0, -0.06f, 0), new Vector3(0, 0.08f, 0), 0.18f, 0.18f, 12, dark);
+                    rotor.AddComponent<MeshFilter>().sharedMesh = rm.Build("Rotor");
+                    rotor.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    var tail = new GameObject("RotorCauda");
+                    tail.transform.SetParent(root.transform, false);
+                    tail.transform.localPosition = new Vector3(0.12f, 2.1f, -4.6f);
+                    var tm = new MeshBuilder();
+                    tm.AddBox(Vector3.zero, new Vector3(0.04f, 1.1f, 0.12f), Quaternion.identity, dark);
+                    tm.AddBox(Vector3.zero, new Vector3(0.04f, 0.12f, 1.1f), Quaternion.identity, dark);
+                    tail.AddComponent<MeshFilter>().sharedMesh = tm.Build("RotorCauda");
+                    tail.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    var gunGo = new GameObject("Metralhadora");
+                    gunGo.transform.SetParent(root.transform, false);
+                    gunGo.transform.localPosition = new Vector3(0, 0.7f, 1.6f);
+                    var gm = new MeshBuilder();
+                    gm.AddBox(new Vector3(0, 0, 0), new Vector3(0.22f, 0.22f, 0.45f), Quaternion.identity, dark);
+                    gm.AddCylinder(new Vector3(0, 0.02f, 0.2f), new Vector3(0, 0.02f, 1.05f), 0.05f, 0.045f, 8, dark);
+                    gunGo.AddComponent<MeshFilter>().sharedMesh = gm.Build("Metralhadora");
+                    gunGo.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    var tip = new GameObject("Ponta");
+                    tip.transform.SetParent(gunGo.transform, false);
+                    tip.transform.localPosition = new Vector3(0, 0.02f, 1.1f);
+                    gunGo.SetActive(false);
+                    var seatH = new GameObject("Assento");
+                    seatH.transform.SetParent(root.transform, false);
+                    seatH.transform.localPosition = new Vector3(0, 0.55f, 0.9f);
+                    Box(root, new Vector3(0, 1.25f, 0.3f), new Vector3(1.9f, 1.7f, 3.6f));
+                    Box(root, new Vector3(0, 1.6f, -2.9f), new Vector3(0.6f, 0.6f, 3.4f));
+                    Box(root, new Vector3(0, 0.1f, 0.15f), new Vector3(1.9f, 0.2f, 3.2f));
+                    root.AddComponent<Helicopter>();
                     break;
                 }
                 case PieceKind.MudaCoqueiro:
