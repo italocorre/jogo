@@ -12,10 +12,31 @@ namespace MarAberto
     {
         public float Radius = 190f;
         public int Seed = 1337;
-        const float HalfSize = 380f;
+        public IslandType Type = IslandType.Montanha;
+        public int Tier = 1;                 // 1 perto do centro do mundo ... 3 bem longe (mais minério)
+        public bool IsStart;                 // ilha onde o jogador nasce (tem o píer antigo e os recifes)
+        public string IslandName = "Ilha";
+        public bool Generated { get; private set; }
+        public bool Generating { get; private set; }
+        public bool Discovered;
+        public Transform Detail { get; private set; }   // tudo que é gerado de perto
+        GameObject silhouette;                          // terreno simplificado visto de longe
+
+        float HalfSize => Radius * 2f;
         const float Cell = 2.5f;
         const float MinDepth = -34f;
-        const int Chunks = 8;
+        int Chunks => Mathf.Max(2, Mathf.RoundToInt(HalfSize * 2f / 95f));
+
+        // Multiplicadores por tipo de ilha
+        float Area => (Radius / 190f) * (Radius / 190f);
+        int N(float baseCount, float mul) => Mathf.Max(0, Mathf.RoundToInt(baseCount * Area * mul));
+        float PalmMul => Type == IslandType.Praia ? 1.5f : Type == IslandType.Floresta ? 0.8f : Type == IslandType.Montanha ? 0.7f : Type == IslandType.Rochosa ? 0.3f : 0.08f;
+        float TreeMul => Type == IslandType.Praia ? 0.4f : Type == IslandType.Floresta ? 2.2f : Type == IslandType.Montanha ? 1.0f : Type == IslandType.Rochosa ? 0.3f : 0.1f;
+        float RockMul => Type == IslandType.Rochosa || Type == IslandType.Vulcanica ? 2.5f : Type == IslandType.Montanha ? 1.5f : 1f;
+        float OreMul => (Type == IslandType.Rochosa ? 1.8f : Type == IslandType.Vulcanica ? 2f : Type == IslandType.Montanha ? 1.3f : 0.8f) * (1f + (Tier - 1) * 0.3f);
+        float RidgeMul => (Type == IslandType.Praia ? 0.2f : Type == IslandType.Floresta ? 0.6f : Type == IslandType.Montanha ? 1.25f : Type == IslandType.Rochosa ? 0.8f : 1.0f) * Mathf.Clamp(Radius / 190f, 0.5f, 1f);
+        float PeakMul => (Type == IslandType.Vulcanica ? 2.4f : Type == IslandType.Praia ? 0.3f : 1f) * Mathf.Clamp(Radius / 190f, 0.5f, 1f);
+        float RockBias => Type == IslandType.Rochosa ? 0.35f : Type == IslandType.Vulcanica ? 0.55f : 0f;
 
         public Vector3 SpawnPoint { get; private set; }
         public Vector3 SpawnLook { get; private set; }
@@ -61,8 +82,8 @@ namespace MarAberto
                 ridge = Mathf.Pow(ridge, 2.4f);
                 float interior = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.12f) / 0.5f));
                 float h = Mathf.Pow(t, 0.7f) * (5f + hills * 16f);
-                h += ridge * 62f * interior;
-                h += Mathf.Exp(-d * d * 7f) * 30f; // pico central
+                h += ridge * 62f * RidgeMul * interior;
+                h += Mathf.Exp(-d * d * 7f) * 30f * PeakMul; // pico central
                 // Praia suave, exceto onde há falésia.
                 float beach = Mathf.Clamp01(t / 0.1f);
                 float beachShape = beach * beach;
@@ -124,30 +145,105 @@ namespace MarAberto
                 sand = Mathf.Clamp01(1f - (y - sandLine) / 1.2f);
             }
             rock = Mathf.Max(rock, Mathf.Clamp01((slope - 0.22f) * 5f) + Mathf.Clamp01((y - 70f) / 15f));
+            if (y > 2f && RockBias > 0) rock = Mathf.Max(rock, Mathf.Clamp01(RockBias + (patch - 0.5f) * 1.5f));
             rock = Mathf.Clamp01(rock);
             return new Color(sand, grass * (1f - rock), ground * (1f - rock), rock);
         }
 
         // ---------- Geração ----------
 
-        public void Generate()
+        void InitNoise()
         {
             rng = new System.Random(Seed);
             sx = (float)rng.NextDouble() * 1000f;
             sz = (float)rng.NextDouble() * 1000f;
+        }
 
+        /// <summary>Gera tudo de uma vez (ilha inicial e prints).</summary>
+        public void Generate()
+        {
+            var it = GenerateRoutine();
+            while (it.MoveNext()) { }
+        }
+
+        /// <summary>Gera aos poucos (um passo por quadro) para não travar o jogo ao chegar perto.</summary>
+        public System.Collections.IEnumerator GenerateRoutine()
+        {
+            if (Generated || Generating) yield break;
+            Generating = true;
+            InitNoise();
+            if (Detail == null)
+            {
+                Detail = new GameObject("Detalhe").transform;
+                Detail.SetParent(transform, false);
+            }
+            flats.Clear(); keepClear.Clear(); palmBases.Clear(); treeSpots.Clear();
             PlanLayout();
+            yield return null;
             BuildTerrain();
-            BuildSeabedFar();
-            BuildDock();
+            yield return null;
+            if (IsStart) BuildDock();
             BuildPalms();
+            yield return null;
             BuildForest();
+            yield return null;
             BuildRocks();
-            BuildGrass();
+            yield return null;
+            if (Type != IslandType.Vulcanica) BuildGrass();
+            yield return null;
             BuildSeabedLife();
             PlaceOres();
             PlaceLoot();
-            Reefs = Reef.CreateAll(transform.parent, transform.position, Seed);
+            if (IsStart) Reefs = Reef.CreateAll(transform.parent, transform.position, Seed);
+            if (silhouette != null) silhouette.SetActive(false);
+            Generating = false;
+            Generated = true;
+        }
+
+        /// <summary>Some o detalhe quando o jogador está muito longe (volta a silhueta).</summary>
+        public void SetDetailVisible(bool on)
+        {
+            if (Detail != null) Detail.gameObject.SetActive(on);
+            if (silhouette != null) silhouette.SetActive(!on || !Generated);
+        }
+
+        /// <summary>Terreno grosseiro, sem colisão, para ver a ilha no horizonte.</summary>
+        public void BuildSilhouette()
+        {
+            InitNoise();
+            float cell = Mathf.Max(8f, HalfSize / 40f);
+            int n = Mathf.RoundToInt(HalfSize * 2f / cell);
+            var verts = new Vector3[(n + 1) * (n + 1)];
+            var cols = new Color[verts.Length];
+            var uvs = new Vector2[verts.Length];
+            for (int z = 0; z <= n; z++)
+                for (int x = 0; x <= n; x++)
+                {
+                    float lx = -HalfSize + x * cell, lz = -HalfSize + z * cell;
+                    float wx = lx + transform.position.x, wz = lz + transform.position.z;
+                    float y = RawHeight(wx, wz);
+                    int i = z * (n + 1) + x;
+                    verts[i] = new Vector3(lx, y, lz);
+                    cols[i] = GroundWeights(wx, y, wz, Vector3.up * 0.9f + Vector3.right * 0.1f);
+                    uvs[i] = new Vector2(wx, wz) * 0.18f;
+                }
+            var tris = new int[n * n * 6];
+            int k = 0;
+            for (int z = 0; z < n; z++)
+                for (int x = 0; x < n; x++)
+                {
+                    int a = z * (n + 1) + x, b = a + 1, c = a + n + 1, d = c + 1;
+                    tris[k++] = a; tris[k++] = c; tris[k++] = d; tris[k++] = a; tris[k++] = d; tris[k++] = b;
+                }
+            var mesh = new Mesh { name = "Silhueta" };
+            mesh.vertices = verts; mesh.colors = cols; mesh.uv = uvs; mesh.triangles = tris;
+            mesh.RecalculateNormals(); mesh.RecalculateTangents(); mesh.RecalculateBounds();
+            silhouette = new GameObject("Silhueta");
+            silhouette.transform.SetParent(transform, false);
+            silhouette.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = silhouette.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = Mats.Terrain;
+            mr.shadowCastingMode = ShadowCastingMode.Off;
         }
 
         void PlanLayout()
@@ -243,7 +339,7 @@ namespace MarAberto
                     mesh.RecalculateTangents();
                     mesh.RecalculateBounds();
                     var go = new GameObject("Terreno_" + cx + "_" + cz);
-                    go.transform.SetParent(transform, false);
+                    go.transform.SetParent(Detail, false);
                     go.AddComponent<MeshFilter>().sharedMesh = mesh;
                     go.AddComponent<MeshRenderer>().sharedMaterial = mat;
                     go.AddComponent<MeshCollider>().sharedMesh = mesh;
@@ -262,7 +358,7 @@ namespace MarAberto
             mb.AddQuad(new Vector3(-i, y, i), new Vector3(-i, y, s), new Vector3(i, y, s), new Vector3(i, y, i), c);
             mb.AddQuad(new Vector3(-i, y, -s), new Vector3(-i, y, -i), new Vector3(i, y, -i), new Vector3(i, y, -s), c);
             var go = new GameObject("FundoDoMar");
-            go.transform.SetParent(transform, false);
+            go.transform.SetParent(Detail, false);
             var mesh = mb.Build("FundoDoMar");
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
@@ -303,7 +399,7 @@ namespace MarAberto
                 }
             }
             var go = new GameObject("Pier");
-            go.transform.SetParent(transform, false);
+            go.transform.SetParent(Detail, false);
             var pl = new GameObject("Tabuas"); pl.transform.SetParent(go.transform, false);
             pl.AddComponent<MeshFilter>().sharedMesh = planks.Build("Tabuas");
             pl.AddComponent<MeshRenderer>().sharedMaterial = Mats.Planks;
@@ -330,8 +426,9 @@ namespace MarAberto
             BoatSpawnRot = Quaternion.LookRotation(dockDir);
         }
 
-        bool RandomLandPoint(float minH, float maxH, float minNormalY, out Vector3 p, float maxR = HalfSize * 0.95f, float clear = 7f)
+        bool RandomLandPoint(float minH, float maxH, float minNormalY, out Vector3 p, float maxR = -1f, float clear = 7f)
         {
+            if (maxR < 0) maxR = HalfSize * 0.95f;
             for (int tries = 0; tries < 40; tries++)
             {
                 float a = (float)rng.NextDouble() * Mathf.PI * 2f;
@@ -359,7 +456,7 @@ namespace MarAberto
         {
             if (mb.VertexCount == 0) return null;
             var go = new GameObject(name);
-            go.transform.SetParent(transform, false);
+            go.transform.SetParent(Detail, false);
             go.layer = layer;
             go.AddComponent<MeshFilter>().sharedMesh = mb.Build(name);
             var mr = go.AddComponent<MeshRenderer>();
@@ -374,9 +471,9 @@ namespace MarAberto
         {
             // Cada coqueiro é um objeto próprio (pode ser cortado com o machado).
             var parent = new GameObject("Coqueiros").transform;
-            parent.SetParent(transform, false);
+            parent.SetParent(Detail, false);
             int count = 0;
-            for (int i = 0; i < 1400 && count < 110; i++)
+            for (int i = 0; i < 1400 && count < N(110, PalmMul); i++)
             {
                 if (!RandomLandPoint(1.6f, 14f, 0.8f, out var p, HalfSize * 0.95f, 6f)) continue;
                 count++;
@@ -480,11 +577,11 @@ namespace MarAberto
         void BuildForest()
         {
             var parent = new GameObject("Floresta").transform;
-            parent.SetParent(transform, false);
+            parent.SetParent(Detail, false);
             bool hasTree = ModelLibrary.Has("pachira_aquatica_01");
             int parts = hasTree ? Mathf.Max(1, ModelLibrary.PartCount("pachira_aquatica_01")) : 1;
             int trees = 0;
-            for (int i = 0; i < 2500 && trees < 70 && hasTree; i++)
+            for (int i = 0; i < 2500 && trees < N(70, TreeMul) && hasTree; i++)
             {
                 if (!RandomLandPoint(6f, 75f, 0.78f, out var p)) continue;
                 // Árvores em bosques, não espalhadas por igual.
@@ -506,7 +603,7 @@ namespace MarAberto
             {
                 int fparts = Mathf.Max(1, ModelLibrary.PartCount("fern_02"));
                 int ferns = 0;
-                for (int i = 0; i < 3000 && ferns < 220; i++)
+                for (int i = 0; i < 3000 && ferns < N(220, TreeMul * 1.2f); i++)
                 {
                     Vector3 p;
                     if (treeSpots.Count > 0 && rng.NextDouble() < 0.7)
@@ -533,10 +630,10 @@ namespace MarAberto
         void BuildRocks()
         {
             var parent = new GameObject("Rochas").transform;
-            parent.SetParent(transform, false);
+            parent.SetParent(Detail, false);
             string[] big = { "boulder_01", "namaqualand_boulder_02" };
             int n = 0;
-            for (int i = 0; i < 800 && n < 26; i++)
+            for (int i = 0; i < 800 && n < N(26, RockMul); i++)
             {
                 if (!RandomLandPoint(3f, 90f, 0.55f, out var p)) continue;
                 n++;
@@ -544,14 +641,14 @@ namespace MarAberto
             }
             int setParts = Mathf.Max(1, ModelLibrary.PartCount("rock_moss_set_01"));
             n = 0;
-            for (int i = 0; i < 1500 && n < 70; i++)
+            for (int i = 0; i < 1500 && n < N(70, RockMul); i++)
             {
                 if (!RandomLandPoint(-25f, 80f, 0.6f, out var p)) continue;
                 n++;
                 SetLayer(ModelLibrary.Spawn("rock_moss_set_01", p - Vector3.up * 0.25f, Quaternion.Euler(0, R(0, 360), 0), R(0.8f, 2.6f), ModelLibrary.Fit.Max, rng.Next(setParts), ModelLibrary.Col.Mesh, parent), Layers.Props);
             }
             n = 0;
-            for (int i = 0; i < 800 && n < 60; i++)
+            for (int i = 0; i < 800 && n < N(60, 1f); i++)
             {
                 if (!RandomLandPoint(0.4f, 40f, 0.75f, out var p)) continue;
                 n++;
@@ -567,7 +664,7 @@ namespace MarAberto
             int nChunks = Mathf.CeilToInt(Radius * 2.5f / chunk);
             float start = -nChunks * chunk * 0.5f;
             var parent = new GameObject("Grama").transform;
-            parent.SetParent(transform, false);
+            parent.SetParent(Detail, false);
             for (int cz = 0; cz < nChunks; cz++)
             {
                 for (int cx = 0; cx < nChunks; cx++)
@@ -661,7 +758,7 @@ namespace MarAberto
             var weeds = new MeshBuilder();
             var coral = new MeshBuilder();
             int w = 0;
-            for (int i = 0; i < 4000 && w < 520; i++)
+            for (int i = 0; i < 4000 && w < N(520, 1f); i++)
             {
                 if (!RandomLandPoint(-28f, -2.5f, 0.6f, out var p)) continue;
                 w++;
@@ -685,7 +782,7 @@ namespace MarAberto
             }
             Color[] coralCols = { C(0.98f, 0.45f, 0.45f), C(1f, 0.62f, 0.30f), C(0.75f, 0.45f, 0.90f), C(1f, 0.82f, 0.35f), C(0.35f, 0.80f, 0.85f) };
             int c = 0;
-            for (int i = 0; i < 1500 && c < 110; i++)
+            for (int i = 0; i < 1500 && c < N(110, 1f); i++)
             {
                 if (!RandomLandPoint(-16f, -2.2f, 0.7f, out var p)) continue;
                 c++;
@@ -709,18 +806,20 @@ namespace MarAberto
         void PlaceOres()
         {
             var parent = new GameObject("Minerios").transform;
-            parent.SetParent(transform, false);
+            parent.SetParent(Detail, false);
             int land = 0;
-            for (int i = 0; i < 900 && land < 60; i++)
+            for (int i = 0; i < 900 && land < N(60, OreMul); i++)
             {
                 if (!RandomLandPoint(2.5f, 70f, 0.65f, out var p)) continue;
                 land++;
                 double roll = rng.NextDouble();
                 ItemType t = roll < 0.4 ? ItemType.Pedra : roll < 0.7 ? ItemType.Carvao : ItemType.Cobre;
+                // Ilhas mais longe têm ferro em terra (e mais cobre).
+                if (Tier >= 2 && rng.NextDouble() < (Tier == 2 ? 0.2 : 0.35)) t = ItemType.Ferro;
                 Mineable.Create(parent, p, t, rng.Next(), false);
             }
             int sea = 0;
-            for (int i = 0; i < 1200 && sea < 45; i++)
+            for (int i = 0; i < 1200 && sea < N(45, 1f); i++)
             {
                 if (!RandomLandPoint(-30f, -4f, 0.55f, out var p)) continue;
                 sea++;
@@ -733,7 +832,7 @@ namespace MarAberto
         void PlaceLoot()
         {
             var parent = new GameObject("ItensSoltos").transform;
-            parent.SetParent(transform, false);
+            parent.SetParent(Detail, false);
             void Spot(ItemType t, Vector3 p, float respawn)
             {
                 var go = new GameObject("Spot_" + t);
@@ -745,14 +844,14 @@ namespace MarAberto
                 s.SpawnNow();
             }
             int shells = 0;
-            for (int i = 0; i < 1200 && shells < 36; i++)
+            for (int i = 0; i < 1200 && shells < N(36, 1f); i++)
             {
                 if (!RandomLandPoint(0.4f, 2.4f, 0.8f, out var p)) continue;
                 shells++;
                 Spot(ItemType.Concha, p + Vector3.up * 0.04f, 180f);
             }
             int stones = 0;
-            for (int i = 0; i < 1200 && stones < 45; i++)
+            for (int i = 0; i < 1200 && stones < N(45, 1f); i++)
             {
                 if (!RandomLandPoint(1f, 40f, 0.75f, out var p)) continue;
                 stones++;

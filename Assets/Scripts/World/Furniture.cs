@@ -76,4 +76,39 @@ namespace MarAberto
 
         public static string Name(Station s) => s == Station.Fundicao ? "Fundição" : s == Station.Bancada ? "Bancada" : "";
     }
+
+    /// <summary>Antena receptora: emite o sinal da jangada/base e funciona como receptor para quem está perto.</summary>
+    public class ReceptorPiece : MonoBehaviour, IInteractable
+    {
+        public const float SignalRange = 3000f;
+        public static readonly List<ReceptorPiece> All = new List<ReceptorPiece>();
+        void OnEnable() => All.Add(this);
+        void OnDisable() => All.Remove(this);
+
+        public string Label
+        {
+            get
+            {
+                var r = GetComponentInParent<Raft>();
+                if (r != null) return r.BoatName;
+                var g = Game.Instance;
+                var isl = g != null && g.World != null ? g.World.IslandAt(transform.position) : null;
+                return isl != null ? "Base na " + isl.IslandName : "Base";
+            }
+        }
+
+        public string Prompt => "Antena receptora (alcance " + (SignalRange / 1000f).ToString("0.#") + " km)";
+        public bool CanInteract => true;
+        public void Interact(PlayerController player) => Game.Instance.Hud.Toast("A antena está transmitindo. Receptores captam este sinal a até 3 km.", Hud.Info);
+
+        /// <summary>O jogador tem um receptor funcionando? (na mochila ou perto de uma antena)</summary>
+        public static bool PlayerHasReceiver(Game g)
+        {
+            if (g == null || g.Player == null) return false;
+            if (g.Inventory.Count(ItemType.Receptor) > 0) return true;
+            Vector3 p = g.Player.transform.position;
+            foreach (var a in All) if ((a.transform.position - p).sqrMagnitude < 15f * 15f) return true;
+            return false;
+        }
+    }
 }

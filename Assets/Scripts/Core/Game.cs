@@ -5,13 +5,14 @@ namespace MarAberto
     /// <summary>Monta o mundo (também usado pelos prints automáticos do build).</summary>
     public static class WorldBuilder
     {
-        public static Island BuildIsland()
+        public static WorldMap BuildWorld(bool preview)
         {
-            Layers.Setup();
-            var islandGo = new GameObject("Ilha do Porto");
-            var island = islandGo.AddComponent<Island>();
-            island.Generate();
-            return island;
+            var go = new GameObject("Mundo");
+            var w = go.AddComponent<WorldMap>();
+            // Cada partida nova sorteia em que ilha você nasce (nos prints, sempre a mesma).
+            int seed = preview ? 1337 : 1337 + System.Environment.TickCount % 100000;
+            w.Build(1337, seed, preview);
+            return w;
         }
 
         public static Ocean BuildOcean(Transform follow)
@@ -34,6 +35,7 @@ namespace MarAberto
         public Hud Hud { get; private set; }
         public WorldEnvironment Environment { get; private set; }
         public Island StartIsland { get; private set; }
+        public WorldMap World { get; private set; }
         public Ocean Ocean { get; private set; }
         public Boat Boat { get; private set; }
         public int Coins { get; private set; }
@@ -66,7 +68,8 @@ namespace MarAberto
                 foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) Destroy(l.gameObject);
             }
 
-            StartIsland = WorldBuilder.BuildIsland();
+            World = WorldBuilder.BuildWorld(preview);
+            StartIsland = World.StartIsland;
 
             var playerGo = new GameObject("Jogador");
             playerGo.AddComponent<CharacterController>();

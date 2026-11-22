@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena }
     public enum Station { Nenhuma, Bancada, Fundicao }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -48,12 +48,13 @@ namespace MarAberto
                 case PieceKind.Leme: return "Leme";
                 case PieceKind.Motor: return "Motor a vapor";
                 case PieceKind.Ancora: return "Âncora";
+                case PieceKind.Antena: return "Antena receptora";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
-            || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora;
+            || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -71,6 +72,7 @@ namespace MarAberto
                 case PieceKind.Leme: return new Vector3(0.9f, 1.4f, 0.4f);
                 case PieceKind.Motor: return new Vector3(0.9f, 1.3f, 0.9f);
                 case PieceKind.Ancora: return new Vector3(1.0f, 0.8f, 0.7f);
+                case PieceKind.Antena: return new Vector3(0.6f, 2.8f, 0.6f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -330,6 +332,28 @@ namespace MarAberto
                     other.AddCylinder(b, b + new Vector3(0.22f, 0.18f, 0), 0.03f, 0.02f, 8, iron);
                     Box(root, new Vector3(0, 0.4f, 0), new Vector3(1.0f, 0.8f, 0.5f));
                     root.AddComponent<RaftAnchorPiece>();
+                    break;
+                }
+                case PieceKind.Antena:
+                {
+                    // Mastro com fios de cobre em espiral e uma caixa de rádio na base.
+                    Color copper = C(0.85f, 0.5f, 0.28f), dark = C(0.2f, 0.2f, 0.22f);
+                    poles.AddTube(new[] { Vector3.zero, Vector3.up * 2.7f }, new[] { 0.07f, 0.04f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        float y = 1.6f + i * 0.35f, r = 0.32f - i * 0.07f;
+                        int seg = 16;
+                        for (int k2 = 0; k2 < seg; k2++)
+                        {
+                            float a0 = k2 * Mathf.PI * 2f / seg, a1 = (k2 + 1) * Mathf.PI * 2f / seg;
+                            other.AddCylinder(new Vector3(Mathf.Cos(a0) * r, y, Mathf.Sin(a0) * r), new Vector3(Mathf.Cos(a1) * r, y, Mathf.Sin(a1) * r), 0.015f, 0.015f, 5, copper, false);
+                        }
+                    }
+                    other.AddSphere(new Vector3(0, 2.75f, 0), Vector3.one * 0.07f, C(1f, 0.3f, 0.2f), 2);
+                    planks.AddBoxUV(new Vector3(0, 0.22f, 0.15f), new Vector3(0.45f, 0.44f, 0.3f), Quaternion.identity, W(0.75f), 0.5f);
+                    other.AddBox(new Vector3(0, 0.3f, 0.31f), new Vector3(0.3f, 0.14f, 0.02f), Quaternion.identity, dark);
+                    Box(root, new Vector3(0, 1.4f, 0), new Vector3(0.5f, 2.8f, 0.5f));
+                    root.AddComponent<ReceptorPiece>();
                     break;
                 }
                 case PieceKind.Bancada:

@@ -186,7 +186,12 @@ namespace MarAberto
             Add(new Recipe { Id = "helicoptero", Name = "Helicóptero", Category = CraftCategory.Veiculos, ComingIn = "Etapa 8", Description = "Voa! Usa gasolina e aceita arma montada." });
 
             // ---- Navegação ----
-            Add(new Recipe { Id = "receptor", Name = "Receptor", Category = CraftCategory.Navegacao, ComingIn = "Etapa 4", Description = "Mostra a ilha mais próxima e outros receptores." });
+            Add(new Recipe { Id = "receptor", Name = "Receptor", Category = CraftCategory.Navegacao, Output = ItemType.Receptor, Station = Station.Bancada,
+                Description = "Na mochila, aponta a ilha não descoberta mais próxima e capta antenas a até 3 km. Feito na bancada.",
+                Cost = L((ItemType.LingoteCobre, 2), (Mad, 2), (Cor, 1)), Research = L((ItemType.LingoteCobre, 3)) });
+            Add(new Recipe { Id = "antena", Name = "Antena receptora", Category = CraftCategory.Navegacao, Piece = PieceKind.Antena, IconOverride = ItemType.Receptor,
+                Description = "Construa na jangada ou na base: transmite o sinal (outros receptores veem você) e funciona como receptor para quem está perto.",
+                Cost = L((ItemType.LingoteCobre, 3), (Mad, 3)), Research = L((ItemType.LingoteCobre, 2), (Cor, 2)) });
 
             // ---- Comida ----
             Add(new Recipe { Id = "muda", Name = "Muda de coqueiro", Category = CraftCategory.Comida, ComingIn = "Etapa 7", Description = "Plante e veja crescer." });

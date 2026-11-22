@@ -295,6 +295,18 @@ namespace MarAberto
                     }
                     break;
                 }
+                case ItemType.Receptor:
+                {
+                    // Rádio de madeira com mostrador de latão e antena de cobre.
+                    Color wood = C(0.45f, 0.30f, 0.18f), brass = C(0.88f, 0.68f, 0.32f), copper = C(0.85f, 0.5f, 0.28f), glass = C(0.75f, 0.88f, 0.8f);
+                    mb.AddBox(new Vector3(0, 0, 0), new Vector3(0.2f, 0.13f, 0.11f), Quaternion.identity, wood);
+                    mb.AddCylinder(new Vector3(-0.04f, 0.01f, 0.055f), new Vector3(-0.04f, 0.01f, 0.065f), 0.035f, 0.035f, 14, brass);
+                    mb.AddCylinder(new Vector3(-0.04f, 0.01f, 0.065f), new Vector3(-0.04f, 0.01f, 0.068f), 0.028f, 0.028f, 14, glass);
+                    mb.AddCylinder(new Vector3(0.05f, -0.02f, 0.055f), new Vector3(0.05f, -0.02f, 0.07f), 0.015f, 0.015f, 10, brass);
+                    mb.AddCylinder(new Vector3(0.07f, 0.065f, 0), new Vector3(0.09f, 0.2f, 0), 0.006f, 0.004f, 6, copper);
+                    mb.AddSphere(new Vector3(0.09f, 0.205f, 0), Vector3.one * 0.01f, C(1f, 0.3f, 0.2f), 1);
+                    break;
+                }
                 case ItemType.Madeira:
                 {
                     // Tora com casca e anéis no corte.

@@ -774,6 +774,7 @@ namespace MarAberto
             }
 
             UpdateMarker(p);
+            UpdateNav(p, hudOn);
             helpBox.gameObject.SetActive(hudOn && Time.time < helpUntil);
 
             float ty = 0;
@@ -858,12 +859,23 @@ namespace MarAberto
                     "Âncora:  " + (boat.Anchor == Boat.AnchorState.Set ? "no fundo" : boat.Anchor == Boat.AnchorState.Up ? "recolhida" : "em movimento") + "\n\n" +
                     "<color=#A9B8BF>Melhorias do motor e da corda: aba FABRICAR, categoria Jangada.</color>";
             }
-            int frags = inv.Count(ItemType.FragmentoMapa);
-            int reefs = game.StartIsland != null && game.StartIsland.Reefs != null ? game.StartIsland.Reefs.Count : 0;
-            bpMapText.text = "<color=#FFD27A>CARTA NÁUTICA</color>\n\n" +
-                "Fragmentos de mapa:  " + frags + " de 4\n" +
-                "Recifes conhecidos:  1 de " + reefs + "  (marcado com a boia)\n\n" +
-                "<color=#A9B8BF>Junte 4 fragmentos para revelar onde fica a próxima ilha. Os fragmentos aparecem ao minerar debaixo d'água.</color>";
+            var world = game.World;
+            if (world != null)
+            {
+                int found = 0;
+                var sb = new System.Text.StringBuilder();
+                foreach (var isl in world.Islands)
+                {
+                    if (!isl.Discovered) continue;
+                    found++;
+                    if (found <= 12) sb.Append("•  " + isl.IslandName + "  <color=#A9B8BF>(" + WorldMap.TypeName(isl.Type) + ", nível " + isl.Tier + ")</color>\n");
+                }
+                bool rec = ReceptorPiece.PlayerHasReceiver(game);
+                bpMapText.text = "<color=#FFD27A>CARTA NÁUTICA</color>\n\nIlhas descobertas:  " + found + " de " + world.Islands.Count + "\n\n" + sb +
+                    "\n<color=#A9B8BF>" + (rec ? "Receptor ligado: siga o marcador dourado até a próxima ilha."
+                        : "Fabrique um Receptor (Tab > Fabricar > Navegação, na bancada) para achar ilhas novas.") +
+                    "\nIlhas mais longe do centro têm minérios melhores.</color>";
+            }
         }
 
         void UpdateMarker(PlayerController p)
