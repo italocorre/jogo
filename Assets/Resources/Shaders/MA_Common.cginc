@@ -81,13 +81,19 @@ float MA_Fbm(float2 p)
 float3 MA_SkyColor(float3 dir)
 {
     float y = dir.y;
-    float t = saturate(pow(saturate(y), 0.45));
-    float3 col = lerp(_MA_SkyHorizon.rgb, _MA_SkyTop.rgb, t);
     float3 sunDir = normalize(_MA_SunDir.xyz);
     float sd = saturate(dot(dir, sunDir));
-    col += _MA_SunColor.rgb * pow(sd, 8.0) * 0.35;
-    // Abaixo do horizonte: tom de mar profundo.
-    float3 below = lerp(_MA_SkyHorizon.rgb, float3(0.05, 0.22, 0.32) * (0.25 + 0.75 * _MA_Day), saturate(-y * 4.0));
+    // Espalhamento (aproximação): o céu escurece para o alto e clareia/embaça no horizonte.
+    float t = saturate(pow(saturate(y), 0.35));
+    float3 col = lerp(_MA_SkyHorizon.rgb, _MA_SkyTop.rgb, t);
+    float haze = exp(-saturate(y) * 9.0);
+    col = lerp(col, _MA_SkyHorizon.rgb * 1.08, haze * 0.5);
+    // Halo do sol (Mie): forte perto, suave longe; avermelha o horizonte no pôr do sol.
+    float lowSun = saturate(1.0 - sunDir.y * 3.0) * saturate(sunDir.y * 6.0 + 1.0);
+    col += _MA_SunColor.rgb * (pow(sd, 6.0) * 0.18 + pow(sd, 64.0) * 0.5) * saturate(_MA_Day + 0.2);
+    col += float3(1.0, 0.45, 0.2) * pow(sd, 3.0) * haze * lowSun * 0.55;
+    // Abaixo do horizonte (reflexo e fundo): tom do mar escuro.
+    float3 below = lerp(_MA_SkyHorizon.rgb, float3(0.02, 0.1, 0.15) * (0.2 + 0.8 * _MA_Day), saturate(-y * 4.0));
     return y < 0 ? below : col;
 }
 

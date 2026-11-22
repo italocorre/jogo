@@ -121,9 +121,9 @@ namespace MarAberto
                     cost += (cost.Length > 0 ? "  ·  " : "") + "<color=" + (ok ? "#8FE08A" : "#FF8A70") + ">" + n + " " + Items.Get(t).Name.ToLowerInvariant() + "</color>";
                 }
             string state = bs.CanPlace ? "<color=#8FE08A>Clique para construir</color>" : "<color=#FF8A70>" + (bs.Reason ?? "") + "</color>";
-            string dismantle = bs.Aimed != null ? "   <color=#FFD27A>X</color> desmontar " + Building.Name(bs.Aimed.Kind).ToLowerInvariant() : "";
+            string dismantle = "   <color=#A9B8BF>(para desmontar: golpes de machado)</color>";
             buildHintText.text = "<color=#FFD27A>" + Building.Name(bs.Selected).ToUpperInvariant() + "</color>   " + cost + "\n" + state +
-                "   <color=#FFD27A>R</color> girar   <color=#FFD27A>Botão direito</color> trocar peça" + dismantle;
+                "   <color=#FFD27A>Segure R + mouse</color> girar   <color=#FFD27A>Botão direito</color> trocar peça" + dismantle;
         }
 
         void RefreshChest()

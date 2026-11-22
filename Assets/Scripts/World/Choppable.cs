@@ -42,7 +42,7 @@ namespace MarAberto
             Health -= damage;
             shake = 1f;
             Debris.Burst(point, normal, 4, new Color(0.55f, 0.40f, 0.24f));
-            Sfx.Play(Sfx.Hit, point, 0.8f);
+            Sfx.Play(Sfx.Chop, point, 0.9f, 0.12f);
             if (Health <= 0)
             {
                 state = State.Falling;
@@ -52,7 +52,7 @@ namespace MarAberto
                 if (away.sqrMagnitude < 0.01f) away = Vector3.forward;
                 fallAxis = Vector3.Cross(Vector3.up, away.normalized);
                 foreach (var c in cols) c.enabled = false;
-                Sfx.Play(Sfx.Break, point, 1f);
+                Sfx.Play(Sfx.TreeFall, point, 0.9f, 0.05f);
                 NetGame.TreeFelledLocal(this, fallAxis);
             }
         }

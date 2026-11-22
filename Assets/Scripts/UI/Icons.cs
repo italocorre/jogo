@@ -103,7 +103,8 @@ namespace MarAberto
             tex.Apply();
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(rt);
-            if (Application.isPlaying) Object.Destroy(obj); else Object.DestroyImmediate(obj);
+            // Apaga já (com Destroy normal o modelo ficava até o fim do quadro e aparecia nos próximos ícones).
+            Object.DestroyImmediate(obj);
             tex.name = "Icone_" + t;
             return tex;
         }

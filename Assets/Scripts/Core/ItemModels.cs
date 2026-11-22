@@ -31,16 +31,24 @@ namespace MarAberto
         static Mesh FromModel(ItemType t, out Material mat)
         {
             mat = null;
-            string id; float size; bool tool = false;
+            string id; float size; bool tool = false; Color? tint = null;
             switch (t)
             {
                 case ItemType.PicaretaPedra: id = "picke_dirty_01"; size = 0.68f; tool = true; break;
+                case ItemType.PicaretaCobre: id = "picke_dirty_01"; size = 0.7f; tool = true; tint = new Color(1f, 0.72f, 0.55f); break;
+                case ItemType.PicaretaFerro: id = "picke_dirty_01"; size = 0.72f; tool = true; tint = new Color(0.8f, 0.86f, 0.95f); break;
+                case ItemType.MachadoPedra: id = "wooden_axe_02"; size = 0.66f; tool = true; break;
+                case ItemType.MachadoFerro: id = "hatchet"; size = 0.62f; tool = true; break;
+                case ItemType.Martelo: id = "wooden_hammer_01"; size = 0.5f; tool = true; break;
+                case ItemType.Gasolina: id = "metal_jerrycan"; size = 0.34f; break;
+                case ItemType.AguaLimpa: id = "wooden_bucket_01"; size = 0.3f; break;
                 case ItemType.Concha: id = "lambis_shell"; size = 0.2f; break;
                 case ItemType.Pedra: id = "stone_01"; size = 0.24f; break;
                 default: return null;
             }
             var src = ModelLibrary.BakedMesh(id, out mat);
             if (src == null || mat == null) return null;
+            if (tint.HasValue) { mat = new Material(mat) { name = mat.name + "_" + t }; mat.color = tint.Value; }
             var verts = src.vertices;
             var norms = src.normals;
             var tans = src.tangents;

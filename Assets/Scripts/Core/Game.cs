@@ -78,6 +78,7 @@ namespace MarAberto
             Player.Init(StartIsland.SpawnPoint, StartIsland.SpawnLook);
             Hands = playerGo.AddComponent<Hands>();
             Hands.Init(Player);
+            playerGo.AddComponent<Highlight>().Init(Player);
 
             Environment = gameObject.AddComponent<WorldEnvironment>();
             Environment.Init(Player.Cam);

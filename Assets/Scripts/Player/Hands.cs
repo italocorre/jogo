@@ -75,23 +75,40 @@ namespace MarAberto
         /// <summary>Braço low-poly: manga, pulso e mão fechada (origem = punho).</summary>
         public static GameObject BuildArm()
         {
+            // Braço humano: antebraço, punho, palma e dedos fechados em volta do cabo (que passa no eixo Y, na origem).
             var mb = new MeshBuilder();
-            // Luva de couro gasto e manga de casaco de marinheiro (fica mais natural que a mão lisa).
-            Color skin = C(0.40f, 0.27f, 0.17f);
-            Color skinDark = C(0.32f, 0.21f, 0.13f);
-            Color sleeve = C(0.20f, 0.24f, 0.31f);
-            Color cuff = C(0.30f, 0.22f, 0.14f);
-            // Antebraço vindo de baixo/trás até a mão
-            Vector3 hand = Vector3.zero;
-            Vector3 elbow = new Vector3(0.16f, -0.26f, -0.14f);
-            mb.AddCylinder(elbow, hand + new Vector3(0.02f, -0.07f, -0.08f), 0.075f, 0.055f, 7, skin);
-            mb.AddCylinder(elbow + (elbow - hand).normalized * 0.4f, elbow + (hand - elbow).normalized * 0.08f, 0.1f, 0.095f, 7, sleeve);
-            mb.AddCylinder(elbow + (hand - elbow).normalized * 0.05f, elbow + (hand - elbow).normalized * 0.11f, 0.1f, 0.1f, 7, cuff, false);
-            // Mão fechada em volta do cabo (formas arredondadas)
-            mb.AddSphere(new Vector3(0.012f, -0.015f, -0.012f), new Vector3(0.05f, 0.058f, 0.046f), skin, 3);
-            for (int i = 0; i < 4; i++)
-                mb.AddSphere(new Vector3(-0.036f, 0.03f - i * 0.022f, 0.028f), new Vector3(0.017f, 0.013f, 0.024f), i % 2 == 0 ? skin : skinDark, 2);
-            mb.AddCapsule(new Vector3(0.035f, 0.0f, 0.02f), new Vector3(0.012f, 0.04f, 0.04f), 0.014f, skin, 8);
+            Color skin = C(0.80f, 0.60f, 0.47f);
+            Color skinShade = C(0.72f, 0.52f, 0.40f);
+            Color sleeve = C(0.22f, 0.26f, 0.33f);
+            Color cuff = C(0.30f, 0.27f, 0.24f);
+            Color Sk(int i, float t) => Color.Lerp(skinShade, skin, t);
+            // Antebraço (vem de baixo/trás) com manga.
+            Vector3 wrist = new Vector3(0.045f, -0.06f, -0.055f);
+            Vector3 elbow = new Vector3(0.17f, -0.3f, -0.2f);
+            mb.AddTube(new[] { elbow, Vector3.Lerp(elbow, wrist, 0.5f), wrist }, new[] { 0.052f, 0.046f, 0.036f }, 12, Sk, new Vector2(1f, 0.8f), false, true);
+            Vector3 sl0 = elbow + (elbow - wrist).normalized * 0.35f, sl1 = Vector3.Lerp(elbow, wrist, 0.2f);
+            mb.AddTube(new[] { sl0, sl1 }, new[] { 0.075f, 0.068f }, 12, (i, t) => sleeve, null, false, true);
+            mb.AddTube(new[] { sl1 - (sl1 - sl0).normalized * 0.03f, sl1 + (wrist - elbow).normalized * 0.012f }, new[] { 0.074f, 0.072f }, 12, (i, t) => cuff, null, false, true);
+            // Palma (achatada), atrás do cabo.
+            Vector3 palm0 = wrist + new Vector3(-0.01f, 0.01f, 0.01f), palm1 = new Vector3(0.022f, 0.035f, -0.018f);
+            mb.AddTube(new[] { palm0, palm1 }, new[] { 0.035f, 0.038f }, 12, Sk, new Vector2(1f, 0.5f), true, true);
+            // Quatro dedos fechados em volta do cabo (de cima para baixo).
+            for (int f = 0; f < 4; f++)
+            {
+                float y = 0.05f - f * 0.024f;
+                float r = 0.0105f - f * 0.0008f;
+                var pts = new Vector3[5];
+                for (int k = 0; k < 5; k++)
+                {
+                    float a = Mathf.Lerp(200f, 470f, k / 4f) * Mathf.Deg2Rad; // dá a volta no cabo
+                    float rad = 0.036f - k * 0.002f;
+                    pts[k] = new Vector3(Mathf.Cos(a) * rad + 0.002f, y - k * 0.002f, Mathf.Sin(a) * rad);
+                }
+                mb.AddTube(pts, new[] { r, r * 0.98f, r * 0.94f, r * 0.9f, r * 0.82f }, 8, Sk, null, true, true);
+            }
+            // Polegar por cima dos dedos.
+            mb.AddTube(new[] { new Vector3(0.035f, 0.0f, -0.03f), new Vector3(0.042f, 0.035f, 0.0f), new Vector3(0.025f, 0.06f, 0.03f) },
+                new[] { 0.014f, 0.012f, 0.0105f }, 8, Sk, null, true, true);
             var go = new GameObject("Braco");
             go.AddComponent<MeshFilter>().sharedMesh = mb.Build("Braco");
             var mr = go.AddComponent<MeshRenderer>();
@@ -243,7 +260,7 @@ namespace MarAberto
             if (!needFood && !needDrink && !needHeal) { Game.Instance.Hud.Toast("Você está satisfeito.", Hud.Info); return; }
             Game.Instance.Inventory.Remove(type, 1);
             player.Consume(def.Food, def.Drink, def.HealAmount);
-            Sfx.Play(Sfx.Pickup, player.transform.position, 0.5f);
+            Sfx.UI(def.Drink > def.Food ? Sfx.Drink : Sfx.Eat, 0.6f);
             string what = (def.Drink > 0 && def.Food <= 0 ? "Bebeu " : "Comeu ") + def.Name.ToLowerInvariant();
             Game.Instance.Hud.Toast(what, Hud.Good);
             switchAnim = 0.6f;
@@ -361,6 +378,13 @@ namespace MarAberto
                 NetGame.HitPlayer(other, dmg);
                 Debris.Burst(hit.point, hit.normal, 4, new Color(0.7f, 0.1f, 0.1f));
                 Sfx.Play(Sfx.Hit, hit.point, 0.7f);
+                return;
+            }
+            // Machado na construção: desmonta (só as do seu time).
+            var piece = hit.collider.GetComponentInParent<BuildPiece>();
+            if (piece != null && Kind == ToolKind.Machado && piece.GetComponent<Choppable>() == null)
+            {
+                Game.Instance.Build.HitPiece(piece, hit.point, ToolTier >= 3 ? 1.6f : 1f);
                 return;
             }
             var m = hit.collider.GetComponentInParent<Mineable>();

@@ -3,13 +3,13 @@ using UnityEngine;
 
 namespace MarAberto
 {
-    /// <summary>Personagens animados (Quaternius, CC0) que o jogador escolhe no menu.</summary>
+    /// <summary>Personagens (Kenney, CC0): corpo humano normal com roupas diferentes (texturas).</summary>
     public static class CharacterSkins
     {
-        public static readonly string[] Files = { "Pirate_Male", "Pirate_Female", "Viking_Male", "Viking_Female", "Worker_Male", "Worker_Female", "Cowboy_Male", "Cowboy_Female", "Casual_Male", "Casual_Female" };
-        public static readonly string[] Names = { "Pirata", "Pirata", "Viking", "Viking", "Trabalhador", "Trabalhadora", "Cowboy", "Cowgirl", "Marujo", "Marujo" };
+        public static readonly string[] Files = { "humanMaleA", "humanFemaleA", "survivorMaleB", "survivorFemaleA", "skaterMaleA", "skaterFemaleA", "criminalMaleA" };
+        static readonly string[] names = { "Marujo", "Marujo (mulher)", "Sobrevivente", "Sobrevivente (mulher)", "Aventureiro", "Aventureira", "Pirata" };
         public static int Count => Files.Length;
-        public static string Label(int i) { i = ((i % Count) + Count) % Count; return Names[i] + (i % 2 == 0 ? " (homem)" : " (mulher)"); }
+        public static string Label(int i) { i = ((i % Count) + Count) % Count; return names[i]; }
     }
 
     /// <summary>Outro jogador visto na tela: personagem animado com item na mão e nome em cima.</summary>
@@ -55,49 +55,53 @@ namespace MarAberto
         bool BuildCharacter(int skin)
         {
             skin = ((skin % CharacterSkins.Count) + CharacterSkins.Count) % CharacterSkins.Count;
-            var prefab = Resources.Load<GameObject>("Characters/" + CharacterSkins.Files[skin]);
+            var prefab = Resources.Load<GameObject>("Characters/Kenney/characterMedium");
             if (prefab == null) return false;
             var inst = Instantiate(prefab, transform, false);
             inst.name = "Modelo";
             model = inst.transform;
-            // Altura de ~1,75 m e pé no chão.
+            // Roupa/pele (textura) com o material realista do jogo.
+            var tex = Resources.Load<Texture2D>("Characters/Kenney/Skins/" + CharacterSkins.Files[skin]);
+            var mat = ModelLibrary.Custom("Pele_" + CharacterSkins.Files[skin], tex, null, 0.15f);
             var rends = inst.GetComponentsInChildren<Renderer>();
+            foreach (var r in rends)
+            {
+                var ms = new Material[r.sharedMaterials.Length];
+                for (int i = 0; i < ms.Length; i++) ms[i] = mat;
+                r.sharedMaterials = ms;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                if (r is SkinnedMeshRenderer smr) smr.updateWhenOffscreen = true;
+            }
+            // Altura de ~1,75 m e pé no chão.
             if (rends.Length > 0)
             {
                 Bounds b = rends[0].bounds;
                 foreach (var r in rends) b.Encapsulate(r.bounds);
-                float h = Mathf.Max(0.01f, b.size.y);
-                model.localScale *= 1.75f / h;
+                model.localScale *= 1.75f / Mathf.Max(0.01f, b.size.y);
                 b = rends[0].bounds; foreach (var r in rends) b.Encapsulate(r.bounds);
                 model.position += Vector3.up * (transform.position.y - b.min.y);
-                foreach (var r in rends) { r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; if (r is SkinnedMeshRenderer smr) smr.updateWhenOffscreen = true; }
             }
-            anim = inst.GetComponentInChildren<Animation>();
-            if (anim != null)
+            // Animações (arquivos separados, mesmo esqueleto).
+            anim = inst.GetComponent<Animation>();
+            if (anim == null) anim = inst.AddComponent<Animation>();
+            AnimationClip Clip(string file, string ends)
             {
-                foreach (AnimationState st in anim)
-                {
-                    string n = st.name;
-                    if (n.EndsWith("|Idle") || n == "Idle") { clipIdle = n; st.wrapMode = WrapMode.Loop; }
-                    else if (n.EndsWith("|Walk") || n == "Walk") { clipWalk = n; st.wrapMode = WrapMode.Loop; }
-                    else if (n.Contains("Punch")) { clipPunch = n; st.wrapMode = WrapMode.Once; }
-                    else if (n.Contains("RecieveHit")) { clipHit = n; st.wrapMode = WrapMode.Once; }
-                    else if (n.Contains("SitDown")) { clipSit = n; st.wrapMode = WrapMode.ClampForever; }
-                }
-                if (clipIdle != null) anim.Play(clipIdle);
+                foreach (var c in Resources.LoadAll<AnimationClip>("Characters/Kenney/" + file))
+                    if (!c.name.StartsWith("__preview") && c.name.ToLowerInvariant().EndsWith(ends)) return c;
+                return null;
             }
+            var idle = Clip("idle", "idle"); var run = Clip("run", "run"); var jump = Clip("jump", "jump");
+            if (idle != null) { idle.legacy = true; anim.AddClip(idle, "Idle"); anim["Idle"].wrapMode = WrapMode.Loop; clipIdle = "Idle"; }
+            if (run != null) { run.legacy = true; anim.AddClip(run, "Walk"); anim["Walk"].wrapMode = WrapMode.Loop; clipWalk = "Walk"; }
+            if (jump != null) { jump.legacy = true; anim.AddClip(jump, "Jump"); anim["Jump"].wrapMode = WrapMode.Once; clipPunch = "Jump"; }
+            if (clipIdle != null) anim.Play(clipIdle);
             // Item na mão direita.
             Transform hand = null;
-            foreach (var t in inst.GetComponentsInChildren<Transform>(true))
-            {
-                string n = t.name.ToLowerInvariant();
-                if (n.Contains("hand") && (n.EndsWith("r") || n.EndsWith(".r") || n.EndsWith("_r") || n.Contains("right")) && !n.Contains("index") && !n.Contains("thumb")) { hand = t; break; }
-            }
+            foreach (var t in inst.GetComponentsInChildren<Transform>(true)) if (t.name == "RightHand") { hand = t; break; }
             handItem = new GameObject("Item").transform;
             handItem.SetParent(hand != null ? hand : model, false);
             handItem.localPosition = Vector3.zero;
-            handItem.localRotation = Quaternion.identity;
-            // Compensa a escala do esqueleto para o item ficar do tamanho certo.
+            handItem.localRotation = Quaternion.Euler(0, 0, 90);
             Vector3 ls = handItem.lossyScale;
             handItem.localScale = new Vector3(1f / Mathf.Max(ls.x, 1e-4f), 1f / Mathf.Max(ls.y, 1e-4f), 1f / Mathf.Max(ls.z, 1e-4f));
             heldFilter = handItem.gameObject.AddComponent<MeshFilter>();
@@ -218,7 +222,7 @@ namespace MarAberto
                     if (driving && clipSit != null) { if (!anim.IsPlaying(clipSit)) anim.CrossFade(clipSit, 0.2f); }
                     else if ((speed > 0.25f || swimming) && clipWalk != null)
                     {
-                        anim[clipWalk].speed = swimming ? 0.6f : Mathf.Clamp(speed / 1.6f, 0.6f, 2.2f);
+                        anim[clipWalk].speed = swimming ? 0.45f : Mathf.Clamp(speed / 4.5f, 0.45f, 1.4f);
                         if (!anim.IsPlaying(clipWalk)) anim.CrossFade(clipWalk, 0.2f);
                     }
                     else if (clipIdle != null && !anim.IsPlaying(clipIdle)) anim.CrossFade(clipIdle, 0.25f);

@@ -2,10 +2,10 @@ Shader "MarAberto/Water"
 {
     Properties
     {
-        _Scatter ("Cor da água", Color) = (0.36, 0.58, 0.74, 1)
-        _Shallow ("Turquesa raso", Color) = (0.60, 0.88, 0.82, 1)
-        _Foam ("Espuma", Color) = (0.95, 0.98, 1.0, 1)
-        _Absorb ("Absorção (RGB)", Vector) = (0.42, 0.11, 0.08, 0)
+        _Scatter ("Cor da água funda", Color) = (0.015, 0.11, 0.17, 1)
+        _Shallow ("Turquesa raso", Color) = (0.12, 0.48, 0.46, 1)
+        _Foam ("Espuma", Color) = (0.92, 0.95, 0.96, 1)
+        _Absorb ("Absorção (RGB)", Vector) = (0.45, 0.09, 0.06, 0)
     }
     SubShader
     {
@@ -87,13 +87,17 @@ Shader "MarAberto/Water"
 
                 // Normal das ondas + ondinhas de detalhe.
                 float3 n = normalize(i.normal);
-                float detail = saturate(1.0 - camDist / 140.0) * 0.24;
+                // Ondinhas em várias escalas (perto e longe), para o mar não ficar liso.
+                float detail = saturate(1.0 - camDist / 600.0) * 0.32 + 0.04;
                 float2 uv = i.wpos.xz;
-                float e = 0.15;
+                float e = 0.12 + camDist * 0.002;
                 float h0 = DetailHeight(uv, _MA_Time);
                 float hx = DetailHeight(uv + float2(e, 0), _MA_Time);
                 float hz = DetailHeight(uv + float2(0, e), _MA_Time);
                 n = normalize(n + float3(h0 - hx, 0, h0 - hz) / e * detail);
+                float2 uvB = uv * 0.08;
+                float b0 = MA_ValueNoise(uvB + _MA_Time * 0.03), bx = MA_ValueNoise(uvB + float2(0.05, 0) + _MA_Time * 0.03), bz = MA_ValueNoise(uvB + float2(0, 0.05) + _MA_Time * 0.03);
+                n = normalize(n + float3(b0 - bx, 0, b0 - bz) * 6.0);
 
                 float3 sunDir = normalize(_MA_SunDir.xyz);
                 float light = lerp(0.1, 1.0, _MA_Day);
@@ -123,45 +127,38 @@ Shader "MarAberto/Water"
                 float waterDepth = max(0.0, sceneZ2 - eye);
                 float3 refr = tex2Dproj(_MAWaterGrab, UNITY_PROJ_COORD(gp2)).rgb;
 
-                // Luz atravessando a água: vermelho some primeiro (fica turquesa / azul).
+                // Luz atravessando a água: o vermelho some primeiro (raso turquesa, fundo azul-escuro).
                 float3 trans = exp(-waterDepth * _Absorb.xyz);
-                float3 scatter = lerp(_Shallow.rgb, _Scatter.rgb, saturate(waterDepth / 14.0)) * light;
-                // Brilho "por dentro" da onda quando o sol está atrás dela.
-                float sss = pow(saturate(dot(v, -sunDir) * 0.6 + 0.4), 3.0) * saturate(i.extra.x * 0.8 + 0.4);
-                scatter += _Shallow.rgb * sss * 0.35 * light;
+                float3 ambient = lerp(float3(0.03, 0.04, 0.07), float3(1, 1, 1), _MA_Day);
+                float sunUp = saturate(sunDir.y * 3.0);
+                float3 scatter = lerp(_Shallow.rgb, _Scatter.rgb, saturate(waterDepth / 10.0)) * ambient;
+                // Luz passando por dentro da crista quando o sol está atrás dela.
+                float sss = pow(saturate(dot(v, -sunDir)), 4.0) * saturate(i.extra.x * 0.7 + 0.2) * sunUp;
+                scatter += _Shallow.rgb * sss * 0.5;
                 float3 water = refr * trans + scatter * (1.0 - trans);
 
-                // Reflexo do céu (Fresnel)
+                // Reflexo do céu (Fresnel físico da água).
                 float ndv = saturate(dot(n, v));
                 float fresnel = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
                 float3 refl = MA_SkyColor(reflect(-v, n));
-                float3 col = lerp(water, refl, fresnel * 0.85);
+                float3 col = lerp(water, refl, saturate(fresnel));
 
-                // Reflexos pintados: traços compridos e claros que deslizam (estilo pintado à mão).
-                float s1 = MA_ValueNoise(float2(uv.x * 0.22 + uv.y * 0.05, uv.y * 1.5) + float2(_MA_Time * 0.12, 0));
-                float s2 = MA_ValueNoise(float2(uv.x * 0.55, uv.y * 2.8 - uv.x * 0.2) - float2(_MA_Time * 0.18, 0));
-                float strokes = smoothstep(0.78, 0.9, s1) * 0.22 + smoothstep(0.86, 0.95, s2) * 0.14;
-                strokes *= saturate(1.0 - camDist / 420.0) * saturate((camDist - 6.0) / 25.0);
-                col = lerp(col, float3(0.93, 0.95, 0.88) * light, strokes * _MA_BrushAmount);
-                // Crista das ondas pega a luz quente do sol.
-                col = lerp(col, float3(0.98, 0.88, 0.72) * light, smoothstep(0.6, 1.4, i.extra.x) * 0.25);
-
-                // Brilho do sol (no HDR vira "brilhinho" com o bloom)
+                // Brilho do sol: ponto forte e nítido + faixa de reflexo larga.
                 float3 hv = normalize(sunDir + v);
                 float nh = saturate(dot(n, hv));
-                float spec = pow(nh, 500.0) * 2.5 * saturate(1.0 - camDist / 300.0) + pow(nh, 60.0) * 0.25;
-                col += _MA_SunColor.rgb * spec * step(0.0, sunDir.y);
+                float spec = pow(nh, 900.0) * 6.0 + pow(nh, 120.0) * 0.35;
+                col += _MA_SunColor.rgb * spec * sunUp;
 
-                // Espuma: linhas na beira da praia e um pouco nas cristas.
-                float fn = MA_ValueNoise(uv * 1.3 + float2(_MA_Time * 0.25, 0)) * 0.55 + MA_ValueNoise(uv * 3.7 - _MA_Time * 0.2) * 0.45;
-                float shore = saturate(1.0 - depthStraight / 1.6);
-                float bands = saturate(sin(depthStraight * 5.0 - _MA_Time * 1.6) * 0.5 + 0.5);
-                float foam = smoothstep(0.42, 0.62, shore * (0.55 + bands * 0.5) * fn * 1.7);
-                foam += smoothstep(0.25, 0.04, depthStraight) * 0.7;
-                float crest = (i.extra.x - 0.85) * 1.2 + (fn - 0.5) * 0.7;
-                foam += smoothstep(0.15, 0.45, crest) * 0.45 * i.extra.z;
-                foam = saturate(foam) * saturate(1.0 - camDist / 500.0);
-                col = lerp(col, _Foam.rgb * light * 1.1, foam);
+                // Espuma: só uma linha fina e quebrada na beira (e um pouco nas cristas fortes), acesa pela luz do momento.
+                float fn = MA_ValueNoise(uv * 1.6 + float2(_MA_Time * 0.25, 0)) * 0.6 + MA_ValueNoise(uv * 5.3 - _MA_Time * 0.2) * 0.4;
+                float edge = smoothstep(0.35, 0.0, depthStraight);
+                float bands = saturate(sin(depthStraight * 9.0 - _MA_Time * 1.8) * 0.5 + 0.5) * smoothstep(1.2, 0.2, depthStraight);
+                float foam = edge * smoothstep(0.35, 0.65, fn) + bands * smoothstep(0.6, 0.8, fn) * 0.5;
+                float crest = (i.extra.x - 1.1) * 1.2 + (fn - 0.5) * 0.6;
+                foam += smoothstep(0.2, 0.5, crest) * 0.3 * i.extra.z;
+                foam = saturate(foam) * saturate(1.0 - camDist / 400.0) * 0.75;
+                float3 foamLight = ambient * 0.55 + _MA_SunColor.rgb * sunUp * 0.6;
+                col = lerp(col, _Foam.rgb * foamLight, foam);
 
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return fixed4(col, 1.0);

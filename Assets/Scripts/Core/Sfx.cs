@@ -31,6 +31,12 @@ namespace MarAberto
         public static readonly string[] StepSand = { "passo_areia_0", "passo_areia_1", "passo_areia_2", "passo_areia_3", "passo_areia_4" };
         public static readonly string[] StepWood = { "passo_madeira_0", "passo_madeira_1", "passo_madeira_2", "passo_madeira_3", "passo_madeira_4" };
         public static readonly string[] Anchor = { "rocha_quebra_1" };
+        public static readonly string[] Eat = { "comer_1", "comer_2", "comer_3", "comer_4" };
+        public static readonly string[] Drink = { "beber_1", "beber_2", "beber_3" };
+        public static readonly string[] Hurt = { "dano_02", "dano_04", "dano_06", "dano_09" };
+        public static readonly string[] FallHit = { "queda_1", "queda_2", "queda_3" };
+        public static readonly string[] Chop = { "machado_1" };
+        public static readonly string[] TreeFall = { "arvore_cai" };
 
         public const string OceanLoop = "amb_ondas";
         public const string BoatWaterLoop = "amb_agua_barco";

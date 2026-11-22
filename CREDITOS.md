@@ -32,5 +32,11 @@ Licenças em `Assets/Resources/Fonts/OFL-*.txt`.
   - Baixados com `tools/baixar_modelos.py`.
 
 ## Personagens animados (CC0 — domínio público)
-- **Ultimate Animated Character Pack** por [Quaternius](https://quaternius.com) — CC0 (via OpenGameArt).
-  Usados: Pirate, Viking, Worker, Cowboy e Casual (masculino e feminino).
+- **Animated Characters 1, 2 e 3** por [Kenney](https://kenney.nl) — CC0 (via OpenGameArt). Modelo, animações e roupas.
+
+## Mais modelos (Poly Haven, CC0)
+- wooden_axe_02, hatchet, wooden_hammer_01, metal_jerrycan, cannon_01, stone_fire_pit, wooden_bucket_01.
+
+## Mais sons (CC0, OpenGameArt)
+- "7 Eating Crunches" (tito), "Liquid Bottle Drink Set" (qubodup), "15 vocal male strain/hurt/pain sounds",
+  "5 break, crunch impacts", "tree chop fall thud".

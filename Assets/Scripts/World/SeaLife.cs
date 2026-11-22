@@ -45,36 +45,103 @@ namespace MarAberto
 
         static Color C(float r, float g, float b) => new Color(r, g, b, 1f);
 
+        /// <summary>Corpo em anéis (forma de fuso), cor por cima/por baixo, barbatanas com espessura.</summary>
+        static void BuildBody(MeshBuilder mb, float L, bool shark, Color top, Color belly)
+        {
+            // perfil (raio relativo ao comprimento) do rabo (0) ao focinho (1)
+            float[] prof = shark ? new[] { 0.015f, 0.04f, 0.07f, 0.10f, 0.125f, 0.135f, 0.13f, 0.115f, 0.09f, 0.055f, 0.012f }
+                                 : new[] { 0.01f, 0.03f, 0.05f, 0.065f, 0.075f, 0.075f, 0.07f, 0.06f, 0.045f, 0.025f, 0.006f };
+            int rings = prof.Length, sides = 16;
+            var pts = new Vector3[rings, sides];
+            var nor = new Vector3[rings, sides];
+            var col = new Color[rings, sides];
+            for (int i = 0; i < rings; i++)
+            {
+                float t = i / (float)(rings - 1);
+                float z = Mathf.Lerp(-0.5f, 0.5f, t) * L;
+                float r = prof[i] * L;
+                float yOff = shark ? (t > 0.8f ? -(t - 0.8f) * 0.25f * L : 0f) : 0f; // focinho um pouco para baixo
+                for (int k = 0; k < sides; k++)
+                {
+                    float a = k * Mathf.PI * 2f / sides;
+                    float cx = Mathf.Cos(a), cy = Mathf.Sin(a);
+                    // corpo mais alto que largo e com a barriga mais achatada
+                    float ry = cy > 0 ? 1.1f : 0.85f;
+                    pts[i, k] = new Vector3(cx * r * 0.82f, cy * r * ry + yOff, z);
+                    nor[i, k] = new Vector3(cx / 0.82f, cy / ry, 0).normalized;
+                    float shade = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.35f, 0.15f, cy));
+                    col[i, k] = Color.Lerp(belly, top, shade);
+                }
+            }
+            for (int i = 0; i < rings - 1; i++)
+                for (int k = 0; k < sides; k++)
+                {
+                    int k2 = (k + 1) % sides;
+                    mb.AddSmoothTri(pts[i, k], pts[i + 1, k], pts[i + 1, k2], nor[i, k], nor[i + 1, k], nor[i + 1, k2], col[i, k], col[i + 1, k], col[i + 1, k2]);
+                    mb.AddSmoothTri(pts[i, k], pts[i + 1, k2], pts[i, k2], nor[i, k], nor[i + 1, k2], nor[i, k2], col[i, k], col[i + 1, k2], col[i, k2]);
+                }
+            // Barbatanas: placas finas com espessura (dois lados).
+            void Fin(Vector3 a, Vector3 b, Vector3 c, Color cl, float th)
+            {
+                Vector3 n = Vector3.Cross(b - a, c - a).normalized * th;
+                mb.AddTri(a + n, b + n, c + n, cl);
+                mb.AddTri(a - n, c - n, b - n, cl);
+                mb.AddTri(a + n, a - n, b - n, cl); mb.AddTri(a + n, b - n, b + n, cl);
+                mb.AddTri(b + n, b - n, c - n, cl); mb.AddTri(b + n, c - n, c + n, cl);
+            }
+            float h = L * (shark ? 0.13f : 0.075f);
+            // dorsal (alta e inclinada para trás)
+            Fin(new Vector3(0, h * 0.95f, L * 0.08f), new Vector3(0, h * (shark ? 2.6f : 1.5f), -L * 0.06f), new Vector3(0, h * 0.95f, -L * 0.12f), top, L * 0.006f);
+            if (shark)
+            {
+                // peitorais (longas, para o lado e para baixo)
+                foreach (float sd in new[] { -1f, 1f })
+                    Fin(new Vector3(sd * h * 0.7f, -h * 0.35f, L * 0.15f), new Vector3(sd * h * 2.6f, -h * 1.2f, -L * 0.05f), new Vector3(sd * h * 0.7f, -h * 0.4f, 0f), top, L * 0.005f);
+                // segunda dorsal e anal pequenas
+                Fin(new Vector3(0, h * 0.5f, -L * 0.3f), new Vector3(0, h * 0.85f, -L * 0.34f), new Vector3(0, h * 0.4f, -L * 0.36f), top, L * 0.004f);
+                // guelras: listras escuras
+                foreach (float sd in new[] { -1f, 1f })
+                    for (int g = 0; g < 4; g++)
+                    {
+                        float z = L * (0.22f + g * 0.025f);
+                        Vector3 p0 = new Vector3(sd * h * 0.86f, h * 0.15f, z), p1 = new Vector3(sd * h * 0.86f, -h * 0.35f, z - L * 0.01f);
+                        Vector3 o = new Vector3(sd * 0.003f, 0, 0);
+                        mb.AddTri(p0 + o, p1 + o, p1 + o + new Vector3(0, 0, L * 0.006f), top * 0.6f);
+                    }
+                // boca escura embaixo do focinho
+                Vector3 m0 = new Vector3(-h * 0.45f, -h * 0.75f, L * 0.34f), m1 = new Vector3(h * 0.45f, -h * 0.75f, L * 0.34f), m2 = new Vector3(0, -h * 0.62f, L * 0.42f);
+                mb.AddTri(m0, m2, m1, new Color(0.25f, 0.12f, 0.12f)); mb.AddTri(m0, m1, m2, new Color(0.25f, 0.12f, 0.12f));
+            }
+            // olhos
+            foreach (float sd in new[] { -1f, 1f })
+                mb.AddSphere(new Vector3(sd * h * 0.72f, h * 0.25f, L * (shark ? 0.37f : 0.36f)), Vector3.one * L * 0.012f, new Color(0.03f, 0.03f, 0.03f), 1);
+        }
+
         void Build()
         {
             bool shark = Kind == CreatureKind.Tubarao;
             float L = shark ? 3.2f : 1.1f;
-            Color top = shark ? C(0.36f, 0.40f, 0.44f) : C(0.55f, 0.6f, 0.62f), belly = C(0.88f, 0.88f, 0.86f);
+            Color top = shark ? C(0.33f, 0.38f, 0.43f) : C(0.52f, 0.58f, 0.6f), belly = C(0.9f, 0.9f, 0.88f);
             var mb = new MeshBuilder();
-            mb.AddRock(Vector3.zero, L * 0.5f, 3, n => n.y > -0.15f ? top : belly, 0.02f, new Vector3(shark ? 0.32f : 0.18f, shark ? 0.34f : 0.2f, 1f), 2);
-            // barbatanas
-            Vector3 df = new Vector3(0, L * 0.15f, L * 0.05f);
-            mb.AddTri(df + new Vector3(0, 0, -L * 0.12f), df + new Vector3(0, L * (shark ? 0.28f : 0.12f), -L * 0.12f), df + new Vector3(0, 0, L * 0.1f), top);
-            mb.AddTri(df + new Vector3(0, 0, L * 0.1f), df + new Vector3(0, L * (shark ? 0.28f : 0.12f), -L * 0.12f), df + new Vector3(0, 0, -L * 0.12f), top);
-            foreach (float s in new[] { -1f, 1f })
-            {
-                Vector3 pf = new Vector3(s * L * 0.12f, -L * 0.06f, L * 0.12f);
-                mb.AddTri(pf, pf + new Vector3(s * L * 0.22f, -L * 0.08f, -L * 0.1f), pf + new Vector3(0, 0, -L * 0.12f), top);
-                mb.AddTri(pf, pf + new Vector3(0, 0, -L * 0.12f), pf + new Vector3(s * L * 0.22f, -L * 0.08f, -L * 0.1f), belly);
-            }
-            // olhos
-            foreach (float s in new[] { -1f, 1f })
-                mb.AddSphere(new Vector3(s * L * 0.1f, L * 0.04f, L * 0.36f), Vector3.one * L * 0.025f, C(0.05f, 0.05f, 0.05f), 1);
+            BuildBody(mb, L, shark, top, belly);
             var body = new GameObject("Corpo");
             body.transform.SetParent(transform, false);
             body.AddComponent<MeshFilter>().sharedMesh = mb.Build("Peixe");
             body.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
 
             var tb = new MeshBuilder();
-            tb.AddTri(Vector3.zero, new Vector3(0, L * 0.25f, -L * 0.25f), new Vector3(0, 0, -L * 0.1f), top);
-            tb.AddTri(Vector3.zero, new Vector3(0, 0, -L * 0.1f), new Vector3(0, L * 0.25f, -L * 0.25f), top);
-            tb.AddTri(Vector3.zero, new Vector3(0, 0, -L * 0.1f), new Vector3(0, -L * 0.18f, -L * 0.22f), top);
-            tb.AddTri(Vector3.zero, new Vector3(0, -L * 0.18f, -L * 0.22f), new Vector3(0, 0, -L * 0.1f), top);
+            {
+                float h = L * 0.12f, th = L * 0.006f;
+                Vector3 r0 = Vector3.zero;
+                Vector3 up = new Vector3(0, h * (shark ? 2.8f : 1.6f), -L * (shark ? 0.2f : 0.12f)), dn = new Vector3(0, -h * (shark ? 1.7f : 1.6f), -L * (shark ? 0.13f : 0.12f));
+                Vector3 notch = new Vector3(0, h * 0.1f, -L * 0.07f);
+                Vector3 n = Vector3.right * th;
+                foreach (var tri in new[] { (r0, up, notch), (r0, notch, dn) })
+                {
+                    tb.AddTri(tri.Item1 + n, tri.Item2 + n, tri.Item3 + n, top);
+                    tb.AddTri(tri.Item1 - n, tri.Item3 - n, tri.Item2 - n, top);
+                }
+            }
             tail = new GameObject("Cauda").transform;
             tail.SetParent(transform, false);
             tail.localPosition = new Vector3(0, 0, -L * 0.45f);
@@ -152,13 +219,13 @@ namespace MarAberto
                     float r = Kind == CreatureKind.Tubarao ? 14f : 6f;
                     Vector3 center = raft != null ? raft.transform.position : pl.transform.position;
                     target = center + Quaternion.Euler(0, circleAngle, 0) * Vector3.forward * r;
-                    target.y = Kind == CreatureKind.Tubarao ? water - 0.7f : Mathf.Min(pp.y, water - 1.5f); // barbatana de fora
+                    target.y = Kind == CreatureKind.Tubarao ? water - 1.25f : Mathf.Min(pp.y, water - 1.5f); // só a ponta da barbatana aparece
                     if (playerInWater && stateT > (Kind == CreatureKind.Tubarao ? 6f : 2f) && biteCooldown <= 0) { state = State.Attack; stateT = 0; }
                     raftBiteTimer -= dt;
                     if (Kind == CreatureKind.Tubarao && raft != null && !playerInWater && raftBiteTimer <= 0)
                     {
                         raftTarget = PickRaftEdge(raft);
-                        if (raftTarget != null) { state = State.BiteRaft; stateT = 0; g.Hud.Toast("Um tubarão está mordendo a jangada!", Hud.Bad); }
+                        if (raftTarget != null) { state = State.BiteRaft; stateT = 0; g.Hud.Toast("Um tubarão está batendo na jangada!", Hud.Bad); }
                         raftBiteTimer = Random.Range(30f, 55f);
                     }
                     break;
@@ -184,14 +251,11 @@ namespace MarAberto
                     want = MaxSpeed * 0.8f;
                     if ((target - pos).magnitude < 1.6f)
                     {
-                        // Mordida: balança a jangada e machuca quem estiver na beirada. Não destrói nada.
-                        if (stateT > 1f)
+                        // Cabeçada: só o susto e o barulho (não mexe, não quebra, não machuca).
+                        if (stateT > 1.4f)
                         {
-                            Sfx.Play(Sfx.Creak, target, 0.9f);
-                            Debris.Burst(target + Vector3.up * 0.5f, Vector3.up, 5, new Color(0.55f, 0.4f, 0.25f));
-                            var rb = raft.GetComponent<Rigidbody>();
-                            if (rb != null && !rb.isKinematic) rb.AddForceAtPosition(Vector3.down * rb.mass * 3f, raftTarget.transform.position, ForceMode.Impulse);
-                            if ((pl.transform.position - raftTarget.transform.position).magnitude < 1.8f) pl.Damage(10f);
+                            Sfx.Play(Sfx.Clank, target, 1f, 0.15f);
+                            Sfx.Play(Sfx.FallHit, target, 0.8f, 0.1f);
                             stateT = 0.2f;
                         }
                         if (Random.value < dt * 0.25f) { state = State.Flee; stateT = 0; }
@@ -218,7 +282,7 @@ namespace MarAberto
             float ground = GroundAt(next);
             float wn = Ocean.HeightAt(next.x, next.z);
             if (wn - ground < 2.5f) { vel = Vector3.Lerp(vel, -to.normalized * want, dt * 4f); next = pos + vel * dt; }
-            next.y = Mathf.Clamp(next.y, ground + 0.8f, wn - 0.35f);
+            next.y = Mathf.Clamp(next.y, ground + 0.8f, wn - (Kind == CreatureKind.Tubarao ? 1.0f : 0.6f));
             transform.position = next;
             Vector3 look = new Vector3(vel.x, vel.y * 0.5f, vel.z);
             if (look.sqrMagnitude > 0.05f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), dt * 3f);
@@ -280,6 +344,7 @@ namespace MarAberto
                 float a = t * 0.6f + phase[i];
                 float r = radius * (0.7f + 0.3f * Mathf.Sin(phase[i]));
                 Vector3 p = center + new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a * 1.7f + phase[i]) * 0.6f, Mathf.Sin(a) * r);
+                p.y = Mathf.Min(p.y, Ocean.HeightAt(p.x, p.z) - 0.8f); // sempre debaixo d'água
                 Vector3 d = new Vector3(-Mathf.Sin(a), 0, Mathf.Cos(a));
                 fish[i].position = p;
                 fish[i].rotation = Quaternion.LookRotation(d);

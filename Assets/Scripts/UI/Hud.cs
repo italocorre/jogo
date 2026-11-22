@@ -20,6 +20,7 @@ namespace MarAberto
         Game game;
         Panel panel = Panel.None;
         Tab tab = Tab.Bag;
+        Tab lastBagTab = Tab.Bag;
         public bool AnyPanelOpen => panel != Panel.None;
         public int PanelChangedFrame { get; private set; } = -10;
 
@@ -218,7 +219,7 @@ namespace MarAberto
             var ht = UIKit.Txt(helpBox, "Texto",
                 K("WASD") + " andar     " + K("Shift") + " correr     " + K("Espaço") + " pular\n" +
                 K("Clique") + " minerar     " + K("E") + " pegar, falar, pilotar\n" +
-                K("1-6") + " trocar item     " + K("Tab") + " mochila     " + K("Q") + " largar\n" +
+                K("1-6") + " item     " + K("Tab") + " mochila     " + K("B") + " fabricar     " + K("Q") + " largar\n" +
                 K("R") + " âncora     " + K("Ctrl") + " mergulhar     " + K("H") + " esconder",
                 UIKit.BodyMed, 22, UIKit.Text, TextAnchor.MiddleLeft);
             ht.rectTransform.Fill(22, 12, 16, 12);
@@ -331,6 +332,10 @@ namespace MarAberto
             }
             bpBagView.gameObject.SetActive(tab == Tab.Bag);
             craftView.gameObject.SetActive(tab == Tab.Craft);
+            if (tab != Tab.Craft) lastBagTab = tab;
+            // Fabricar fica no canto direito (dá para ver o mundo); a mochila fica no meio.
+            if (tab == Tab.Craft) backpackWin.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-24, 20), new Vector2(1400, 760));
+            else backpackWin.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 24), new Vector2(1400, 760));
             if (bpHint != null) bpHint.gameObject.SetActive(tab == Tab.Bag);
             craftVersion = -1;
             bpBoatView.gameObject.SetActive(tab == Tab.Boat);
@@ -538,7 +543,7 @@ namespace MarAberto
             if (p == Panel.Backpack || p == Panel.Shop) hotbarRt.SetAsLastSibling();
             if (p == Panel.Pause) pauseWin.SetAsLastSibling();
             if (p == Panel.Shop) shopVersion = -1;
-            if (p == Panel.Backpack) { tab = Tab.Bag; RefreshTabs(); }
+            if (p == Panel.Backpack) RefreshTabs();
             if (p == Panel.Pause && game.Player != null) sensSlider.value = game.Player.MouseSensitivity;
             CancelDrag();
         }
@@ -648,8 +653,17 @@ namespace MarAberto
             if (Input.GetKeyDown(KeyCode.Escape)) SetPanel(panel == Panel.None ? Panel.Pause : Panel.None);
             else if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.I))
             {
-                if (panel == Panel.None) SetPanel(Panel.Backpack);
+                // Tab: mochila no meio da tela (volta na última aba usada: mochila, barco ou mapa).
+                if (panel == Panel.None) { SetPanel(Panel.Backpack); tab = lastBagTab; RefreshTabs(); }
+                else if (panel == Panel.Backpack && tab == Tab.Craft) { tab = lastBagTab; RefreshTabs(); }
                 else SetPanel(Panel.None);
+            }
+            else if (Input.GetKeyDown(KeyCode.B))
+            {
+                // B: fabricar, no canto direito (lembra a última categoria).
+                if (panel == Panel.None) { SetPanel(Panel.Backpack); tab = Tab.Craft; RefreshTabs(); }
+                else if (panel == Panel.Backpack && tab != Tab.Craft) { tab = Tab.Craft; RefreshTabs(); }
+                else if (panel == Panel.Backpack) SetPanel(Panel.None);
             }
             else if ((panel == Panel.Shop || panel == Panel.Chest || panel == Panel.Build) && Input.GetKeyDown(KeyCode.E) && Time.frameCount != PanelChangedFrame) SetPanel(Panel.None);
             else if (panel == Panel.Build && Input.GetMouseButtonDown(1) && Time.frameCount != PanelChangedFrame) SetPanel(Panel.None);
@@ -735,8 +749,8 @@ namespace MarAberto
             bool hasTarget = hands != null && hands.HasTarget;
             var look = p != null ? p.LookTarget : null;
             crosshair.gameObject.SetActive(hudOn && (p == null || p.Driving == null));
-            crosshair.color = (hasTarget || look != null) ? UIKit.Gold : new Color(1, 1, 1, 0.9f);
-            crosshair.rectTransform.sizeDelta = Vector2.one * ((hasTarget || look != null) ? 10 : 7);
+            crosshair.color = new Color(1, 1, 1, hasTarget ? 0.9f : 0.55f);
+            crosshair.rectTransform.sizeDelta = Vector2.one * 5f;
             promptBox.gameObject.SetActive(hudOn && look != null);
             if (look != null)
             {

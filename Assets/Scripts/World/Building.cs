@@ -306,23 +306,26 @@ namespace MarAberto
                 }
                 case PieceKind.Fogueira:
                 {
-                    // Roda de pedras, lenha cruzada, grelha e fogo aceso.
-                    var rng = new System.Random(8);
-                    for (int i = 0; i < 9; i++)
+                    // Roda de pedras realista (Poly Haven), lenha cruzada e grelha.
+                    var fp = ModelLibrary.Spawn("stone_fire_pit", Vector3.zero, Quaternion.identity, 1.1f, ModelLibrary.Fit.Length, -1, ModelLibrary.Col.None, root.transform);
+                    if (fp == null)
                     {
-                        float a = i * Mathf.PI * 2f / 9f;
-                        other.AddRock(new Vector3(Mathf.Cos(a) * 0.42f, 0.07f, Mathf.Sin(a) * 0.42f), 0.1f, rng.Next(), _ => C(0.45f, 0.44f, 0.42f), 0.2f);
+                        var rng = new System.Random(8);
+                        for (int i = 0; i < 9; i++)
+                        {
+                            float a = i * Mathf.PI * 2f / 9f;
+                            other.AddRock(new Vector3(Mathf.Cos(a) * 0.42f, 0.07f, Mathf.Sin(a) * 0.42f), 0.1f, rng.Next(), _ => C(0.45f, 0.44f, 0.42f), 0.2f);
+                        }
                     }
                     for (int i = 0; i < 4; i++)
                     {
                         float a = i * Mathf.PI / 2f + 0.3f;
                         Vector3 d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                        poles.AddTube(new[] { d * 0.32f + Vector3.up * 0.03f, Vector3.up * 0.25f - d * 0.02f }, new[] { 0.045f, 0.035f }, 7, (j, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                        poles.AddTube(new[] { d * 0.3f + Vector3.up * 0.06f, Vector3.up * 0.28f - d * 0.02f }, new[] { 0.045f, 0.035f }, 7, (j, t) => Color.white, null, true, true, null, 0.6f, 1f);
                     }
-                    other.AddSphere(new Vector3(0, 0.06f, 0), new Vector3(0.22f, 0.05f, 0.22f), C(0.15f, 0.1f, 0.08f), 2); // brasas
-                    foreach (float x in new[] { -0.4f, 0.4f })
-                        poles.AddTube(new[] { new Vector3(x, 0, 0), new Vector3(x, 0.55f, 0) }, new[] { 0.025f, 0.02f }, 6, (j, t) => Color.white, null, true, true, null, 0.6f, 1f);
-                    other.AddCylinder(new Vector3(-0.42f, 0.55f, 0), new Vector3(0.42f, 0.55f, 0), 0.012f, 0.012f, 6, C(0.3f, 0.3f, 0.32f));
+                    foreach (float x in new[] { -0.45f, 0.45f })
+                        poles.AddTube(new[] { new Vector3(x, 0, 0), new Vector3(x, 0.6f, 0) }, new[] { 0.025f, 0.02f }, 6, (j, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    other.AddCylinder(new Vector3(-0.47f, 0.6f, 0), new Vector3(0.47f, 0.6f, 0), 0.012f, 0.012f, 6, C(0.3f, 0.3f, 0.32f));
                     Box(root, new Vector3(0, 0.15f, 0), new Vector3(1.0f, 0.3f, 1.0f));
                     root.AddComponent<CraftStation>().Kind = Station.Fogueira;
                     root.AddComponent<CampfireFx>();
@@ -348,25 +351,14 @@ namespace MarAberto
                 }
                 case PieceKind.Canhao:
                 {
-                    // Carreta de madeira com rodas e cano de ferro (o cano gira para onde você mira).
-                    Color iron = C(0.16f, 0.16f, 0.17f);
-                    planks.AddBoxUV(new Vector3(0, 0.3f, 0), new Vector3(0.7f, 0.2f, 1.1f), Quaternion.identity, W(0.75f), 0.5f);
-                    foreach (float x in new[] { -0.42f, 0.42f })
-                        foreach (float z in new[] { -0.35f, 0.35f })
-                            other.AddCylinder(new Vector3(x, 0.2f, z), new Vector3(x + Mathf.Sign(x) * 0.08f, 0.2f, z), 0.2f, 0.2f, 14, C(0.4f, 0.28f, 0.17f));
-                    var barrel = new GameObject("Cano");
-                    barrel.transform.SetParent(root.transform, false);
-                    barrel.transform.localPosition = new Vector3(0, 0.55f, 0);
-                    var bm = new MeshBuilder();
-                    bm.AddCylinder(new Vector3(0, 0, -0.45f), new Vector3(0, 0, 0.9f), 0.17f, 0.12f, 14, iron);
-                    bm.AddSphere(new Vector3(0, 0, -0.48f), Vector3.one * 0.17f, iron, 2);
-                    bm.AddCylinder(new Vector3(0, 0, 0.82f), new Vector3(0, 0, 0.92f), 0.15f, 0.15f, 14, iron, false);
-                    barrel.AddComponent<MeshFilter>().sharedMesh = bm.Build("Cano");
-                    barrel.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
-                    var boca = new GameObject("Boca");
-                    boca.transform.SetParent(barrel.transform, false);
-                    boca.transform.localPosition = new Vector3(0, 0, 1.05f);
-                    Box(root, new Vector3(0, 0.45f, 0.1f), new Vector3(0.9f, 0.9f, 1.3f));
+                    // Canhão realista (Poly Haven); se faltar, um simples.
+                    var cm = ModelLibrary.Spawn("cannon_01", Vector3.zero, Quaternion.identity, 1.5f, ModelLibrary.Fit.Length, -1, ModelLibrary.Col.None, root.transform);
+                    if (cm == null)
+                    {
+                        planks.AddBoxUV(new Vector3(0, 0.3f, 0), new Vector3(0.7f, 0.2f, 1.1f), Quaternion.identity, W(0.75f), 0.5f);
+                        other.AddCylinder(new Vector3(0, 0.55f, -0.45f), new Vector3(0, 0.55f, 0.9f), 0.17f, 0.12f, 14, C(0.16f, 0.16f, 0.17f));
+                    }
+                    Box(root, new Vector3(0, 0.45f, 0.1f), new Vector3(0.9f, 0.9f, 1.4f));
                     root.AddComponent<CannonPiece>();
                     break;
                 }

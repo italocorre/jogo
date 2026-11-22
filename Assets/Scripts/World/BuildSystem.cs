@@ -21,7 +21,7 @@ namespace MarAberto
         GameObject ghost;
         PieceKind ghostKind;
         Material ghostMat;
-        int rotSteps;
+        float rotOffset;   // giro livre (segurar R e mover o mouse)
         Vector3 placePos;
         Quaternion placeRot;
         Transform placeParent;   // jangada onde a peça vai (null = terra)
@@ -46,7 +46,7 @@ namespace MarAberto
         public void Select(PieceKind k)
         {
             Selected = k;
-            rotSteps = 0;
+            rotOffset = 0;
         }
 
         void Update()
@@ -65,14 +65,16 @@ namespace MarAberto
             var cam = p.Cam.transform;
             // Botão direito: escolher peça.
             if (Input.GetMouseButtonDown(1)) { game.Hud.OpenBuildPicker(); return; }
-            if (Input.GetKeyDown(KeyCode.R)) rotSteps = (rotSteps + 1) % 8;
+            // Segurar R e mover o mouse: gira a peça (a câmera fica parada).
+            bool rotating = Input.GetKey(KeyCode.R);
+            p.LookFrozen = rotating;
+            if (rotating) rotOffset += Input.GetAxisRaw("Mouse X") * 4f;
 
             int mask = ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.UI));
             bool hasHit = Physics.Raycast(cam.position, cam.forward, out var hit, Range, mask, QueryTriggerInteraction.Ignore);
             Aimed = hasHit ? hit.collider.GetComponentInParent<BuildPiece>() : null;
 
             // X: desmontar a peça mirada.
-            if (Aimed != null && Input.GetKeyDown(KeyCode.X)) { Dismantle(Aimed); return; }
 
             var recipe = RecipeFor(Selected);
             ShowGhost(Selected);
@@ -156,7 +158,7 @@ namespace MarAberto
             var raft = hit.collider.GetComponentInParent<Raft>();
             placeParent = raft != null ? raft.transform : null;
             float yaw = Mathf.Round(cam.eulerAngles.y / 90f) * 90f;
-            Quaternion freeRot = Quaternion.Euler(0, yaw + rotSteps * 45f, 0);
+            Quaternion freeRot = Quaternion.Euler(0, yaw + rotOffset, 0);
             float h = Building.Cell * 0.5f;
 
             switch (Selected)
@@ -243,7 +245,7 @@ namespace MarAberto
                 {
                     if (piece != null && piece.IsFloorLike && hit.normal.y > 0.7f)
                     {
-                        placeRot = piece.transform.rotation * Quaternion.Euler(0, (rotSteps % 4) * 90f, 0);
+                        placeRot = piece.transform.rotation * Quaternion.Euler(0, Mathf.Round(rotOffset / 90f) * 90f, 0);
                         placePos = piece.transform.position + Vector3.up * Building.FloorH;
                     }
                     else { Reason = "A escada vai em cima de um piso"; placeRot = freeRot; placePos = hit.point; }
@@ -270,6 +272,22 @@ namespace MarAberto
             if (newRaft) game.Hud.Toast("Jangada nova! Aumente com mais pisos e ponha leme, motor e âncora.", Hud.Good);
             Sfx.Play(Sfx.Hit, placePos, 0.8f);
             Debris.Burst(placePos + Vector3.up * 0.3f, Vector3.up, 6, new Color(0.6f, 0.45f, 0.3f));
+        }
+
+        readonly Dictionary<BuildPiece, float> pieceHits = new Dictionary<BuildPiece, float>();
+
+        /// <summary>Machado na construção do seu time: depois de alguns golpes ela é desmontada (devolve tudo).</summary>
+        public void HitPiece(BuildPiece bp, Vector3 point, float power)
+        {
+            if (!string.IsNullOrEmpty(bp.Owner) && bp.Owner != NetConfig.Team && bp.Owner != NetConfig.PlayerName)
+            { game.Hud.Toast("Construção de " + bp.Owner + ": não dá para quebrar.", Hud.Bad); Sfx.Play(Sfx.Clank, point, 0.5f); return; }
+            pieceHits.TryGetValue(bp, out float h);
+            h += power;
+            Sfx.Play(Sfx.Chop, point, 0.8f, 0.1f);
+            Debris.Burst(point, Vector3.up, 4, new Color(0.6f, 0.45f, 0.3f));
+            float need = Building.IsFurniture(bp.Kind) ? 4f : 3f;
+            if (h >= need) { pieceHits.Remove(bp); Dismantle(bp); }
+            else pieceHits[bp] = h;
         }
 
         void Dismantle(BuildPiece bp)

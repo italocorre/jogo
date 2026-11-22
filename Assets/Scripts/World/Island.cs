@@ -419,9 +419,11 @@ namespace MarAberto
             var go = new GameObject("Pier");
             go.transform.SetParent(Detail, false);
             var pl = new GameObject("Tabuas"); pl.transform.SetParent(go.transform, false);
+            pl.transform.position = Vector3.zero; // vértices já estão em coordenadas do mundo
             pl.AddComponent<MeshFilter>().sharedMesh = planks.Build("Tabuas");
             pl.AddComponent<MeshRenderer>().sharedMaterial = Mats.Planks;
             var po = new GameObject("Estacas"); po.transform.SetParent(go.transform, false);
+            po.transform.position = Vector3.zero;
             po.AddComponent<MeshFilter>().sharedMesh = poles.Build("Estacas");
             po.AddComponent<MeshRenderer>().sharedMaterial = Mats.Poles;
 
@@ -475,6 +477,7 @@ namespace MarAberto
             if (mb.VertexCount == 0) return null;
             var go = new GameObject(name);
             go.transform.SetParent(Detail, false);
+            go.transform.position = Vector3.zero; // malhas montadas em coordenadas do mundo
             go.layer = layer;
             go.AddComponent<MeshFilter>().sharedMesh = mb.Build(name);
             var mr = go.AddComponent<MeshRenderer>();

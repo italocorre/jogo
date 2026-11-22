@@ -40,6 +40,7 @@ namespace MarAberto
 
         void Update()
         {
+            if (IsRemote) foreach (var m in motors) if (m != null) m.Running = Mathf.Abs(Speed) > 0.4f && m.Fuel > 0;
             if (!IsRemote || !hasNet) return;
             float k = 1f - Mathf.Exp(-Time.deltaTime * 10f);
             transform.SetPositionAndRotation(Vector3.Lerp(transform.position, netPos, k), Quaternion.Slerp(transform.rotation, netRot, k));
@@ -56,6 +57,10 @@ namespace MarAberto
             r.rb = go.AddComponent<Rigidbody>();
             r.rb.interpolation = RigidbodyInterpolation.Interpolate;
             r.rb.mass = 150f;
+#if UNITY_2022_2_OR_NEWER
+            // O jogador encostando não empurra a jangada (mas continua andando em cima dela).
+            r.rb.excludeLayers = 1 << Layers.Player;
+#endif
             return r;
         }
 
@@ -76,7 +81,8 @@ namespace MarAberto
                 Vector3 lp = transform.InverseTransformPoint(bp.transform.position);
                 if (bp.Kind == PieceKind.Piso && Mathf.Abs(lp.y) < 0.5f)
                 {
-                    floatPoints.Add(lp + Vector3.up * 0.05f);
+                    floatPoints.Add(lp + Vector3.down * 0.42f);   // boias (barris) embaixo: o piso fica acima das ondas
+                    AddFloats(bp.transform);
                     mass += 120f;
                     com += lp * 120f;
                 }
@@ -90,6 +96,36 @@ namespace MarAberto
             rb.centerOfMass = com / (120f * floatPoints.Count) + Vector3.down * 0.35f;
             rb.ResetInertiaTensor();
             if (!hasAnchorPiece && Anchor == AnchorState.Set) Anchor = AnchorState.Up;
+        }
+
+        static Mesh floatMesh;
+
+        /// <summary>Barris amarrados embaixo de cada piso (o que faz a jangada boiar).</summary>
+        static void AddFloats(Transform floor)
+        {
+            if (floor.Find("Boias") != null) return;
+            if (floatMesh == null)
+            {
+                var mb = new MeshBuilder();
+                foreach (float x in new[] { -0.5f, 0.5f })
+                {
+                    var pts = new Vector3[7];
+                    var radii = new float[7];
+                    for (int i = 0; i < 7; i++)
+                    {
+                        float t = i / 6f;
+                        pts[i] = new Vector3(x, -0.3f, Mathf.Lerp(-0.85f, 0.85f, t));
+                        radii[i] = 0.24f + Mathf.Sin(t * Mathf.PI) * 0.05f; // barril bojudo
+                    }
+                    mb.AddTube(pts, radii, 14, (i, t) => Color.white, null, true, true, null, 0.6f, 2f);
+                }
+                floatMesh = mb.Build("Boias");
+            }
+            var g = new GameObject("Boias");
+            g.transform.SetParent(floor, false);
+            g.layer = Layers.Build;
+            g.AddComponent<MeshFilter>().sharedMesh = floatMesh;
+            g.AddComponent<MeshRenderer>().sharedMaterial = Mats.Poles;
         }
 
         public override void ToggleAnchor()
@@ -227,7 +263,12 @@ namespace MarAberto
         float smokeT;
         Transform prop;
 
-        void Start() => prop = transform.Find("Helice");
+        AudioSource engine;
+        void Start()
+        {
+            prop = transform.Find("Helice");
+            engine = Sfx.Loop(gameObject, FuelItem == ItemType.Gasolina ? "motor" : Sfx.Motor, 0f, true);
+        }
 
         public string Prompt => "Abastecer motor com " + FuelName + " (" + Mathf.CeilToInt(Fuel / 60f) + " min)";
         public bool CanInteract => true;
@@ -245,6 +286,7 @@ namespace MarAberto
         void Update()
         {
             if (prop != null && Running) prop.Rotate(0, 0, 900f * Time.deltaTime, Space.Self);
+            if (engine != null) engine.volume = Mathf.MoveTowards(engine.volume, Running ? 0.5f : 0f, Time.deltaTime);
             if (!Running) return;
             smokeT -= Time.deltaTime;
             if (smokeT <= 0)

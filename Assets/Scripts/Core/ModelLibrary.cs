@@ -132,10 +132,12 @@ namespace MarAberto
             var renderers = new List<MeshRenderer>(inst.GetComponentsInChildren<MeshRenderer>(true));
             if (part >= 0 && renderers.Count > 1)
             {
-                int keep = part % renderers.Count;
-                for (int i = 0; i < renderers.Count; i++)
-                    if (i != keep) renderers[i].gameObject.SetActive(false);
-                renderers = new List<MeshRenderer> { renderers[keep] };
+                // Variações: peças com o mesmo final de nome ("_a", "_b"...) formam uma variação
+                // (ex.: tronco_a + folhas_a). Escolhe a variação inteira, não uma peça solta.
+                var groups = Groups(renderers);
+                var keepGroup = groups[part % groups.Count];
+                foreach (var r in renderers) if (!keepGroup.Contains(r)) r.gameObject.SetActive(false);
+                renderers = keepGroup;
             }
             if (simplify.TryGetValue(id, out int res))
             {
@@ -251,7 +253,25 @@ namespace MarAberto
         public static int PartCount(string id)
         {
             var p = Prefab(id);
-            return p == null ? 0 : p.GetComponentsInChildren<MeshRenderer>(true).Length;
+            return p == null ? 0 : Groups(new List<MeshRenderer>(p.GetComponentsInChildren<MeshRenderer>(true))).Count;
+        }
+
+        static List<List<MeshRenderer>> Groups(List<MeshRenderer> renderers)
+        {
+            var map = new Dictionary<string, List<MeshRenderer>>();
+            var order = new List<string>();
+            foreach (var r in renderers)
+            {
+                string n = r.gameObject.name;
+                int u = n.LastIndexOf('_');
+                string tail = u >= 0 ? n.Substring(u + 1) : n;
+                string key = tail.Length == 1 && char.IsLetter(tail[0]) ? tail : n;
+                if (!map.TryGetValue(key, out var l)) { l = new List<MeshRenderer>(); map[key] = l; order.Add(key); }
+                l.Add(r);
+            }
+            var res = new List<List<MeshRenderer>>();
+            foreach (var k in order) res.Add(map[k]);
+            return res;
         }
     }
 }

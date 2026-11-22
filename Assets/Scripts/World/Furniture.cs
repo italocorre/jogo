@@ -20,6 +20,7 @@ namespace MarAberto
         public void Interact(PlayerController player)
         {
             NetGame.ChestOpened(this);
+            Sfx.Play(Sfx.Creak, transform.position, 0.7f);
             Game.Instance.Hud.OpenChest(this);
         }
 

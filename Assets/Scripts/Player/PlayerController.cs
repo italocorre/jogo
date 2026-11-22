@@ -168,12 +168,22 @@ namespace MarAberto
                     if (stepTimer <= 0)
                     {
                         stepTimer = 0.48f;
-                        Sfx.Play(StepSound(), transform.position, 0.35f, 0.1f);
+                        Sfx.UI(StepSound(), 0.32f); // passos sem posição (sempre audíveis)
                     }
                 }
             }
 
+            bool groundedBefore = cc.isGrounded;
+            float vyBefore = velocity.y;
             cc.Move(velocity * dt);
+            // Dano de queda: cair rápido demais em terra (na água não machuca).
+            if (!groundedBefore && cc.isGrounded && vyBefore < -11f && !InWater && !Swimming)
+            {
+                float dmg = (-vyBefore - 11f) * 7f;
+                Sfx.UI(Sfx.FallHit, 0.8f);
+                Damage(dmg);
+                if (dmg > 8f) Game.Instance.Hud.Toast("Ai! Dano de queda (-" + Mathf.RoundToInt(dmg) + ")", Hud.Bad);
+            }
             UpdatePlatform();
 
             // Balanço leve da câmera ao andar.
@@ -345,9 +355,11 @@ namespace MarAberto
             Cam.transform.localPosition = new Vector3(0, EyeHeight - 0.35f, 0);
         }
 
+        public bool LookFrozen { get; set; }   // girando peça com R: a câmera não mexe
+
         void Look()
         {
-            if (InputLocked || Cursor.lockState != CursorLockMode.Locked) return;
+            if (InputLocked || LookFrozen || Cursor.lockState != CursorLockMode.Locked) return;
             yaw += Input.GetAxisRaw("Mouse X") * MouseSensitivity;
             pitch -= Input.GetAxisRaw("Mouse Y") * MouseSensitivity;
             pitch = Mathf.Clamp(pitch, -88f, 88f);
@@ -392,8 +404,11 @@ namespace MarAberto
             Oxygen = MaxOxygen;
         }
 
+        float hurtSoundAt;
+
         public void Damage(float amount, bool flash = true)
         {
+            if (amount >= 2f && Time.time - hurtSoundAt > 0.5f) { hurtSoundAt = Time.time; Sfx.UI(Sfx.Hurt, 0.55f); }
             Health -= amount;
             if (flash) damageFlash = 1f;
             else damageFlash = Mathf.Max(damageFlash, 0.35f);
