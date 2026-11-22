@@ -543,6 +543,13 @@ namespace MarAberto
                     if (server) link.Broadcast(new NetWriter(Msg.Shot).Vec(a).Vec(b), m.From);
                     break;
                 }
+                case Msg.Projectile:
+                {
+                    int k = m.Int(); Vector3 a = m.Vec(), v = m.Vec();
+                    MarAberto.Projectile.Fire((MarAberto.Projectile.Kind)k, a, v, true);
+                    if (server) link.Broadcast(new NetWriter(Msg.Projectile).Int(k).Vec(a).Vec(v), m.From);
+                    break;
+                }
                 case Msg.Chat:
                 {
                     string text = m.Str();
@@ -908,6 +915,14 @@ namespace MarAberto
                 var w = new NetWriter(Msg.HeliState).Int(kv.Key).Vec(h.transform.position).Rot(h.transform.rotation).Float(h.Rotor).Float(h.Fuel).Bool(h.HasGun);
                 if (mode == NetMode.Client) link.SendToServer(w); else link.Broadcast(w);
             }
+        }
+
+        public static void SendProjectile(MarAberto.Projectile.Kind k, Vector3 from, Vector3 vel)
+        {
+            var n = Instance;
+            if (n == null || n.link == null) return;
+            var w = new NetWriter(Msg.Projectile).Int((int)k).Vec(from).Vec(vel);
+            if (n.mode == NetMode.Client) n.link.SendToServer(w); else n.link.Broadcast(w);
         }
 
         public static void SendShot(Vector3 from, Vector3 to)

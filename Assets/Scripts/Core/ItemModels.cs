@@ -337,6 +337,33 @@ namespace MarAberto
                     mb.AddBox(new Vector3(-0.03f, 0.135f, 0), new Vector3(0.08f, 0.02f, 0.03f), Quaternion.identity, red);
                     break;
                 }
+                case ItemType.Arco:
+                {
+                    // Arco curvo no eixo Y com corda.
+                    Color wood = C(0.5f, 0.34f, 0.2f), str = C(0.9f, 0.88f, 0.8f);
+                    Vector3 prev = Vector3.zero;
+                    for (int i = 0; i <= 10; i++)
+                    {
+                        float u = i / 10f, y = Mathf.Lerp(-0.42f, 0.42f, u), z = -Mathf.Sin(u * Mathf.PI) * 0.14f;
+                        Vector3 p = new Vector3(0, y, z);
+                        if (i > 0) mb.AddCylinder(prev, p, 0.016f, 0.016f, 6, wood, false);
+                        prev = p;
+                    }
+                    mb.AddCylinder(new Vector3(0, -0.42f, 0), new Vector3(0, 0.42f, 0), 0.003f, 0.003f, 4, str, false);
+                    break;
+                }
+                case ItemType.Flecha:
+                    mb.AddCylinder(new Vector3(-0.22f, 0, 0), new Vector3(0.18f, 0, 0), 0.008f, 0.008f, 6, C(0.6f, 0.45f, 0.28f));
+                    mb.AddCylinder(new Vector3(0.18f, 0, 0), new Vector3(0.24f, 0, 0), 0.02f, 0.002f, 6, C(0.45f, 0.44f, 0.43f));
+                    mb.AddTri(new Vector3(-0.22f, 0, 0), new Vector3(-0.17f, 0.03f, 0), new Vector3(-0.12f, 0, 0), C(0.85f, 0.85f, 0.8f));
+                    mb.AddTri(new Vector3(-0.12f, 0, 0), new Vector3(-0.17f, 0.03f, 0), new Vector3(-0.22f, 0, 0), C(0.85f, 0.85f, 0.8f));
+                    break;
+                case ItemType.BalaCanhao:
+                    mb.AddSphere(Vector3.zero, Vector3.one * 0.1f, C(0.14f, 0.14f, 0.15f), 3);
+                    break;
+                case ItemType.CarneTubarao:
+                    mb.AddRock(Vector3.zero, 0.12f, 71, n => n.y > 0.3f ? C(0.9f, 0.55f, 0.55f) : C(0.75f, 0.35f, 0.35f), 0.15f, new Vector3(1.4f, 0.5f, 0.9f));
+                    break;
                 case ItemType.Madeira:
                 {
                     // Tora com casca e anéis no corte.

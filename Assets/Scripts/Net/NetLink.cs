@@ -33,7 +33,7 @@ namespace MarAberto
         Hello = 1, Welcome, Reject, PlayerJoined, PlayerLeft, PlayerState,
         PlaceRequest, PiecePlaced, RemoveRequest, PieceRemoved, RaftCreated, RaftState, DriveInput, AnchorToggle, Refuel, MotorFuel,
         TreeFelled, OreBroken, ChestOpen, ChestContents, ChestTake, ChestPut, ChestGive,
-        BackpackDrop, BackpackSpawned, BackpackTake, BackpackTaken, TimeSync, PlayerSave, Chat, Damage, Alert, Swing, HeliState, Shot,
+        BackpackDrop, BackpackSpawned, BackpackTake, BackpackTaken, TimeSync, PlayerSave, Chat, Damage, Alert, Swing, HeliState, Shot, Projectile,
     }
 
     /// <summary>Escreve uma mensagem (tipo + dados) em bytes.</summary>

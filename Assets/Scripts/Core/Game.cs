@@ -107,6 +107,7 @@ namespace MarAberto
 
             if (!preview)
             {
+                gameObject.AddComponent<SeaLife>();
                 Net = gameObject.AddComponent<NetGame>();
                 Net.Init(this);
             }

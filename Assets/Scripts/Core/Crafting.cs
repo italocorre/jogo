@@ -155,8 +155,15 @@ namespace MarAberto
                 Description = "Para o helicóptero: segure ela e aperte E no helicóptero para instalar.", Cost = L((ItemType.LingoteFerro, 6), (ItemType.LingoteCobre, 2)), Research = L((ItemType.LingoteFerro, 6)) });
             Add(new Recipe { Id = "municao", Name = "Munição (20)", Category = CraftCategory.Armas, Output = ItemType.Municao, OutputCount = 20, Station = Station.Bancada,
                 Description = "Balas da metralhadora.", Cost = L((ItemType.LingoteCobre, 1), (Car, 1)), Research = L((ItemType.LingoteCobre, 2)) });
-            Add(new Recipe { Id = "arco", Name = "Arco e flechas", Category = CraftCategory.Armas, ComingIn = "Etapa 9", Description = "Ataque à distância." });
-            Add(new Recipe { Id = "canhao", Name = "Canhão de jangada", Category = CraftCategory.Armas, ComingIn = "Etapa 9", Description = "Montado na jangada." });
+            Add(new Recipe { Id = "arco", Name = "Arco", Category = CraftCategory.Armas, Output = ItemType.Arco,
+                Description = "Atira flechas longe. Bom contra tubarões e outros jogadores.", Cost = L((Gra, 4), (Cor, 3)), Research = L((Gra, 6), (Cor, 4)) });
+            Add(new Recipe { Id = "flechas", Name = "Flechas (10)", Category = CraftCategory.Armas, Output = ItemType.Flecha, OutputCount = 10,
+                Description = "Munição do arco.", Cost = L((Gra, 3), (Ped, 1), (Fol, 1)), Research = L((Gra, 4), (Ped, 2)) });
+            Add(new Recipe { Id = "canhao", Name = "Canhão", Category = CraftCategory.Armas, Piece = PieceKind.Canhao, IconOverride = ItemType.BalaCanhao,
+                Description = "Construa na jangada (ou na base). E dispara na direção em que você olha. Não quebra construções.",
+                Cost = L((ItemType.LingoteFerro, 8), (Mad, 4)), Research = L((ItemType.LingoteFerro, 6), (Car, 4)) });
+            Add(new Recipe { Id = "bala_canhao", Name = "Balas de canhão (5)", Category = CraftCategory.Armas, Output = ItemType.BalaCanhao, OutputCount = 5, Station = Station.Fundicao,
+                Description = "Feitas na fundição.", Cost = L((ItemType.LingoteFerro, 2), (Car, 1)), Research = L((ItemType.LingoteFerro, 3)) });
 
             // ---- Construção (peças: pesquisa aqui, constrói com o martelo) ----
             Add(new Recipe { Id = "piso", Name = "Piso de madeira", Category = CraftCategory.Construcao, Piece = PieceKind.Piso, StartUnlocked = true,

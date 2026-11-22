@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao }
     public enum Station { Nenhuma, Bancada, Fundicao, Refinaria }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -56,13 +56,14 @@ namespace MarAberto
                 case PieceKind.Refinaria: return "Refinaria de gasolina";
                 case PieceKind.MotorGas: return "Motor a gasolina";
                 case PieceKind.Helicoptero: return "Helicóptero";
+                case PieceKind.Canhao: return "Canhão";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
             || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
-            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero;
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -87,6 +88,7 @@ namespace MarAberto
                 case PieceKind.Refinaria: return new Vector3(1.6f, 2.4f, 1.2f);
                 case PieceKind.MotorGas: return new Vector3(0.9f, 1.1f, 0.9f);
                 case PieceKind.Helicoptero: return new Vector3(2.4f, 2.6f, 7.5f);
+                case PieceKind.Canhao: return new Vector3(1.0f, 1.0f, 1.4f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -296,6 +298,30 @@ namespace MarAberto
                     seat.transform.localPosition = new Vector3(0, 0, -0.85f);
                     Box(root, new Vector3(0, 0.7f, 0), new Vector3(0.9f, 1.4f, 0.4f));
                     root.AddComponent<RaftHelm>();
+                    break;
+                }
+                case PieceKind.Canhao:
+                {
+                    // Carreta de madeira com rodas e cano de ferro (o cano gira para onde você mira).
+                    Color iron = C(0.16f, 0.16f, 0.17f);
+                    planks.AddBoxUV(new Vector3(0, 0.3f, 0), new Vector3(0.7f, 0.2f, 1.1f), Quaternion.identity, W(0.75f), 0.5f);
+                    foreach (float x in new[] { -0.42f, 0.42f })
+                        foreach (float z in new[] { -0.35f, 0.35f })
+                            other.AddCylinder(new Vector3(x, 0.2f, z), new Vector3(x + Mathf.Sign(x) * 0.08f, 0.2f, z), 0.2f, 0.2f, 14, C(0.4f, 0.28f, 0.17f));
+                    var barrel = new GameObject("Cano");
+                    barrel.transform.SetParent(root.transform, false);
+                    barrel.transform.localPosition = new Vector3(0, 0.55f, 0);
+                    var bm = new MeshBuilder();
+                    bm.AddCylinder(new Vector3(0, 0, -0.45f), new Vector3(0, 0, 0.9f), 0.17f, 0.12f, 14, iron);
+                    bm.AddSphere(new Vector3(0, 0, -0.48f), Vector3.one * 0.17f, iron, 2);
+                    bm.AddCylinder(new Vector3(0, 0, 0.82f), new Vector3(0, 0, 0.92f), 0.15f, 0.15f, 14, iron, false);
+                    barrel.AddComponent<MeshFilter>().sharedMesh = bm.Build("Cano");
+                    barrel.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    var boca = new GameObject("Boca");
+                    boca.transform.SetParent(barrel.transform, false);
+                    boca.transform.localPosition = new Vector3(0, 0, 1.05f);
+                    Box(root, new Vector3(0, 0.45f, 0.1f), new Vector3(0.9f, 0.9f, 1.3f));
+                    root.AddComponent<CannonPiece>();
                     break;
                 }
                 case PieceKind.Helicoptero:

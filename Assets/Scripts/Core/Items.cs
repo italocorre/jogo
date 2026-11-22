@@ -34,9 +34,13 @@ namespace MarAberto
         Gasolina,
         Metralhadora,
         Municao,
+        Arco,
+        Flecha,
+        BalaCanhao,
+        CarneTubarao,
     }
 
-    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo }
+    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco }
 
     public class ItemDef
     {
@@ -104,6 +108,12 @@ namespace MarAberto
             Def(ItemType.Metralhadora, "Metralhadora", "Instale no helicóptero (E com ela na mão). Atira com o clique enquanto pilota.", new Color(0.2f, 0.2f, 0.22f), 0, 1);
             SetRarity(ItemType.Metralhadora, 2);
             Def(ItemType.Municao, "Munição", "Balas para a metralhadora do helicóptero.", new Color(0.85f, 0.65f, 0.3f), 1, 200);
+            Def(ItemType.Arco, "Arco", "Clique para atirar uma flecha (precisa de flechas). Bom contra tubarões.", new Color(0.55f, 0.4f, 0.25f), 0, 1, true, 0);
+            defs[ItemType.Arco].Kind = ToolKind.Arco;
+            Def(ItemType.Flecha, "Flecha", "Munição do arco.", new Color(0.7f, 0.6f, 0.45f), 1, 50);
+            Def(ItemType.BalaCanhao, "Bala de Canhão", "Munição do canhão da jangada.", new Color(0.15f, 0.15f, 0.16f), 2, 30);
+            Def(ItemType.CarneTubarao, "Carne de Tubarão", "Comida: clique para comer (+30 de vida).", new Color(0.85f, 0.5f, 0.5f), 4, 20);
+            defs[ItemType.CarneTubarao].Food = 30f;
             Def(ItemType.Madeira, "Madeira", "Toras de árvore. Base de quase toda construção.", new Color(0.55f, 0.38f, 0.22f), 1, 30);
             Def(ItemType.Graveto, "Graveto", "Galho seco. Cabos de ferramentas e tochas.", new Color(0.6f, 0.45f, 0.28f), 1, 40);
             Def(ItemType.Folha, "Folha", "Folha de coqueiro. Vira corda e telhado.", new Color(0.35f, 0.6f, 0.2f), 1, 40);

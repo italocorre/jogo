@@ -163,7 +163,8 @@ namespace MarAberto
 
             // Comer e plantar com o item na mão (clique).
             bool click = !driving && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButtonDown(0);
-            if (click && def != null && def.Food > 0) Eat(type, def);
+            if (click && def != null && def.Kind == ToolKind.Arco) ShootBow(cam);
+            else if (click && def != null && def.Food > 0) Eat(type, def);
             else if (click && def != null && def.Plant.HasValue) Plant(type, def.Plant.Value, cam);
 
             bool wantSwing = ToolTier > 0 && !driving && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButton(0);
@@ -219,6 +220,20 @@ namespace MarAberto
             root.localRotation = Quaternion.Slerp(root.localRotation, rot, dt * 22f);
         }
 
+        float bowCooldown;
+        void ShootBow(Transform cam)
+        {
+            var g = Game.Instance;
+            if (Time.time < bowCooldown) return;
+            if (g.Inventory.Count(ItemType.Flecha) <= 0) { g.Hud.Toast("Sem flechas (Tab > Armas).", Hud.Bad); return; }
+            g.Inventory.Remove(ItemType.Flecha, 1);
+            bowCooldown = Time.time + 0.8f;
+            Projectile.Fire(Projectile.Kind.Flecha, cam.position + cam.forward * 0.6f + cam.right * 0.1f, cam.forward * 55f, false);
+            Sfx.Play(Sfx.Swing, cam.position, 0.5f);
+            switchAnim = 0.35f;
+            NetGame.SendSwing(false);
+        }
+
         void Eat(ItemType type, ItemDef def)
         {
             if (player.Health >= player.MaxHealth - 0.5f) { Game.Instance.Hud.Toast("Você está sem fome (vida cheia).", Hud.Info); return; }
@@ -261,6 +276,15 @@ namespace MarAberto
         {
             if (!Physics.Raycast(cam.position, cam.forward, out var hit, Range, mask, QueryTriggerInteraction.Ignore))
                 return;
+            // Peixes perigosos
+            var fish = hit.collider.GetComponentInParent<SeaCreature>();
+            if (fish != null)
+            {
+                var h = Game.Instance.Inventory.SelectedStack.Type;
+                fish.Hit(h == ItemType.LancaCobre ? 30f : h == ItemType.Lanca ? 20f : Kind == ToolKind.Machado ? 12f : 8f, hit.point);
+                Sfx.Play(Sfx.Hit, hit.point, 0.7f);
+                return;
+            }
             // Outro jogador (PvP): armas acertam mais forte, ferramentas um pouco.
             var other = hit.collider.GetComponentInParent<RemotePlayer>();
             if (other != null)
