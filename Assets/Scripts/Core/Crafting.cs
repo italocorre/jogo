@@ -196,6 +196,14 @@ namespace MarAberto
                 Description = "Sobe um andar. Vai em cima de um piso.", Cost = L((Mad, 4), (Cor, 1)), Research = L((Mad, 6), (Cor, 2)) });
             Add(new Recipe { Id = "telhado", Name = "Telhado de folhas", Category = CraftCategory.Construcao, Piece = PieceKind.Telhado, IconOverride = Fol,
                 Description = "Vai em cima das paredes. Também serve de piso do andar de cima.", Cost = L((Mad, 2), (Fol, 4)), Research = L((Fol, 6), (Mad, 3)) });
+            Add(new Recipe { Id = "porta", Name = "Parede com porta", Category = CraftCategory.Construcao, Piece = PieceKind.Porta, IconOverride = Mad, StartUnlocked = true,
+                Description = "Vai na borda do piso, como a parede. E abre e fecha.", Cost = L((Mad, 4), (Cor, 1)) });
+            Add(new Recipe { Id = "janela", Name = "Parede com janela", Category = CraftCategory.Construcao, Piece = PieceKind.Janela, IconOverride = Mad, StartUnlocked = true,
+                Description = "Parede com uma janela para ver o mar.", Cost = L((Mad, 3), (Gra, 1)) });
+            Add(new Recipe { Id = "cerca", Name = "Cerca", Category = CraftCategory.Construcao, Piece = PieceKind.Cerca, IconOverride = Gra, StartUnlocked = true,
+                Description = "Guarda-corpo na borda do piso: ninguém cai da jangada.", Cost = L((Mad, 1), (Gra, 3)) });
+            Add(new Recipe { Id = "lampiao", Name = "Lampião", Category = CraftCategory.Construcao, Piece = PieceKind.Lampiao, IconOverride = ItemType.Tocha,
+                Description = "Ilumina a base e a jangada à noite.", Cost = L((Mad, 1), (Car, 2), (ItemType.LingoteFerro, 1)), Research = L((Car, 3), (ItemType.LingoteFerro, 1)) });
             Add(new Recipe { Id = "bau", Name = "Baú", Category = CraftCategory.Construcao, Piece = PieceKind.Bau, IconOverride = Mad,
                 Description = "Guarda 18 espaços de itens. Cuidado: outros jogadores podem abrir!", Cost = L((Mad, 6), (Cor, 2)), Research = L((Mad, 6), (Cor, 2)) });
             Add(new Recipe { Id = "cama", Name = "Cama", Category = CraftCategory.Construcao, Piece = PieceKind.Cama, IconOverride = Fol,
@@ -270,6 +278,8 @@ namespace MarAberto
                 Cost = L((Ped, 6), (Mad, 4), (Fol, 2), (Cor, 1)), Research = L((Ped, 4), (Mad, 3)) });
             Add(new Recipe { Id = "coletor", Name = "Coletor de chuva", Category = CraftCategory.Comida, Piece = PieceKind.ColetorChuva, IconOverride = ItemType.AguaLimpa, StartUnlocked = true,
                 Description = "Junta água limpa: rápido quando chove, devagar no tempo bom. E para pegar.", Cost = L((Gra, 4), (Fol, 6), (Cor, 2)) });
+            Add(new Recipe { Id = "rede", Name = "Rede coletora", Category = CraftCategory.Jangada, Piece = PieceKind.Rede, IconOverride = Cor, StartUnlocked = true,
+                Description = "Na borda da jangada: pega sozinha os destroços que passam. E para pegar o que juntou.", Cost = L((Cor, 4), (Gra, 4), (Mad, 1)) });
             Add(new Recipe { Id = "gancho", Name = "Gancho", Category = CraftCategory.Ferramentas, Output = ItemType.Gancho, StartUnlocked = true,
                 Description = "Jogue no mar e puxe os destroços que a correnteza traz (tábuas, folhas, galhos e barris).", Cost = L((Gra, 2), (Cor, 3), (ItemType.Pedra, 1)) });
             Add(new Recipe { Id = "vara", Name = "Vara de pescar", Category = CraftCategory.Comida, Output = ItemType.VaraPescar, StartUnlocked = true,

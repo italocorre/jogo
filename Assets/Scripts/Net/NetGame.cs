@@ -413,6 +413,18 @@ namespace MarAberto
                     if (Rafts.TryGetValue(id, out var r) && r != null) { r.Driven = true; r.Throttle = thr; r.Steer = steer; remoteDriveUntil[id] = Time.time + 0.6f; }
                     break;
                 }
+                case Msg.DoorToggle when server:
+                {
+                    int id = m.Int();
+                    if (Pieces.TryGetValue(id, out var dp) && dp != null) { var d = dp.GetComponent<DoorPiece>(); if (d != null) { d.SetOpen(!d.Open); link.Broadcast(new NetWriter(Msg.DoorState).Int(id).Bool(d.Open)); } }
+                    break;
+                }
+                case Msg.DoorState when !server:
+                {
+                    int id = m.Int(); bool open = m.Bool();
+                    if (Pieces.TryGetValue(id, out var dp) && dp != null) dp.GetComponent<DoorPiece>()?.SetOpen(open);
+                    break;
+                }
                 case Msg.AnchorToggle when server:
                     if (Rafts.TryGetValue(m.Int(), out var ar) && ar != null) ar.ToggleAnchor();
                     break;
@@ -754,6 +766,15 @@ namespace MarAberto
         }
 
         // ---------- Jangada ----------
+
+        public static void ToggleDoor(DoorPiece d)
+        {
+            var n = Instance;
+            var bp = d.GetComponent<BuildPiece>();
+            if (n == null || n.link == null || bp == null) { d.SetOpen(!d.Open); return; }
+            if (n.mode == NetMode.Client) n.link.SendToServer(new NetWriter(Msg.DoorToggle).Int(bp.Id));
+            else { d.SetOpen(!d.Open); n.link.Broadcast(new NetWriter(Msg.DoorState).Int(bp.Id).Bool(d.Open)); }
+        }
 
         public static void RequestAnchor(Raft r)
         {

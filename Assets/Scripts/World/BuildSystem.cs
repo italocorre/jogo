@@ -178,7 +178,7 @@ namespace MarAberto
                         if (roof && hit.normal.y > 0.7f && Mathf.Abs(local.x) < h * 0.5f && Mathf.Abs(local.z) < h * 0.5f)
                             placePos = piece.transform.position + Vector3.up * (Building.WallH + Building.FloorH); // andar de cima
                     }
-                    else if (piece != null && (piece.Kind == PieceKind.Parede || piece.Kind == PieceKind.Pilar))
+                    else if (piece != null && (Building.IsFullWall(piece.Kind) || piece.Kind == PieceKind.Pilar))
                     {
                         // Em cima da parede: telhado/piso do lado de onde você está.
                         Vector3 n = piece.transform.forward;
@@ -209,6 +209,10 @@ namespace MarAberto
                     break;
                 }
                 case PieceKind.Parede:
+                case PieceKind.Porta:
+                case PieceKind.Janela:
+                case PieceKind.Cerca:
+                case PieceKind.Rede:
                 {
                     if (piece != null && piece.IsFloorLike)
                     {
@@ -217,12 +221,13 @@ namespace MarAberto
                         placeRot = piece.transform.rotation * Quaternion.LookRotation(dir);
                         placePos = piece.transform.position + piece.transform.rotation * (dir * h) + Vector3.up * Building.FloorH;
                     }
-                    else if (piece != null && piece.Kind == PieceKind.Parede)
+                    else if (piece != null && Building.IsFullWall(piece.Kind) && Selected != PieceKind.Rede)
                     {
                         placeRot = piece.transform.rotation;
                         placePos = piece.transform.position + Vector3.up * Building.WallH;
                     }
-                    else { Reason = "A parede vai na borda de um piso"; placeRot = freeRot; placePos = hit.point; }
+                    else { Reason = Selected == PieceKind.Rede ? "A rede vai na borda da jangada" : "Vai na borda de um piso"; placeRot = freeRot; placePos = hit.point; }
+                    if (Selected == PieceKind.Rede && placeParent == null) Reason = "A rede vai na borda da jangada";
                     break;
                 }
                 case PieceKind.Pilar:

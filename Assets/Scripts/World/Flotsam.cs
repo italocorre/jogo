@@ -79,9 +79,16 @@ namespace MarAberto
 
         public void Collect()
         {
-            var g = Game.Instance;
-            var inv = g.Inventory;
-            switch (Kind)
+            Give(Kind);
+            Sfx.Play(Sfx.SmallSplash, transform.position, 0.5f);
+            Destroy(gameObject);
+        }
+
+        /// <summary>Coloca na mochila o que vem desse tipo de destroço.</summary>
+        public static void Give(FlotsamKind kind)
+        {
+            var inv = Game.Instance.Inventory;
+            switch (kind)
             {
                 case FlotsamKind.Tabua: inv.Add(ItemType.Madeira, Random.Range(1, 3)); break;
                 case FlotsamKind.Folhas: inv.Add(ItemType.Folha, Random.Range(2, 4)); break;
@@ -104,8 +111,6 @@ namespace MarAberto
                     }
                     break;
             }
-            Sfx.Play(Sfx.SmallSplash, transform.position, 0.5f);
-            Destroy(gameObject);
         }
 
         void Update()

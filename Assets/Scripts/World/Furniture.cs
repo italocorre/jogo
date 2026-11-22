@@ -177,3 +177,86 @@ namespace MarAberto
         }
     }
 }
+
+namespace MarAberto
+{
+    /// <summary>Porta: E abre e fecha (sincronizada no multiplayer).</summary>
+    public class DoorPiece : MonoBehaviour, IInteractable
+    {
+        public Transform Leaf;
+        public bool Open { get; private set; }
+        float angle;
+
+        public string Prompt => Open ? "Fechar porta" : "Abrir porta";
+        public bool CanInteract => true;
+        public void Interact(PlayerController player) => NetGame.ToggleDoor(this);
+
+        public void SetOpen(bool open)
+        {
+            if (open == Open) return;
+            Open = open;
+            Sfx.Play(Sfx.Creak, transform.position + Vector3.up, 0.6f, 0.15f);
+        }
+
+        void Update()
+        {
+            if (Leaf == null) return;
+            float target = Open ? -95f : 0f;
+            if (Mathf.Abs(angle - target) < 0.05f) return;
+            angle = Mathf.MoveTowards(angle, target, Time.deltaTime * 240f);
+            Leaf.localRotation = Quaternion.Euler(0, angle, 0);
+        }
+    }
+
+    /// <summary>Lampião: chama e luz quente (bonito à noite).</summary>
+    public class LanternFx : MonoBehaviour
+    {
+        void Start()
+        {
+            var t = TorchLight.Attach(transform, new Vector3(0, 1.56f, 0), 10f);
+            t.transform.localScale = Vector3.one * 0.45f;
+        }
+    }
+
+    /// <summary>Rede coletora da jangada: segura os destroços que passam por ela. E para pegar.</summary>
+    public class NetCatcher : MonoBehaviour, IInteractable
+    {
+        public const int Max = 12;
+        readonly System.Collections.Generic.List<FlotsamKind> caught = new System.Collections.Generic.List<FlotsamKind>();
+        float timer;
+
+        public string Prompt => caught.Count > 0 ? "Pegar da rede (" + caught.Count + ")" : "Rede coletora (vazia)";
+        public bool CanInteract => true;
+
+        public void Interact(PlayerController player)
+        {
+            if (caught.Count == 0) { Game.Instance.Hud.Toast("A rede pega o que a correnteza trouxer para perto.", Hud.Info); return; }
+            foreach (var k in caught) FlotsamItem.Give(k);
+            caught.Clear();
+            Sfx.Play(Sfx.SmallSplash, transform.position, 0.5f);
+        }
+
+        void Update()
+        {
+            timer -= Time.deltaTime;
+            if (timer > 0) return;
+            timer = 0.4f;
+            if (caught.Count >= Max) return;
+            Vector3 c = transform.position + transform.forward * 0.9f;
+            for (int i = FlotsamItem.All.Count - 1; i >= 0; i--)
+            {
+                var f = FlotsamItem.All[i];
+                if (f == null || f.Hooked) continue;
+                Vector3 d = f.transform.position - c; d.y = 0;
+                // Rede tem 2 m de largura: pega se passar na frente dela.
+                Vector3 local = Quaternion.Inverse(transform.rotation) * d;
+                if (Mathf.Abs(local.x) < 1.3f && Mathf.Abs(local.z) < 1.1f)
+                {
+                    caught.Add(f.Kind);
+                    Destroy(f.gameObject);
+                    if (caught.Count >= Max) break;
+                }
+            }
+        }
+    }
+}

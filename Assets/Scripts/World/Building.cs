@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva, Porta, Janela, Cerca, Lampiao, Rede }
     public enum Station { Nenhuma, Bancada, Fundicao, Refinaria, Fogueira }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -60,13 +60,23 @@ namespace MarAberto
                 case PieceKind.Fogueira: return "Fogueira";
                 case PieceKind.Purificador: return "Purificador de água";
                 case PieceKind.ColetorChuva: return "Coletor de chuva";
+                case PieceKind.Porta: return "Parede com porta";
+                case PieceKind.Janela: return "Parede com janela";
+                case PieceKind.Cerca: return "Cerca";
+                case PieceKind.Lampiao: return "Lampião";
+                case PieceKind.Rede: return "Rede coletora";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
             || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
-            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva;
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva || k == PieceKind.Lampiao;
+
+        /// <summary>Peças que vão na borda do piso, como a parede.</summary>
+        public static bool IsWallLike(PieceKind k) => k == PieceKind.Parede || k == PieceKind.Porta || k == PieceKind.Janela || k == PieceKind.Cerca || k == PieceKind.Rede;
+        /// <summary>Paredes inteiras (aguentam telhado e outra parede em cima).</summary>
+        public static bool IsFullWall(PieceKind k) => k == PieceKind.Parede || k == PieceKind.Porta || k == PieceKind.Janela;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -95,6 +105,11 @@ namespace MarAberto
                 case PieceKind.Fogueira: return new Vector3(1.0f, 0.6f, 1.0f);
                 case PieceKind.Purificador: return new Vector3(0.9f, 1.3f, 0.9f);
                 case PieceKind.ColetorChuva: return new Vector3(1.3f, 1.4f, 1.3f);
+                case PieceKind.Porta:
+                case PieceKind.Janela: return new Vector3(Cell, WallH, 0.16f);
+                case PieceKind.Cerca: return new Vector3(Cell, 1.0f, 0.12f);
+                case PieceKind.Lampiao: return new Vector3(0.4f, 1.7f, 0.4f);
+                case PieceKind.Rede: return new Vector3(Cell, 0.9f, 0.12f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -349,6 +364,125 @@ namespace MarAberto
                     other.AddCylinder(new Vector3(0.55f, 0.05f, 0), new Vector3(0.55f, 0.45f, 0), 0.12f, 0.1f, 12, glass);
                     Box(root, new Vector3(0, 0.5f, 0), new Vector3(0.9f, 1.0f, 0.7f));
                     root.AddComponent<WaterPurifier>();
+                    break;
+                }
+                case PieceKind.Porta:
+                {
+                    // Parede com vão de porta (1 m) no meio e uma folha que abre (E).
+                    const float dw = 1.0f, dh = 2.05f;
+                    float side = (Cell - dw) * 0.5f;
+                    foreach (float sx in new[] { -1f, 1f })
+                    {
+                        for (int i = 0; i < 2; i++)
+                        {
+                            float x = sx * (dw * 0.5f + side * (i + 0.5f) / 2f);
+                            planks.AddBoxUV(new Vector3(x, WallH * 0.5f, 0), new Vector3(side / 2f - 0.02f, WallH - 0.02f, 0.07f), Quaternion.identity, W(0.8f + Noise.Hash(i, 5 + (int)sx) * 0.3f), 0.5f);
+                        }
+                        Box(root, new Vector3(sx * (dw * 0.5f + side * 0.5f), WallH * 0.5f, 0), new Vector3(side, WallH, 0.16f));
+                        poles.AddTube(new[] { new Vector3(sx * dw * 0.5f, 0, -0.02f), new Vector3(sx * dw * 0.5f, dh, -0.02f) }, new[] { 0.05f, 0.05f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    }
+                    planks.AddBoxUV(new Vector3(0, (dh + WallH) * 0.5f, 0), new Vector3(dw, WallH - dh, 0.07f), Quaternion.identity, W(0.78f), 0.5f);
+                    planks.AddBoxUV(new Vector3(0, dh + 0.04f, -0.06f), new Vector3(dw + 0.2f, 0.1f, 0.06f), Quaternion.identity, W(0.65f), 0.5f);
+                    Box(root, new Vector3(0, (dh + WallH) * 0.5f, 0), new Vector3(dw, WallH - dh, 0.16f));
+                    // Folha (dobradiça no lado esquerdo).
+                    var leaf = new GameObject("Folha");
+                    leaf.transform.SetParent(root.transform, false);
+                    leaf.transform.localPosition = new Vector3(-dw * 0.5f + 0.04f, 0, 0);
+                    var lm = new MeshBuilder();
+                    for (int i = 0; i < 4; i++)
+                        lm.AddBoxUV(new Vector3(0.02f + (i + 0.5f) * (dw - 0.1f) / 4f, dh * 0.5f, 0), new Vector3((dw - 0.1f) / 4f - 0.015f, dh - 0.06f, 0.05f), Quaternion.identity, W(0.75f + Noise.Hash(i, 11) * 0.25f), 0.5f);
+                    foreach (float y in new[] { 0.4f, dh - 0.4f })
+                        lm.AddBoxUV(new Vector3((dw - 0.1f) * 0.5f, y, 0.04f), new Vector3(dw - 0.14f, 0.12f, 0.04f), Quaternion.identity, W(0.62f), 0.5f);
+                    leaf.AddComponent<MeshFilter>().sharedMesh = lm.Build("Folha");
+                    leaf.AddComponent<MeshRenderer>().sharedMaterial = Mats.Planks;
+                    var knob = new MeshBuilder();
+                    knob.AddSphere(new Vector3(dw - 0.2f, 1.0f, 0.07f), Vector3.one * 0.03f, C(0.3f, 0.28f, 0.26f), 1);
+                    knob.AddSphere(new Vector3(dw - 0.2f, 1.0f, -0.07f), Vector3.one * 0.03f, C(0.3f, 0.28f, 0.26f), 1);
+                    var kg = new GameObject("Macaneta");
+                    kg.transform.SetParent(leaf.transform, false);
+                    kg.AddComponent<MeshFilter>().sharedMesh = knob.Build("Macaneta");
+                    kg.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
+                    var lc = leaf.AddComponent<BoxCollider>();
+                    lc.center = new Vector3((dw - 0.1f) * 0.5f, dh * 0.5f, 0);
+                    lc.size = new Vector3(dw - 0.1f, dh - 0.04f, 0.07f);
+                    root.AddComponent<DoorPiece>().Leaf = leaf.transform;
+                    break;
+                }
+                case PieceKind.Janela:
+                {
+                    // Parede com janela (1,1 x 0,8 m) e cruz de madeira.
+                    const float ww = 1.1f, wy0 = 1.0f, wy1 = 1.8f;
+                    float side = (Cell - ww) * 0.5f;
+                    foreach (float sx in new[] { -1f, 1f })
+                    {
+                        float cx = sx * (ww * 0.5f + side * 0.5f);
+                        planks.AddBoxUV(new Vector3(cx, WallH * 0.5f, 0), new Vector3(side - 0.02f, WallH - 0.02f, 0.07f), Quaternion.identity, W(0.8f + Noise.Hash(3, 5 + (int)sx) * 0.3f), 0.5f);
+                        Box(root, new Vector3(cx, WallH * 0.5f, 0), new Vector3(side, WallH, 0.16f));
+                    }
+                    planks.AddBoxUV(new Vector3(0, wy0 * 0.5f, 0), new Vector3(ww, wy0, 0.07f), Quaternion.identity, W(0.82f), 0.5f);
+                    planks.AddBoxUV(new Vector3(0, (wy1 + WallH) * 0.5f, 0), new Vector3(ww, WallH - wy1, 0.07f), Quaternion.identity, W(0.78f), 0.5f);
+                    Box(root, new Vector3(0, wy0 * 0.5f, 0), new Vector3(ww, wy0, 0.16f));
+                    Box(root, new Vector3(0, (wy1 + WallH) * 0.5f, 0), new Vector3(ww, WallH - wy1, 0.16f));
+                    planks.AddBoxUV(new Vector3(0, wy0 - 0.02f, -0.07f), new Vector3(ww + 0.16f, 0.07f, 0.16f), Quaternion.identity, W(0.62f), 0.5f); // peitoril
+                    poles.AddTube(new[] { new Vector3(0, wy0, 0), new Vector3(0, wy1, 0) }, new[] { 0.025f, 0.025f }, 6, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    poles.AddTube(new[] { new Vector3(-ww * 0.5f, (wy0 + wy1) * 0.5f, 0), new Vector3(ww * 0.5f, (wy0 + wy1) * 0.5f, 0) }, new[] { 0.025f, 0.025f }, 6, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    break;
+                }
+                case PieceKind.Cerca:
+                {
+                    // Guarda-corpo: dois postes, corrimão e travessas.
+                    foreach (float x in new[] { -h + 0.06f, h - 0.06f })
+                        poles.AddTube(new[] { new Vector3(x, 0, 0), new Vector3(x, 1.0f, 0) }, new[] { 0.06f, 0.055f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    planks.AddBoxUV(new Vector3(0, 0.98f, 0), new Vector3(Cell, 0.07f, 0.12f), Quaternion.identity, W(0.75f), 0.5f);
+                    planks.AddBoxUV(new Vector3(0, 0.5f, 0), new Vector3(Cell - 0.1f, 0.06f, 0.05f), Quaternion.identity, W(0.7f), 0.5f);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        float x = -h + 0.3f + i * (Cell - 0.6f) / 6f;
+                        planks.AddBoxUV(new Vector3(x, 0.5f, 0.02f), new Vector3(0.05f, 0.92f, 0.03f), Quaternion.Euler(0, 0, (Noise.Hash(i, 4) - 0.5f) * 3f), W(0.8f), 0.5f);
+                    }
+                    Box(root, new Vector3(0, 0.6f, 0), new Vector3(Cell, 1.2f, 0.12f));
+                    break;
+                }
+                case PieceKind.Lampiao:
+                {
+                    // Poste de madeira com lampião de ferro e vidro (acende sozinho).
+                    poles.AddTube(new[] { Vector3.zero, Vector3.up * 1.45f }, new[] { 0.06f, 0.05f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    planks.AddBoxUV(new Vector3(0, 0.05f, 0), new Vector3(0.36f, 0.1f, 0.36f), Quaternion.identity, W(0.7f), 0.5f);
+                    Color iron = C(0.18f, 0.18f, 0.19f), glass = C(1f, 0.85f, 0.55f);
+                    other.AddCylinder(new Vector3(0, 1.45f, 0), new Vector3(0, 1.48f, 0), 0.12f, 0.12f, 8, iron);
+                    other.AddCylinder(new Vector3(0, 1.48f, 0), new Vector3(0, 1.7f, 0), 0.09f, 0.1f, 8, glass);
+                    other.AddCylinder(new Vector3(0, 1.7f, 0), new Vector3(0, 1.8f, 0), 0.12f, 0.03f, 8, iron);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var q = Quaternion.Euler(0, i * 90f + 45f, 0);
+                        other.AddCylinder(q * new Vector3(0.1f, 1.48f, 0), q * new Vector3(0.1f, 1.7f, 0), 0.008f, 0.008f, 4, iron);
+                    }
+                    other.AddCylinder(new Vector3(0, 1.8f, 0), new Vector3(0, 1.86f, 0), 0.025f, 0.025f, 6, iron);
+                    Box(root, new Vector3(0, 0.85f, 0), new Vector3(0.3f, 1.7f, 0.3f));
+                    root.AddComponent<LanternFx>();
+                    break;
+                }
+                case PieceKind.Rede:
+                {
+                    // Rede pendurada para fora da borda da jangada: pega destroços que passam.
+                    foreach (float x in new[] { -h + 0.08f, h - 0.08f })
+                        poles.AddTube(new[] { new Vector3(x, 0.8f, 0), new Vector3(x, -0.7f, 0.9f) }, new[] { 0.05f, 0.045f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    poles.AddTube(new[] { new Vector3(-h, 0.8f, 0), new Vector3(h, 0.8f, 0) }, new[] { 0.045f, 0.045f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    Color rope = C(0.72f, 0.64f, 0.45f);
+                    // malha: cordas cruzadas entre o alto e a ponta dentro da água
+                    for (int i = 0; i <= 8; i++)
+                    {
+                        float x = -h + 0.1f + i * (Cell - 0.2f) / 8f;
+                        other.AddCylinder(new Vector3(x, 0.8f, 0), new Vector3(x, -0.7f, 0.9f), 0.008f, 0.008f, 4, rope, false);
+                    }
+                    for (int j = 0; j <= 6; j++)
+                    {
+                        float u = j / 6f;
+                        Vector3 a = Vector3.Lerp(new Vector3(-h + 0.1f, 0.8f, 0), new Vector3(-h + 0.1f, -0.7f, 0.9f), u);
+                        other.AddCylinder(a, a + Vector3.right * (Cell - 0.2f), 0.008f, 0.008f, 4, rope, false);
+                    }
+                    Box(root, new Vector3(0, 0.45f, 0), new Vector3(Cell, 0.9f, 0.12f));
+                    root.AddComponent<NetCatcher>();
                     break;
                 }
                 case PieceKind.ColetorChuva:
