@@ -51,9 +51,10 @@ namespace MarAberto
         MachadoFerro,
         LancaTitanio,
         CarneCrua,
+        Gancho,
     }
 
-    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca }
+    public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca, Gancho }
 
     public class ItemDef
     {
@@ -131,6 +132,8 @@ namespace MarAberto
             SetFood(ItemType.CarneTubarao, 15f, 0f, 0f);
             Def(ItemType.CarneCrua, "Carne Crua", "De javali ou caranguejo. Asse na fogueira.", new Color(0.8f, 0.35f, 0.35f), 3, 20);
             SetFood(ItemType.CarneCrua, 12f, 0f, 0f);
+            Def(ItemType.Gancho, "Gancho", "Segure o clique para dar força e solte para jogar no mar. Segure de novo para puxar: traz tábuas, folhas, galhos e barris que boiam.", new Color(0.6f, 0.55f, 0.45f), 0, 1);
+            defs[ItemType.Gancho].Kind = ToolKind.Gancho;
             Def(ItemType.CarneAssada, "Carne Assada", "Assada na fogueira: mata bem a fome e cura.", new Color(0.55f, 0.3f, 0.18f), 6, 20);
             SetFood(ItemType.CarneAssada, 45f, 0f, 15f);
             Def(ItemType.PeixeCru, "Peixe (cru)", "Pescado com a vara. Melhor assar na fogueira.", new Color(0.6f, 0.7f, 0.8f), 2, 20);

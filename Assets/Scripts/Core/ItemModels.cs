@@ -448,6 +448,21 @@ namespace MarAberto
                     mb.AddCylinder(new Vector3(0, 0.13f, 0), new Vector3(0, 0.16f, 0), 0.026f, 0.026f, 10, cork);
                     break;
                 }
+                case ItemType.Gancho:
+                {
+                    Color wood = C(0.5f, 0.36f, 0.22f), rope = C(0.75f, 0.66f, 0.45f), metal = C(0.32f, 0.31f, 0.3f);
+                    mb.AddCylinder(new Vector3(0, -0.25f, 0), new Vector3(0, 0.05f, 0), 0.016f, 0.016f, 7, wood);
+                    for (int i = 0; i < 6; i++) mb.AddCylinder(new Vector3(0, -0.2f + i * 0.035f, 0), new Vector3(0, -0.18f + i * 0.035f, 0), 0.026f, 0.026f, 8, rope);
+                    mb.AddCylinder(new Vector3(0, 0.05f, 0), new Vector3(0, 0.25f, 0), 0.012f, 0.012f, 6, metal);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var r = Quaternion.Euler(0, i * 120f, 0);
+                        Vector3 tip = r * new Vector3(0.09f, 0.3f, 0);
+                        mb.AddCylinder(new Vector3(0, 0.22f, 0), r * new Vector3(0.08f, 0.2f, 0), 0.01f, 0.009f, 5, metal);
+                        mb.AddCylinder(r * new Vector3(0.08f, 0.2f, 0), tip, 0.009f, 0.003f, 5, metal);
+                    }
+                    break;
+                }
                 case ItemType.VaraPescar:
                 {
                     Color wood = C(0.55f, 0.4f, 0.25f), line = C(0.9f, 0.9f, 0.88f);

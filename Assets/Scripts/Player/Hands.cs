@@ -183,6 +183,7 @@ namespace MarAberto
             if (click && def != null && def.Kind == ToolKind.Arco) ShootBow(cam);
             else if (click && def != null && def.Kind == ToolKind.Pesca) FishClick(cam);
             else if (click && def != null && (def.Food > 0 || def.Drink > 0)) Eat(type, def);
+            UpdateHook(dt, cam, def != null && def.Kind == ToolKind.Gancho && !driving);
             if (bobber != null && (def == null || def.Kind != ToolKind.Pesca || driving)) StopFishing(false);
             if (bobber != null) UpdateFishing(dt);
             else if (click && def != null && def.Plant.HasValue) Plant(type, def.Plant.Value, cam);
@@ -265,6 +266,37 @@ namespace MarAberto
             Game.Instance.Hud.Toast(what, Hud.Good);
             switchAnim = 0.6f;
         }
+
+        // ---------- Gancho ----------
+        HookThrow hook;
+        float hookCharge = -1f;
+
+        void UpdateHook(float dt, Transform cam, bool holding)
+        {
+            bool canUse = holding && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked;
+            if (!holding) { if (hook != null) hook.Cancel(); hook = null; hookCharge = -1f; return; }
+            if (hook != null)
+            {
+                if (canUse && Input.GetMouseButton(0) && hook.Reel(dt, player.transform.position)) hook = null;
+                return;
+            }
+            if (!canUse) { hookCharge = -1f; return; }
+            if (Input.GetMouseButtonDown(0)) hookCharge = 0f;
+            if (hookCharge >= 0f)
+            {
+                if (Input.GetMouseButton(0)) hookCharge = Mathf.Min(1f, hookCharge + dt / 0.8f);
+                else
+                {
+                    Vector3 v = cam.forward * (7f + 13f * hookCharge) + Vector3.up * 3f;
+                    hook = HookThrow.Throw(cam.position + cam.forward * 0.7f, v, held);
+                    hookCharge = -1f;
+                    Sfx.Play(Sfx.Swing, cam.position + cam.forward, 0.5f);
+                }
+            }
+        }
+
+        /// <summary>Força do gancho (0..1) enquanto segura o clique, ou -1.</summary>
+        public float HookCharge => hookCharge;
 
         // ---------- Pesca ----------
         GameObject bobber;

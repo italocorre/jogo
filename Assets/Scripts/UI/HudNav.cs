@@ -51,6 +51,14 @@ namespace MarAberto
                     if (used > 8) break;
                 }
             }
+            // Marca feita no mapa (M).
+            if (hudOn && cam != null && Waypoint.HasValue)
+            {
+                Vector3 pp = p.transform.position, w = Waypoint.Value;
+                Vector3 d = w - pp; d.y = 0;
+                if (d.magnitude < 12f) Waypoint = null;
+                else Place(GetNav(used++), cam, new Vector3(w.x, pp.y + 3f, w.z), "MARCA\n<size=15>" + Km(d.magnitude) + "</size>", new Color(1f, 0.45f, 0.4f));
+            }
             // Ilhas reveladas pelos fragmentos de mapa (sempre visíveis até serem descobertas).
             if (hudOn && cam != null && game.World != null)
             {

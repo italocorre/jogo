@@ -275,7 +275,7 @@ namespace MarAberto
                 for (int ci = 0; ci < nc; ci++)
                 {
                     var c = nearBuf[ci];
-                    var wi = c.GetComponent<WorldItem>();
+                    var wi = c.GetComponent<IInteractable>();
                     if (wi != null && wi.CanInteract) { LookTarget = wi; break; }
                 }
             }

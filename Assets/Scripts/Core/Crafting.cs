@@ -256,6 +256,8 @@ namespace MarAberto
                 Cost = L((Ped, 6), (Mad, 4), (Fol, 2), (Cor, 1)), Research = L((Ped, 4), (Mad, 3)) });
             Add(new Recipe { Id = "coletor", Name = "Coletor de chuva", Category = CraftCategory.Comida, Piece = PieceKind.ColetorChuva, IconOverride = ItemType.AguaLimpa, StartUnlocked = true,
                 Description = "Junta água limpa: rápido quando chove, devagar no tempo bom. E para pegar.", Cost = L((Gra, 4), (Fol, 6), (Cor, 2)) });
+            Add(new Recipe { Id = "gancho", Name = "Gancho", Category = CraftCategory.Ferramentas, Output = ItemType.Gancho, StartUnlocked = true,
+                Description = "Jogue no mar e puxe os destroços que a correnteza traz (tábuas, folhas, galhos e barris).", Cost = L((Gra, 2), (Cor, 3), (ItemType.Pedra, 1)) });
             Add(new Recipe { Id = "vara", Name = "Vara de pescar", Category = CraftCategory.Comida, Output = ItemType.VaraPescar, StartUnlocked = true,
                 Description = "Clique mirando na água; quando a boia afundar, clique de novo para pegar o peixe.", Cost = L((Gra, 3), (Cor, 2)) });
             Add(new Recipe { Id = "peixe_assado", Name = "Peixe assado", Category = CraftCategory.Comida, Output = ItemType.PeixeAssado, Station = Station.Fogueira, StartUnlocked = true,

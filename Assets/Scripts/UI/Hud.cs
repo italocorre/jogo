@@ -14,7 +14,7 @@ namespace MarAberto
         public static readonly Color Info = UIKit.Hex("#E8EEF0");
         public static readonly Color Gold = UIKit.Hex("#FFD27A");
 
-        enum Panel { None, Backpack, Shop, Pause, Chest, Build }
+        enum Panel { None, Backpack, Shop, Pause, Chest, Build, Map }
         enum Tab { Bag, Craft, Boat, Map }
 
         Game game;
@@ -220,7 +220,7 @@ namespace MarAberto
             var ht = UIKit.Txt(helpBox, "Texto",
                 K("WASD") + " andar     " + K("Shift") + " correr     " + K("Espaço") + " pular\n" +
                 K("Clique") + " minerar     " + K("E") + " pegar, falar, pilotar\n" +
-                K("1-6") + " item     " + K("Tab") + " mochila     " + K("B") + " fabricar     " + K("Q") + " largar\n" +
+                K("1-6") + " item     " + K("Tab") + " mochila     " + K("B") + " fabricar     " + K("M") + " mapa     " + K("Q") + " largar\n" +
                 K("R") + " âncora     " + K("Ctrl") + " mergulhar     " + K("H") + " esconder",
                 UIKit.BodyMed, 22, UIKit.Text, TextAnchor.MiddleLeft);
             ht.rectTransform.Fill(22, 12, 16, 12);
@@ -541,6 +541,7 @@ namespace MarAberto
             backpackWin.gameObject.SetActive(p == Panel.Backpack);
             shopWin.gameObject.SetActive(p == Panel.Shop);
             pauseWin.gameObject.SetActive(p == Panel.Pause);
+            if (mapWin != null) mapWin.gameObject.SetActive(p == Panel.Map);
             if (p == Panel.Backpack || p == Panel.Shop) hotbarRt.SetAsLastSibling();
             if (p == Panel.Pause) pauseWin.SetAsLastSibling();
             if (p == Panel.Shop) shopVersion = -1;
@@ -666,6 +667,10 @@ namespace MarAberto
                 else if (panel == Panel.Backpack && tab != Tab.Craft) { tab = Tab.Craft; RefreshTabs(); }
                 else if (panel == Panel.Backpack) SetPanel(Panel.None);
             }
+            else if (Input.GetKeyDown(KeyCode.M) && (panel == Panel.None || panel == Panel.Map || panel == Panel.Backpack))
+            {
+                if (panel == Panel.Map) SetPanel(Panel.None); else OpenMap();
+            }
             else if ((panel == Panel.Shop || panel == Panel.Chest || panel == Panel.Build) && Input.GetKeyDown(KeyCode.E) && Time.frameCount != PanelChangedFrame) SetPanel(Panel.None);
             else if (panel == Panel.Build && Input.GetMouseButtonDown(1) && Time.frameCount != PanelChangedFrame) SetPanel(Panel.None);
             if (Input.GetKeyDown(KeyCode.H)) helpUntil = helpUntil > Time.time ? 0 : float.MaxValue;
@@ -675,6 +680,7 @@ namespace MarAberto
                 Cursor.visible = false;
             }
             Refresh();
+            UpdateMap();
         }
 
         static float WrapAngle(float a)
@@ -894,7 +900,7 @@ namespace MarAberto
                 bpMapText.text = "<color=#FFD27A>CARTA NÁUTICA</color>\n\nIlhas descobertas:  " + found + " de " + world.Islands.Count + "\n\n" + sb +
                     "\n<color=#A9B8BF>" + (rec ? "Receptor ligado: siga o marcador dourado até a próxima ilha."
                         : "Fabrique um Receptor (Tab > Fabricar > Navegação, na bancada) para achar ilhas novas.") +
-                    "\nIlhas mais longe do centro têm minérios melhores.</color>";
+                    "\nIlhas mais longe do centro têm minérios melhores.\n\n<color=#FFD27A>Aperte M para abrir o mapa desenhado.</color></color>";
             }
         }
 
