@@ -180,21 +180,13 @@ namespace MarAberto
                     // Estrutura de ripas + folhas de coqueiro por cima (palha).
                     for (int i = 0; i < 4; i++)
                         planks.AddBoxUV(new Vector3(-h + 0.25f + i * 0.5f, 0.05f, 0), new Vector3(0.1f, 0.08f, Cell), Quaternion.identity, W(0.75f), 0.5f);
-                    var leaves = new MeshBuilder();
-                    for (int row = 0; row < 4; row++)
+                    // Palha: camadas de feixes cor de palha seca, levemente sobrepostas (fecha o telhado).
+                    for (int row = 0; row < 5; row++)
                     {
-                        for (int j = 0; j < 4; j++)
-                        {
-                            float x = -h + 0.25f + j * 0.5f, z0 = -h - 0.1f + row * 0.55f;
-                            Vector3 a = new Vector3(x - 0.35f, 0.12f + row * 0.01f, z0), b = new Vector3(x + 0.35f, 0.12f + row * 0.01f, z0);
-                            Vector3 c = new Vector3(x + 0.35f, 0.16f + row * 0.01f, z0 + 0.8f), d = new Vector3(x - 0.35f, 0.16f + row * 0.01f, z0 + 0.8f);
-                            Color col = new Color(0.9f, 0.85f, 0.6f, 0f); // folha seca; alfa 0 = sem vento
-                            Vector3 n = Vector3.up;
-                            leaves.AddTriUV(a, d, c, n, n, n, new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1), col, col, col);
-                            leaves.AddTriUV(a, c, b, n, n, n, new Vector2(0, 0), new Vector2(1, 1), new Vector2(1, 0), col, col, col);
-                        }
+                        float z = -h + 0.2f + row * 0.4f;
+                        planks.AddBoxUV(new Vector3(0, 0.13f + (row % 2) * 0.015f, z), new Vector3(Cell + 0.1f, 0.06f, 0.48f),
+                            Quaternion.Euler(-4f, (Noise.Hash(row, 7) - 0.5f) * 2f, 0), new Color(1.0f, 0.86f, 0.55f, 1f), 0.6f);
                     }
-                    Part(root, "Palha", leaves, Mats.PalmLeaves);
                     Box(root, new Vector3(0, FloorH * 0.5f, 0), new Vector3(Cell, FloorH, Cell));
                     break;
                 }
