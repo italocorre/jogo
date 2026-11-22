@@ -47,8 +47,11 @@ namespace MarAberto.EditorTools
 
             // No GitHub a Unity desenha por software: cada print leva minutos. Só os principais por padrão.
             const bool AllShots = false;
+            var clock = System.Diagnostics.Stopwatch.StartNew();
             void Shot(string name, Vector3 pos, Vector3 look, float tod, bool ui = false)
             {
+                // Limite de tempo: no GitHub a Unity desenha sem placa de vídeo e alguns prints levam muito tempo.
+                if (clock.Elapsed.TotalMinutes > 10) { Debug.Log("[MarAberto] Print pulado (limite de tempo): " + name); return; }
                 try
                 {
                     env.TimeOfDay = tod;
@@ -143,16 +146,16 @@ namespace MarAberto.EditorTools
                 Shot("18_personagens", eye, b0 + Vector3.up * 1.0f, 0.42f);
                 foreach (var g in made) UnityEngine.Object.DestroyImmediate(g);
             }
-            Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 35f, 0.62f);
+            if (AllShots) Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 35f, 0.62f);
             Vector3 dockEye = island.DockEnd + Vector3.up * 1.65f - dockDir * 4f - side * 0.6f;
-            Shot("04_jangada", dockEye + Vector3.up * 1.5f, boat.transform.TransformPoint(new Vector3(0, 0.6f, 1f)), 0.45f);
+            if (AllShots) Shot("04_jangada", dockEye + Vector3.up * 1.5f, boat.transform.TransformPoint(new Vector3(0, 0.6f, 1f)), 0.45f);
             var reef = island.Reefs[0];
             Vector3 rc = reef.transform.position;
             Vector3 reefEye = rc + new Vector3(12f, 0, 8f); reefEye.y = reef.Height(reefEye.x, reefEye.z) + 3.5f;
             if (AllShots) Shot("05_recife_fundo", reefEye, rc + Vector3.down * 14f, 0.45f);
             if (AllShots) Shot("06_por_do_sol", spawnEye, spawnEye + island.SpawnLook * 10f, 0.715f);
             Vector3 hill = c + dockDir * 120f + side * 25f; hill.y = island.Height(hill.x, hill.z) + 1.7f;
-            Shot("07_floresta_e_montanhas", hill, c + Vector3.up * 45f, 0.38f);
+            if (AllShots) Shot("07_floresta_e_montanhas", hill, c + Vector3.up * 45f, 0.38f);
             Vector3 palmEye = island.SpawnPoint + Vector3.up * 0.6f - side * 3f;
             if (AllShots) Shot("15_coqueiros", palmEye, palmEye - side * 10f + Vector3.up * 5f, 0.36f);
             // Mochila deixada ao desmaiar
