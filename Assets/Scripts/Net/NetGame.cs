@@ -221,7 +221,7 @@ namespace MarAberto
                     link.Broadcast(new NetWriter(Msg.RaftState).Int(r.Id).Vec(r.transform.position).Rot(r.transform.rotation).Bool(r.Anchor == Vessel.AnchorState.Set).Float(r.Speed));
                 }
                 timeTimer -= dt;
-                if (timeTimer <= 0 && game.Environment != null) { timeTimer = 5f; link.Broadcast(new NetWriter(Msg.TimeSync).Float(game.Environment.TimeOfDay)); }
+                if (timeTimer <= 0 && game.Environment != null) { timeTimer = 5f; link.Broadcast(new NetWriter(Msg.TimeSync).Float(game.Environment.TimeOfDay).Int(Weather.Instance != null ? (int)Weather.Instance.Current : 0)); }
                 fuelTimer -= dt;
                 if (fuelTimer <= 0)
                 {
@@ -517,8 +517,12 @@ namespace MarAberto
                     RemoveBag(m.Int());
                     break;
                 case Msg.TimeSync when !server:
-                    if (game.Environment != null) game.Environment.TimeOfDay = m.Float();
+                {
+                    float tod = m.Float(); int w = m.Int();
+                    if (game.Environment != null) game.Environment.TimeOfDay = tod;
+                    Weather.Instance?.Set((WeatherKind)w, true);
                     break;
+                }
                 case Msg.PlayerSave when server:
                 {
                     var d = JsonUtility.FromJson<PlayerSaveData>(m.Str());

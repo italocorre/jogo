@@ -50,6 +50,7 @@ namespace MarAberto
         PicaretaFerro,
         MachadoFerro,
         LancaTitanio,
+        CarneCrua,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca }
@@ -128,6 +129,8 @@ namespace MarAberto
             Def(ItemType.BalaCanhao, "Bala de Canhão", "Munição do canhão da jangada.", new Color(0.15f, 0.15f, 0.16f), 2, 30);
             Def(ItemType.CarneTubarao, "Carne de Tubarão (crua)", "Dá para comer crua, mas assada na fogueira mata muito mais a fome.", new Color(0.85f, 0.5f, 0.5f), 4, 20);
             SetFood(ItemType.CarneTubarao, 15f, 0f, 0f);
+            Def(ItemType.CarneCrua, "Carne Crua", "De javali ou caranguejo. Asse na fogueira.", new Color(0.8f, 0.35f, 0.35f), 3, 20);
+            SetFood(ItemType.CarneCrua, 12f, 0f, 0f);
             Def(ItemType.CarneAssada, "Carne Assada", "Assada na fogueira: mata bem a fome e cura.", new Color(0.55f, 0.3f, 0.18f), 6, 20);
             SetFood(ItemType.CarneAssada, 45f, 0f, 15f);
             Def(ItemType.PeixeCru, "Peixe (cru)", "Pescado com a vara. Melhor assar na fogueira.", new Color(0.6f, 0.7f, 0.8f), 2, 20);

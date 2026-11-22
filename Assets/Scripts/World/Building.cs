@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas, Helicoptero, Canhao, Fogueira, Purificador, ColetorChuva }
     public enum Station { Nenhuma, Bancada, Fundicao, Refinaria, Fogueira }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -59,13 +59,14 @@ namespace MarAberto
                 case PieceKind.Canhao: return "Canhão";
                 case PieceKind.Fogueira: return "Fogueira";
                 case PieceKind.Purificador: return "Purificador de água";
+                case PieceKind.ColetorChuva: return "Coletor de chuva";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
             || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
-            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador;
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas || k == PieceKind.Helicoptero || k == PieceKind.Canhao || k == PieceKind.Fogueira || k == PieceKind.Purificador || k == PieceKind.ColetorChuva;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -93,6 +94,7 @@ namespace MarAberto
                 case PieceKind.Canhao: return new Vector3(1.0f, 1.0f, 1.4f);
                 case PieceKind.Fogueira: return new Vector3(1.0f, 0.6f, 1.0f);
                 case PieceKind.Purificador: return new Vector3(0.9f, 1.3f, 0.9f);
+                case PieceKind.ColetorChuva: return new Vector3(1.3f, 1.4f, 1.3f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -347,6 +349,23 @@ namespace MarAberto
                     other.AddCylinder(new Vector3(0.55f, 0.05f, 0), new Vector3(0.55f, 0.45f, 0), 0.12f, 0.1f, 12, glass);
                     Box(root, new Vector3(0, 0.5f, 0), new Vector3(0.9f, 1.0f, 0.7f));
                     root.AddComponent<WaterPurifier>();
+                    break;
+                }
+                case PieceKind.ColetorChuva:
+                {
+                    // Funil de lona sobre quatro estacas, escorrendo para um balde.
+                    foreach (var p in new[] { new Vector3(-0.55f, 0, -0.55f), new Vector3(0.55f, 0, -0.55f), new Vector3(-0.55f, 0, 0.55f), new Vector3(0.55f, 0, 0.55f) })
+                        poles.AddTube(new[] { p, p + Vector3.up * 1.3f }, new[] { 0.04f, 0.035f }, 7, (j, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    Color cloth = C(0.78f, 0.72f, 0.58f);
+                    Vector3 c0 = new Vector3(0, 0.75f, 0);
+                    Vector3[] cs = { new Vector3(-0.62f, 1.3f, -0.62f), new Vector3(0.62f, 1.3f, -0.62f), new Vector3(0.62f, 1.3f, 0.62f), new Vector3(-0.62f, 1.3f, 0.62f) };
+                    for (int i = 0; i < 4; i++) { other.AddTri(c0, cs[i], cs[(i + 1) % 4], cloth); other.AddTri(c0, cs[(i + 1) % 4], cs[i], cloth * 0.85f); }
+                    other.AddCylinder(new Vector3(0, 0, 0), new Vector3(0, 0.35f, 0), 0.22f, 0.25f, 14, C(0.45f, 0.32f, 0.2f));
+                    other.AddCylinder(new Vector3(0, 0.3f, 0), new Vector3(0, 0.31f, 0), 0.23f, 0.23f, 14, C(0.4f, 0.6f, 0.75f));
+                    Box(root, new Vector3(0, 0.7f, 0), new Vector3(1.3f, 1.4f, 1.3f));
+                    var wp = root.AddComponent<WaterPurifier>();
+                    wp.RainCollector = true;
+                    wp.Seconds = 60f;
                     break;
                 }
                 case PieceKind.Canhao:

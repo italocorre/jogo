@@ -22,7 +22,7 @@ namespace MarAberto
         public static bool NewWorld;
         public static int Skin;
         public static string Clan = "";
-        public const int Version = 2;
+        public const int Version = 3;
         /// <summary>Equipe: o clã, ou o próprio nome se jogar sozinho.</summary>
         public static string Team => string.IsNullOrWhiteSpace(Clan) ? PlayerName : "Clã " + Clan.Trim();
     }

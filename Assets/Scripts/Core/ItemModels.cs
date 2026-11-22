@@ -422,6 +422,9 @@ namespace MarAberto
                 case ItemType.CarneTubarao:
                     mb.AddRock(Vector3.zero, 0.12f, 71, n => n.y > 0.3f ? C(0.9f, 0.55f, 0.55f) : C(0.75f, 0.35f, 0.35f), 0.15f, new Vector3(1.4f, 0.5f, 0.9f));
                     break;
+                case ItemType.CarneCrua:
+                    mb.AddRock(Vector3.zero, 0.12f, 73, n => n.y > 0.3f ? C(0.85f, 0.4f, 0.4f) : C(0.92f, 0.85f, 0.8f), 0.15f, new Vector3(1.3f, 0.6f, 1f));
+                    break;
                 case ItemType.CarneAssada:
                     mb.AddRock(Vector3.zero, 0.12f, 72, n => n.y > 0.3f ? C(0.5f, 0.28f, 0.15f) : C(0.38f, 0.2f, 0.1f), 0.15f, new Vector3(1.4f, 0.5f, 0.9f));
                     break;

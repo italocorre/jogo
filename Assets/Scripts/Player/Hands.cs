@@ -369,6 +369,15 @@ namespace MarAberto
                 Sfx.Play(Sfx.Hit, hit.point, 0.7f);
                 return;
             }
+            // Bichos da ilha (caranguejo, javali)
+            var animal = hit.collider.GetComponentInParent<LandAnimal>();
+            if (animal != null)
+            {
+                var h = Game.Instance.Inventory.SelectedStack.Type;
+                animal.Hit(h == ItemType.LancaTitanio ? 40f : h == ItemType.LancaCobre ? 30f : h == ItemType.Lanca ? 20f : Kind == ToolKind.Machado ? 14f : 8f, hit.point);
+                Sfx.Play(Sfx.Hit, hit.point, 0.7f);
+                return;
+            }
             // Outro jogador (PvP): armas acertam mais forte, ferramentas um pouco.
             var other = hit.collider.GetComponentInParent<RemotePlayer>();
             if (other != null)

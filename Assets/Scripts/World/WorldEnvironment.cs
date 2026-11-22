@@ -86,7 +86,9 @@ namespace MarAberto
             {
                 sun.transform.rotation = Quaternion.LookRotation(-sunDir);
                 sun.color = sunCol;
-                sun.intensity = Mathf.Lerp(0f, 1.4f, day);
+                float cloud = Weather.Instance != null ? Weather.Instance.Cloud : 0f;
+                sun.intensity = Mathf.Lerp(0f, 1.4f, day) * (1f - cloud * 0.65f);
+                sun.shadowStrength = Mathf.Lerp(0.82f, 0.35f, cloud);
             }
             else
             {
@@ -102,6 +104,16 @@ namespace MarAberto
             RenderSettings.ambientSkyColor = Color.Lerp(Hex("#232B40"), Hex("#9DB8D8"), day);
             RenderSettings.ambientEquatorColor = Color.Lerp(Hex("#171C2A"), Color.Lerp(Hex("#A9B2B6"), sunsetHor, golden * 0.4f), day);
             RenderSettings.ambientGroundColor = Color.Lerp(Hex("#0F1218"), Hex("#6B5E4C"), day);
+            if (Weather.Instance != null)
+            {
+                // Tempo fechado: luz mais fria e fraca; relâmpago clareia tudo por um instante.
+                float c = Weather.Instance.Cloud, f = Weather.Instance.Flash;
+                Color grey = new Color(0.55f, 0.58f, 0.62f);
+                RenderSettings.ambientSkyColor = Color.Lerp(RenderSettings.ambientSkyColor, RenderSettings.ambientSkyColor.grayscale * grey * 1.4f, c * 0.6f) + Color.white * f * 0.8f;
+                RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, RenderSettings.ambientEquatorColor.grayscale * grey * 1.3f, c * 0.6f) + Color.white * f * 0.6f;
+                top = Color.Lerp(top, Color.Lerp(top, new Color(0.45f, 0.5f, 0.56f) * Mathf.Max(day, 0.15f), 0.75f), c);
+                hor = Color.Lerp(hor, new Color(0.6f, 0.63f, 0.66f) * Mathf.Max(day, 0.12f), c * 0.8f);
+            }
 
             Shader.SetGlobalColor(skyTopId, top);
             Shader.SetGlobalColor(skyHorId, hor);
@@ -130,8 +142,9 @@ namespace MarAberto
                 RenderSettings.fogColor = hor;
                 // Névoa atmosférica: montanhas distantes ficam azuladas (dá profundidade).
                 // À noite a visão encurta: o horizonte some no escuro.
-                RenderSettings.fogStartDistance = Mathf.Lerp(4f, 90f, day);
-                RenderSettings.fogEndDistance = Mathf.Lerp(110f, 1500f, day);
+                float rain = Weather.Instance != null ? Weather.Instance.Rain : 0f;
+                RenderSettings.fogStartDistance = Mathf.Lerp(4f, 90f, day) * (1f - rain * 0.8f);
+                RenderSettings.fogEndDistance = Mathf.Lerp(Mathf.Lerp(110f, 1500f, day), Mathf.Lerp(90f, 380f, day), rain);
             }
             if (cam != null) cam.clearFlags = CameraUnderwater ? CameraClearFlags.SolidColor : CameraClearFlags.Skybox;
         }

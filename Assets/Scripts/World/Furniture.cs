@@ -149,11 +149,14 @@ namespace MarAberto
     public class WaterPurifier : MonoBehaviour, IInteractable
     {
         public const int Max = 4;
-        public const float Seconds = 75f;
+        public float Seconds = 75f;
+        public bool RainCollector;   // coletor de chuva: rápido na chuva, lento no tempo bom
         int stored;
         float t;
 
-        public string Prompt => stored > 0 ? "Pegar água limpa (" + stored + ")" : "Purificador: fervendo água (" + Mathf.RoundToInt(100f * t / Seconds) + "%)";
+        public string Prompt => stored > 0 ? "Pegar água limpa (" + stored + ")"
+            : RainCollector ? "Coletor de chuva (" + Mathf.RoundToInt(100f * t / Seconds) + "%)" + (Weather.Instance != null && Weather.Instance.Rain > 0.2f ? " — chovendo!" : "")
+            : "Purificador: fervendo água (" + Mathf.RoundToInt(100f * t / Seconds) + "%)";
         public bool CanInteract => true;
 
         public void Interact(PlayerController player)
@@ -167,7 +170,9 @@ namespace MarAberto
         void Update()
         {
             if (stored >= Max) return;
-            t += Time.deltaTime;
+            float rate = 1f;
+            if (RainCollector) rate = Weather.Instance != null && Weather.Instance.Rain > 0.2f ? 2.5f : 0.25f;
+            t += Time.deltaTime * rate;
             if (t >= Seconds) { t = 0; stored++; }
         }
     }

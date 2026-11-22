@@ -30,6 +30,9 @@ namespace MarAberto
         static readonly int seaLevelId = Shader.PropertyToID("_MA_SeaLevel");
 
         public static float WaveTime => Time.timeSinceLevelLoad;
+        /// <summary>0 = mar calmo, 1 = tempestade (ondas bem mais altas).</summary>
+        public static float Storm;
+        static float SteepMul => 1f + Storm * 1.3f;
 
         const int Grid = 240;          // vértices por lado
         const float Extent = 3500f;    // raio do mar visível
@@ -93,7 +96,7 @@ namespace MarAberto
             {
                 var w = waves[i];
                 var d = new Vector2(w.x, w.y).normalized;
-                Shader.SetGlobalVector(waveIds[i], new Vector4(d.x, d.y, w.z, w.w));
+                Shader.SetGlobalVector(waveIds[i], new Vector4(d.x, d.y, Mathf.Min(w.z * SteepMul, 0.24f), w.w));
             }
             Shader.SetGlobalFloat(timeId, WaveTime);
             Shader.SetGlobalFloat(seaLevelId, SeaLevel);
@@ -121,7 +124,7 @@ namespace MarAberto
                 float k = 2f * Mathf.PI / w.w;
                 float c = Mathf.Sqrt(9.8f / k);
                 float f = k * (dir.x * x + dir.y * z - c * t);
-                float a = w.z / k;
+                float a = Mathf.Min(w.z * SteepMul, 0.24f) / k;
                 float cos = Mathf.Cos(f);
                 d.x += dir.x * a * cos;
                 d.y += a * Mathf.Sin(f);

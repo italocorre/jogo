@@ -58,13 +58,14 @@ Shader "MarAberto/Sky"
                     float2 wind = float2(_MA_Time * 0.006, _MA_Time * 0.003);
                     float2 warp = float2(MA_Fbm(cp * 0.7 + wind * 0.5), MA_Fbm(cp * 0.7 + 5.2 - wind * 0.5)) * 0.6;
                     float dens = MA_Fbm(cp * 1.3 + warp + wind);
-                    float cover = 0.5 + 0.08 * sin(_MA_Time * 0.01);
+                    float cover = lerp(0.52, 0.22, _MA_Cloud) + 0.05 * sin(_MA_Time * 0.01);   // mais nuvem com tempo fechado
                     float c = smoothstep(cover, cover + 0.22, dens);
                     // "Espessura" na direção do sol: quanto mais nuvem entre o ponto e o sol, mais escura a base.
                     float toward = MA_Fbm(cp * 1.3 + warp + wind + sunDir.xz * 0.12);
                     float shadow = saturate((toward - dens) * 3.0 + 0.5);
                     float3 lit = lerp(float3(1, 1, 1), _MA_SunColor.rgb * 1.1, 0.35);
-                    float3 dark = lerp(_MA_SkyHorizon.rgb * 0.55, float3(0.55, 0.58, 0.64), 0.5);
+                    float3 dark = lerp(_MA_SkyHorizon.rgb * 0.55, float3(0.55, 0.58, 0.64), 0.5) * lerp(1.0, 0.45, _MA_Cloud);
+                    lit = lerp(lit, float3(0.62, 0.65, 0.7), _MA_Cloud * 0.7);
                     float3 cloudCol = lerp(lit, dark, saturate(shadow * 0.8 + c * 0.25));
                     cloudCol += _MA_SunColor.rgb * pow(saturate(sd), 10.0) * (1.0 - c) * 0.8; // borda prateada
                     cloudCol *= lerp(0.06, 1.0, _MA_Day);
@@ -74,6 +75,9 @@ Shader "MarAberto/Sky"
                     float ci = smoothstep(0.55, 0.85, MA_Fbm(float2(cp.x * 0.35, cp.y * 2.2) + wind * 2.0));
                     col = lerp(col, float3(1, 1, 1) * lerp(0.05, 0.95, _MA_Day), ci * 0.25 * fadeH * (1.0 - c));
                 }
+                // Tempo fechado: céu acinzentado; relâmpago clareia tudo.
+                col = lerp(col, dot(col, float3(0.3, 0.59, 0.11)) * float3(0.85, 0.88, 0.92), _MA_Cloud * 0.6);
+                col += _MA_Flash * float3(0.8, 0.85, 1.0);
                 return fixed4(col, 1.0);
             }
             ENDCG

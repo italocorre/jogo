@@ -10,6 +10,9 @@ float _MA_Day;
 float _MA_Time;
 float _MA_SeaLevel;
 float _MA_Underwater;
+float _MA_Rain;      // 0..1 chuva
+float _MA_Cloud;     // 0..1 céu coberto
+float _MA_Flash;     // relâmpago
 float4 _MA_Wave0, _MA_Wave1, _MA_Wave2, _MA_Wave3;
 sampler2D _MA_Brush;          // pinceladas (estilo pintado à mão)
 float _MA_BrushAmount;        // 0 = sem pinceladas, 1 = forte

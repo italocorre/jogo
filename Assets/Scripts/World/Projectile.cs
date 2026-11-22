@@ -88,6 +88,8 @@ namespace MarAberto
                         if (rp != null && hitSet.Add(rp)) NetGame.HitPlayer(rp, 35f);
                         var sc = c.GetComponentInParent<SeaCreature>();
                         if (sc != null && hitSet.Add(sc)) sc.Hit(80f, hit.point);
+                        var la = c.GetComponentInParent<LandAnimal>();
+                        if (la != null && hitSet.Add(la)) la.Hit(80f, hit.point);
                     }
                 }
                 else
@@ -96,6 +98,7 @@ namespace MarAberto
                     if (rp != null) NetGame.HitPlayer(rp, 12f);
                     var sc = hit.collider.GetComponentInParent<SeaCreature>();
                     if (sc != null) sc.Hit(25f, hit.point);
+                    hit.collider.GetComponentInParent<LandAnimal>()?.Hit(25f, hit.point);
                 }
             }
             if (ball)

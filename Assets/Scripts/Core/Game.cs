@@ -82,6 +82,7 @@ namespace MarAberto
 
             Environment = gameObject.AddComponent<WorldEnvironment>();
             Environment.Init(Player.Cam);
+            if (!preview) gameObject.AddComponent<Weather>().Init(Player.Cam);
             Ocean = WorldBuilder.BuildOcean(Player.Cam.transform);
 
             // Ambiente: ondas, bolhas debaixo d'água e música (música fica fora do filtro "abafado").
@@ -109,6 +110,7 @@ namespace MarAberto
             if (!preview)
             {
                 gameObject.AddComponent<SeaLife>();
+                gameObject.AddComponent<LandLife>();
                 Net = gameObject.AddComponent<NetGame>();
                 Net.Init(this);
             }
@@ -173,6 +175,12 @@ namespace MarAberto
             {
                 Inventory.Add(ItemType.Cobre, 10); Inventory.Add(ItemType.Carvao, 6); Inventory.Add(ItemType.Ferro, 4);
                 Inventory.Add(ItemType.Perola, 2); Inventory.Add(ItemType.Concha, 5); Inventory.Add(ItemType.FragmentoMapa, 1);
+            }
+            if (Input.GetKeyDown(KeyCode.F8) && Weather.Instance != null && NetGame.IsAuthority)
+            {
+                var next = (WeatherKind)(((int)Weather.Instance.Current + 1) % 4);
+                Weather.Instance.Set(next, true);
+                Hud.Toast("Teste: clima " + next, Hud.Gold);
             }
             if (Input.GetKeyDown(KeyCode.F6)) { Player.Heal(); Player.Consume(100f, 100f, 0f); Hud.Toast("Teste: vida, fôlego, fome e sede cheios", Hud.Gold); }
         }

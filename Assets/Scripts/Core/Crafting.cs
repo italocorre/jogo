@@ -254,10 +254,14 @@ namespace MarAberto
             Add(new Recipe { Id = "purificador", Name = "Purificador de água", Category = CraftCategory.Comida, Piece = PieceKind.Purificador, IconOverride = ItemType.AguaLimpa,
                 Description = "Ferve a água do mar: junta 1 água limpa a cada ~1 minuto (até 4). E para pegar.",
                 Cost = L((Ped, 6), (Mad, 4), (Fol, 2), (Cor, 1)), Research = L((Ped, 4), (Mad, 3)) });
+            Add(new Recipe { Id = "coletor", Name = "Coletor de chuva", Category = CraftCategory.Comida, Piece = PieceKind.ColetorChuva, IconOverride = ItemType.AguaLimpa, StartUnlocked = true,
+                Description = "Junta água limpa: rápido quando chove, devagar no tempo bom. E para pegar.", Cost = L((Gra, 4), (Fol, 6), (Cor, 2)) });
             Add(new Recipe { Id = "vara", Name = "Vara de pescar", Category = CraftCategory.Comida, Output = ItemType.VaraPescar, StartUnlocked = true,
                 Description = "Clique mirando na água; quando a boia afundar, clique de novo para pegar o peixe.", Cost = L((Gra, 3), (Cor, 2)) });
             Add(new Recipe { Id = "peixe_assado", Name = "Peixe assado", Category = CraftCategory.Comida, Output = ItemType.PeixeAssado, Station = Station.Fogueira, StartUnlocked = true,
                 Description = "Assado na fogueira.", Cost = L((ItemType.PeixeCru, 1)) });
+            Add(new Recipe { Id = "carne_crua_assada", Name = "Carne assada (caça)", Category = CraftCategory.Comida, Output = ItemType.CarneAssada, Station = Station.Fogueira, StartUnlocked = true,
+                Description = "Carne de javali ou caranguejo assada na fogueira.", Cost = L((ItemType.CarneCrua, 1)) });
             Add(new Recipe { Id = "carne_assada", Name = "Carne assada", Category = CraftCategory.Comida, Output = ItemType.CarneAssada, Station = Station.Fogueira, StartUnlocked = true,
                 Description = "Carne de tubarão assada na fogueira.", Cost = L((ItemType.CarneTubarao, 1)) });
             Add(new Recipe { Id = "muda", Name = "Muda de coqueiro", Category = CraftCategory.Comida, Output = ItemType.MudaCoqueiro, StartUnlocked = true,
