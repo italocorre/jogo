@@ -148,6 +148,12 @@ namespace MarAberto
                 thirst = p.Thirst,
             };
             if (p.Driving != null) d.pos = p.Driving.transform.position + Vector3.up * 1.5f;
+            if (game.World != null)
+                foreach (var isl in game.World.Islands)
+                {
+                    if (isl.Discovered) d.discovered.Add(isl.Index);
+                    if (isl.Revealed) d.revealed.Add(isl.Index);
+                }
             return d;
         }
 
@@ -160,6 +166,11 @@ namespace MarAberto
             Crafting.SetUnlocked(d.unlocked);
             if (d.oxygen > 0 && game.OxygenLevel == 0) { game.OxygenLevel = d.oxygen; game.Player.OxygenSeconds *= 1.6f; }
             if (d.hasBed) game.Player.SetRespawn(d.bedPos, d.bedLook);
+            if (game.World != null)
+            {
+                if (d.discovered != null) foreach (int i in d.discovered) if (i >= 0 && i < game.World.Islands.Count) game.World.Islands[i].Discovered = true;
+                if (d.revealed != null) foreach (int i in d.revealed) if (i >= 0 && i < game.World.Islands.Count) game.World.Islands[i].Revealed = true;
+            }
             if (d.hasPos) { game.Player.Hunger = Mathf.Clamp(d.hunger, 30f, 100f); game.Player.Thirst = Mathf.Clamp(d.thirst, 30f, 100f); }
             if (d.hasPos) game.Player.Teleport(d.pos + Vector3.up * 0.3f, d.look);
         }

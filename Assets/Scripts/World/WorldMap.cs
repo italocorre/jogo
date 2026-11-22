@@ -127,6 +127,19 @@ namespace MarAberto
             return best;
         }
 
+        /// <summary>Ilha não descoberta e ainda não revelada mais próxima.</summary>
+        public Island NearestHidden(Vector3 p)
+        {
+            Island best = null; float bd = float.MaxValue;
+            foreach (var isl in Islands)
+            {
+                if (isl.Discovered || isl.Revealed) continue;
+                float d = (isl.transform.position - p).sqrMagnitude;
+                if (d < bd) { bd = d; best = isl; }
+            }
+            return best;
+        }
+
         public Island IslandAt(Vector3 p)
         {
             foreach (var isl in Islands)

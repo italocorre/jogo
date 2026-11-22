@@ -19,6 +19,7 @@ namespace MarAberto
         public bool Generated { get; private set; }
         public bool Generating { get; private set; }
         public bool Discovered;
+        public bool Revealed;   // achada no mapa (fragmentos): marcador sempre visível
         public int Index;
         public readonly List<Choppable> Trees = new List<Choppable>();
         public readonly List<Mineable> Ores = new List<Mineable>();
@@ -209,6 +210,7 @@ namespace MarAberto
             BuildSeabedLife();
             PlaceOres();
             PlaceLoot();
+            BuildWrecks();
             if (IsStart) Reefs = Reef.CreateAll(transform.parent, transform.position, Seed);
             if (silhouette != null) silhouette.SetActive(false);
             Generating = false;
@@ -834,6 +836,10 @@ namespace MarAberto
                 ItemType t = roll < 0.4 ? ItemType.Pedra : roll < 0.7 ? ItemType.Carvao : ItemType.Cobre;
                 // Ilhas mais longe têm ferro em terra (e mais cobre).
                 if (Tier >= 2 && rng.NextDouble() < (Tier == 2 ? 0.2 : 0.35)) t = ItemType.Ferro;
+                // Minérios raros: ouro (nível 2+) e titânio (nível 3 e vulcânicas).
+                double r2 = rng.NextDouble();
+                if (Tier >= 2 && r2 < (Tier == 2 ? 0.08 : 0.12)) t = ItemType.Ouro;
+                else if ((Tier == 3 && r2 < 0.24) || (Type == IslandType.Vulcanica && Tier >= 2 && r2 < 0.22)) t = ItemType.Titanio;
                 RegisterOre(Mineable.Create(parent, p, t, rng.Next(), false));
             }
             int sea = 0;
@@ -843,7 +849,22 @@ namespace MarAberto
                 sea++;
                 double roll = rng.NextDouble();
                 ItemType t = roll < 0.5 ? ItemType.Cobre : roll < 0.68 ? ItemType.Carvao : ItemType.Ferro;
+                double r2 = rng.NextDouble();
+                if (Tier >= 2 && r2 < 0.1) t = ItemType.Ouro;
+                else if (Tier == 3 && p.y < -14f && r2 < 0.22) t = ItemType.Titanio;
                 RegisterOre(Mineable.Create(parent, p, t, rng.Next(), true));
+            }
+        }
+
+        /// <summary>Naufrágios no fundo do mar ao redor da ilha (mais e melhores longe do centro).</summary>
+        void BuildWrecks()
+        {
+            int count = Tier == 1 ? (rng.NextDouble() < 0.6 ? 1 : 0) : Tier == 2 ? 1 + rng.Next(2) : 2;
+            for (int w = 0, tries = 0; w < count && tries < 300; tries++)
+            {
+                if (!RandomLandPoint(-30f, -8f, 0.6f, out var p)) continue;
+                w++;
+                Wreck.Create(Detail, p, Quaternion.Euler(0, R(0, 360), 0), Tier, rng.Next());
             }
         }
 

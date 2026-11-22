@@ -32,6 +32,8 @@ namespace MarAberto
                     case ItemType.Carvao: return "Veio de Carvão";
                     case ItemType.Cobre: return "Veio de Cobre";
                     case ItemType.Ferro: return "Veio de Ferro";
+                    case ItemType.Ouro: return "Veio de Ouro";
+                    case ItemType.Titanio: return "Veio de Titânio";
                     case ItemType.Perola: return "Ostra";
                     default: return Items.Get(Type).Name;
                 }
@@ -62,6 +64,8 @@ namespace MarAberto
                 case ItemType.Carvao: MaxHealth = 4; RequiredTier = 1; radius = 1.0f; break;
                 case ItemType.Cobre: MaxHealth = 5; RequiredTier = 1; radius = 1.05f; break;
                 case ItemType.Ferro: MaxHealth = 7; RequiredTier = 2; radius = 1.15f; break;
+                case ItemType.Ouro: MaxHealth = 8; RequiredTier = 2; radius = 1.1f; break;
+                case ItemType.Titanio: MaxHealth = 10; RequiredTier = 3; radius = 1.2f; break;
                 case ItemType.Perola: MaxHealth = 2; RequiredTier = 1; radius = 0.45f; break;
                 default: MaxHealth = 3; radius = 1f; break;
             }
@@ -101,6 +105,8 @@ namespace MarAberto
                 case ItemType.Carvao: tint = new Color(0.62f, 0.60f, 0.58f); break;
                 case ItemType.Cobre: tint = new Color(0.92f, 0.82f, 0.74f); break;
                 case ItemType.Ferro: tint = new Color(0.85f, 0.70f, 0.62f); break;
+                case ItemType.Ouro: tint = new Color(0.95f, 0.88f, 0.72f); break;
+                case ItemType.Titanio: tint = new Color(0.62f, 0.66f, 0.72f); break;
             }
             if (Underwater) tint *= new Color(0.85f, 0.95f, 0.95f);
             int parts = Mathf.Max(1, ModelLibrary.PartCount("rock_moss_set_01"));

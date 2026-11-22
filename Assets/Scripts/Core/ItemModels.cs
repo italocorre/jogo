@@ -108,6 +108,9 @@ namespace MarAberto
                 case ItemType.PicaretaCobre: return 0.35f;
                 case ItemType.Lanca: return 0.5f;
                 case ItemType.LancaCobre: return 0.5f;
+                case ItemType.LancaTitanio: return 0.5f;
+                case ItemType.PicaretaFerro: return 0.35f;
+                case ItemType.MachadoFerro: return 0.35f;
                 case ItemType.Madeira: return 0.2f;
                 case ItemType.Gasolina: return 0.14f;
                 case ItemType.Graveto: return 0.2f;
@@ -273,6 +276,42 @@ namespace MarAberto
                 case ItemType.PicaretaCobre:
                     Tools.AddPickaxe(mb, 2, -0.25f);
                     break;
+                case ItemType.PicaretaFerro:
+                    Tools.AddPickaxe(mb, 3, -0.25f);
+                    break;
+                case ItemType.MachadoFerro:
+                {
+                    Color wood = C(0.5f, 0.34f, 0.2f), iron = C(0.72f, 0.73f, 0.76f);
+                    mb.AddCylinder(new Vector3(0, -0.27f, 0), new Vector3(0, 0.33f, 0), 0.022f, 0.02f, 8, wood);
+                    mb.AddBox(new Vector3(0, 0.27f, 0.07f), new Vector3(0.025f, 0.12f, 0.14f), Quaternion.identity, iron);
+                    mb.AddBox(new Vector3(0, 0.27f, 0.15f), new Vector3(0.012f, 0.17f, 0.03f), Quaternion.identity, iron * 1.1f);
+                    break;
+                }
+                case ItemType.Ouro:
+                case ItemType.Titanio:
+                {
+                    bool gold = t == ItemType.Ouro;
+                    Color rock = C(0.45f, 0.44f, 0.42f), ore = gold ? C(1f, 0.8f, 0.2f) : C(0.75f, 0.85f, 0.98f);
+                    mb.AddRock(Vector3.zero, 0.1f, gold ? 81 : 82, n => n.y > 0.1f ? ore : rock, 0.25f);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float a = i * 1.6f;
+                        Vector3 d = new Vector3(Mathf.Cos(a), 0.8f, Mathf.Sin(a)).normalized;
+                        mb.AddCylinder(d * 0.06f, d * 0.14f, 0.025f, 0.004f, 5, ore);
+                    }
+                    break;
+                }
+                case ItemType.LingoteOuro:
+                case ItemType.LingoteTitanio:
+                {
+                    Color c = t == ItemType.LingoteOuro ? C(1f, 0.8f, 0.22f) : C(0.75f, 0.84f, 0.95f);
+                    Vector3[] b = { new Vector3(-0.12f, 0, -0.05f), new Vector3(0.12f, 0, -0.05f), new Vector3(0.12f, 0, 0.05f), new Vector3(-0.12f, 0, 0.05f) };
+                    Vector3[] tp = { new Vector3(-0.1f, 0.06f, -0.035f), new Vector3(0.1f, 0.06f, -0.035f), new Vector3(0.1f, 0.06f, 0.035f), new Vector3(-0.1f, 0.06f, 0.035f) };
+                    mb.AddQuad(tp[0], tp[3], tp[2], tp[1], c * 1.1f);
+                    mb.AddQuad(b[0], b[1], b[2], b[3], c * 0.6f);
+                    for (int i = 0; i < 4; i++) { int j = (i + 1) % 4; mb.AddQuad(b[i], tp[i], tp[j], b[j], c * (i % 2 == 0 ? 0.9f : 0.8f)); }
+                    break;
+                }
                 case ItemType.Martelo:
                 {
                     Color wood = C(0.55f, 0.38f, 0.22f), stone = C(0.48f, 0.47f, 0.45f), rope = C(0.72f, 0.60f, 0.40f);
@@ -460,8 +499,9 @@ namespace MarAberto
                 }
                 case ItemType.Lanca:
                 case ItemType.LancaCobre:
+                case ItemType.LancaTitanio:
                 {
-                    Color wood = C(0.58f, 0.42f, 0.25f), stone = t == ItemType.LancaCobre ? C(0.85f, 0.5f, 0.28f) : C(0.45f, 0.44f, 0.43f), rope = C(0.72f, 0.60f, 0.40f);
+                    Color wood = C(0.58f, 0.42f, 0.25f), stone = t == ItemType.LancaTitanio ? C(0.78f, 0.86f, 0.96f) : t == ItemType.LancaCobre ? C(0.85f, 0.5f, 0.28f) : C(0.45f, 0.44f, 0.43f), rope = C(0.72f, 0.60f, 0.40f);
                     mb.AddCylinder(new Vector3(0, -0.45f, 0), new Vector3(0, 0.45f, 0), 0.016f, 0.014f, 7, wood);
                     mb.AddRock(new Vector3(0, 0.52f, 0), 0.05f, 31, _ => stone, 0.1f, new Vector3(0.45f, 1.9f, 0.25f));
                     mb.AddCylinder(new Vector3(0, 0.42f, 0), new Vector3(0, 0.47f, 0), 0.022f, 0.022f, 8, rope);

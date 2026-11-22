@@ -348,7 +348,7 @@ namespace MarAberto
             if (fish != null)
             {
                 var h = Game.Instance.Inventory.SelectedStack.Type;
-                fish.Hit(h == ItemType.LancaCobre ? 30f : h == ItemType.Lanca ? 20f : Kind == ToolKind.Machado ? 12f : 8f, hit.point);
+                fish.Hit(h == ItemType.LancaTitanio ? 40f : h == ItemType.LancaCobre ? 30f : h == ItemType.Lanca ? 20f : Kind == ToolKind.Machado ? 12f : 8f, hit.point);
                 Sfx.Play(Sfx.Hit, hit.point, 0.7f);
                 return;
             }
@@ -357,7 +357,7 @@ namespace MarAberto
             if (other != null)
             {
                 var held = Game.Instance.Inventory.SelectedStack.Type;
-                float dmg = held == ItemType.LancaCobre ? 24f : held == ItemType.Lanca ? 16f : Kind == ToolKind.Machado ? 12f : 9f;
+                float dmg = held == ItemType.LancaTitanio ? 32f : held == ItemType.LancaCobre ? 24f : held == ItemType.Lanca ? 16f : Kind == ToolKind.Machado ? 12f : 9f;
                 NetGame.HitPlayer(other, dmg);
                 Debris.Burst(hit.point, hit.normal, 4, new Color(0.7f, 0.1f, 0.1f));
                 Sfx.Play(Sfx.Hit, hit.point, 0.7f);
@@ -367,12 +367,13 @@ namespace MarAberto
             var tree = m == null ? hit.collider.GetComponentInParent<Choppable>() : null;
             if (m != null && Kind == ToolKind.Picareta)
             {
-                if (!m.Hit(1f, ToolTier, hit.point, hit.normal))
+                float power = ToolTier >= 3 ? 1.9f : ToolTier == 2 ? 1.4f : 1f;
+                if (!m.Hit(power, ToolTier, hit.point, hit.normal))
                     Game.Instance.Hud.Toast("Picareta fraca demais! Precisa de uma melhor.", Hud.Bad);
             }
             else if (tree != null && Kind == ToolKind.Machado)
             {
-                tree.Hit(1f, hit.point, hit.normal, cam.position);
+                tree.Hit(ToolTier >= 3 ? 1.9f : 1f, hit.point, hit.normal, cam.position);
             }
             else if (m != null || tree != null)
             {

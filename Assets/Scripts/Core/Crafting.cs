@@ -143,6 +143,10 @@ namespace MarAberto
                 Description = "Ilumina à noite. Segure na mão ou largue no chão.", Cost = L((Gra, 1), (Fol, 1), (Car, 1)), Research = L((Car, 3), (Gra, 2)) });
             Add(new Recipe { Id = "martelo", Name = "Martelo", Category = CraftCategory.Ferramentas, Output = ItemType.Martelo, StartUnlocked = true,
                 Description = "Constrói pisos, paredes, baús, cama e máquinas. Botão direito escolhe a peça.", Cost = L((Mad, 1), (Ped, 1), (Cor, 1)) });
+            Add(new Recipe { Id = "picareta_ferro", Name = "Picareta de Ferro", Category = CraftCategory.Ferramentas, Output = ItemType.PicaretaFerro, Station = Station.Bancada,
+                Description = "Nível 3: minera titânio e quebra tudo mais rápido. Feita na bancada.", Cost = L((ItemType.LingoteFerro, 3), (Gra, 2), (Cor, 1)), Research = L((ItemType.LingoteFerro, 4)) });
+            Add(new Recipe { Id = "machado_ferro", Name = "Machado de Ferro", Category = CraftCategory.Ferramentas, Output = ItemType.MachadoFerro, Station = Station.Bancada,
+                Description = "Corta árvores quase duas vezes mais rápido.", Cost = L((ItemType.LingoteFerro, 2), (Gra, 2), (Cor, 1)), Research = L((ItemType.LingoteFerro, 3)) });
             Add(new Recipe { Id = "picareta_cobre", Name = "Picareta de Cobre", Category = CraftCategory.Ferramentas, Output = ItemType.PicaretaCobre, Station = Station.Bancada,
                 Description = "Nível 2: minera ferro. Feita na bancada.", Cost = L((ItemType.LingoteCobre, 3), (Gra, 2), (Cor, 1)), Research = L((ItemType.LingoteCobre, 2)) });
 
@@ -151,6 +155,8 @@ namespace MarAberto
                 Description = "Arma simples contra peixes e outros jogadores.", Cost = L((Gra, 3), (Ped, 1), (Cor, 2)), Research = L((Gra, 4), (Ped, 2), (Cor, 2)) });
             Add(new Recipe { Id = "lanca_cobre", Name = "Lança de cobre", Category = CraftCategory.Armas, Output = ItemType.LancaCobre, Station = Station.Bancada,
                 Description = "Mais forte que a de pedra. Feita na bancada.", Cost = L((ItemType.LingoteCobre, 2), (Gra, 3), (Cor, 2)), Research = L((ItemType.LingoteCobre, 3)) });
+            Add(new Recipe { Id = "lanca_titanio", Name = "Lança de titânio", Category = CraftCategory.Armas, Output = ItemType.LancaTitanio, Station = Station.Bancada,
+                Description = "A arma corpo a corpo mais forte.", Cost = L((ItemType.LingoteTitanio, 2), (Gra, 3), (Cor, 2)), Research = L((ItemType.LingoteTitanio, 2)) });
             Add(new Recipe { Id = "metralhadora", Name = "Metralhadora", Category = CraftCategory.Armas, Output = ItemType.Metralhadora, Station = Station.Bancada,
                 Description = "Para o helicóptero: segure ela e aperte E no helicóptero para instalar.", Cost = L((ItemType.LingoteFerro, 6), (ItemType.LingoteCobre, 2)), Research = L((ItemType.LingoteFerro, 6)) });
             Add(new Recipe { Id = "municao", Name = "Munição (20)", Category = CraftCategory.Armas, Output = ItemType.Municao, OutputCount = 20, Station = Station.Bancada,
@@ -203,6 +209,10 @@ namespace MarAberto
                 Description = "Derrete minério em lingotes. Fique perto dela.", Cost = L((Ped, 12), (Mad, 2), (Car, 2)), Research = L((Ped, 10), (Car, 3)) });
             Add(new Recipe { Id = "lingote_cobre", Name = "Lingote de cobre", Category = CraftCategory.Maquinas, Output = ItemType.LingoteCobre, Station = Station.Fundicao,
                 Description = "Feito na fundição.", Cost = L((Cob, 2), (Car, 1)), Research = L((Cob, 3)) });
+            Add(new Recipe { Id = "lingote_ouro", Name = "Lingote de ouro", Category = CraftCategory.Maquinas, Output = ItemType.LingoteOuro, Station = Station.Fundicao,
+                Description = "Feito na fundição.", Cost = L((ItemType.Ouro, 2), (Car, 1)), Research = L((ItemType.Ouro, 2)) });
+            Add(new Recipe { Id = "lingote_titanio", Name = "Lingote de titânio", Category = CraftCategory.Maquinas, Output = ItemType.LingoteTitanio, Station = Station.Fundicao,
+                Description = "Feito na fundição.", Cost = L((ItemType.Titanio, 2), (Car, 2)), Research = L((ItemType.Titanio, 2)) });
             Add(new Recipe { Id = "lingote_ferro", Name = "Lingote de ferro", Category = CraftCategory.Maquinas, Output = ItemType.LingoteFerro, Station = Station.Fundicao,
                 Description = "Feito na fundição.", Cost = L((Fer, 2), (Car, 2)), Research = L((Fer, 3)) });
             Add(new Recipe { Id = "refinaria", Name = "Refinaria de gasolina", Category = CraftCategory.Maquinas, Piece = PieceKind.Refinaria, IconOverride = ItemType.Gasolina,
@@ -213,13 +223,27 @@ namespace MarAberto
             // ---- Veículos ----
             Add(new Recipe { Id = "helicoptero", Name = "Helicóptero", Category = CraftCategory.Veiculos, Piece = PieceKind.Helicoptero, IconOverride = ItemType.Gasolina,
                 Description = "Construa em terra firme com o martelo. Voa com gasolina (E com galão na mão abastece) e aceita metralhadora.",
-                Cost = L((ItemType.LingoteFerro, 20), (ItemType.LingoteCobre, 10), (Mad, 6), (Cor, 4), (ItemType.Gasolina, 2)),
-                Research = L((ItemType.LingoteFerro, 8), (ItemType.LingoteCobre, 6), (ItemType.Gasolina, 4)) });
+                Cost = L((ItemType.LingoteFerro, 16), (ItemType.LingoteTitanio, 6), (Mad, 6), (Cor, 4), (ItemType.Gasolina, 2)),
+                Research = L((ItemType.LingoteFerro, 8), (ItemType.LingoteTitanio, 3), (ItemType.Gasolina, 4)) });
 
             // ---- Navegação ----
             Add(new Recipe { Id = "receptor", Name = "Receptor", Category = CraftCategory.Navegacao, Output = ItemType.Receptor, Station = Station.Bancada,
                 Description = "Na mochila, aponta a ilha não descoberta mais próxima e capta antenas a até 3 km. Feito na bancada.",
                 Cost = L((ItemType.LingoteCobre, 2), (Mad, 2), (Cor, 1)), Research = L((ItemType.LingoteCobre, 3)) });
+            Add(new Recipe { Id = "revelar_mapa", Name = "Juntar fragmentos de mapa", Category = CraftCategory.Navegacao, IconOverride = ItemType.FragmentoMapa, StartUnlocked = true,
+                Description = "4 fragmentos (achados em naufrágios) revelam as 2 ilhas não descobertas mais próximas: o marcador delas aparece sempre.",
+                Cost = L((ItemType.FragmentoMapa, 4)),
+                Blocked = () => game.World == null || game.World.Nearest(game.Player.transform.position, true) == null ? "Todas as ilhas já foram achadas" : null,
+                OnCraft = () =>
+                {
+                    for (int i = 0; i < 2; i++)
+                    {
+                        var isl = game.World.NearestHidden(game.Player.transform.position);
+                        if (isl == null) break;
+                        isl.Revealed = true;
+                        game.Hud.Toast("Mapa revelado: " + isl.IslandName + " (" + WorldMap.TypeName(isl.Type) + ")", Hud.Gold);
+                    }
+                } });
             Add(new Recipe { Id = "antena", Name = "Antena receptora", Category = CraftCategory.Navegacao, Piece = PieceKind.Antena, IconOverride = ItemType.Receptor,
                 Description = "Construa na jangada ou na base: transmite o sinal (outros receptores veem você) e funciona como receptor para quem está perto.",
                 Cost = L((ItemType.LingoteCobre, 3), (Mad, 3)), Research = L((ItemType.LingoteCobre, 2), (Cor, 2)) });

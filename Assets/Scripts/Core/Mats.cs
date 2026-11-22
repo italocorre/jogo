@@ -128,6 +128,13 @@ namespace MarAberto
             {
                 case ItemType.Cobre: return Variant("ItemCobre", 0.62f, 0.75f, 2.5f);
                 case ItemType.LingoteCobre: return Variant("ItemCobre", 0.62f, 0.75f, 2.5f);
+                case ItemType.Ouro:
+                case ItemType.LingoteOuro: return Variant("ItemOuro", 0.75f, 0.85f, 2.5f);
+                case ItemType.Titanio:
+                case ItemType.LingoteTitanio:
+                case ItemType.LancaTitanio: return Variant("ItemTitanio", 0.7f, 0.7f, 2.5f);
+                case ItemType.PicaretaFerro:
+                case ItemType.MachadoFerro: return Variant("ItemFerro", 0.5f, 0.45f, 2.5f);
                 case ItemType.LingoteFerro: return Variant("ItemFerro", 0.5f, 0.45f, 2.5f);
                 case ItemType.PicaretaCobre: return Variant("ItemCobre", 0.62f, 0.75f, 2.5f);
                 case ItemType.Ferro: return Variant("ItemFerro", 0.5f, 0.45f, 2.5f);

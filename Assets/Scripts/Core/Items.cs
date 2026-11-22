@@ -43,6 +43,13 @@ namespace MarAberto
         PeixeAssado,
         AguaLimpa,
         VaraPescar,
+        Ouro,
+        Titanio,
+        LingoteOuro,
+        LingoteTitanio,
+        PicaretaFerro,
+        MachadoFerro,
+        LancaTitanio,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo, Arco, Pesca }
@@ -80,7 +87,7 @@ namespace MarAberto
             Def(ItemType.Carvao, "Carvão", "Combustível. O mercador compra.", new Color(0.16f, 0.16f, 0.18f), 3);
             Def(ItemType.Cobre, "Cobre", "Minério de cobre.", new Color(0.88f, 0.50f, 0.26f), 6);
             Def(ItemType.Ferro, "Ferro", "Minério de ferro. Fica no fundo do mar.", new Color(0.74f, 0.70f, 0.66f), 14);
-            Def(ItemType.FragmentoMapa, "Fragmento de Mapa", "Junte vários para achar uma ilha nova.", new Color(0.93f, 0.85f, 0.60f), 0, 10);
+            Def(ItemType.FragmentoMapa, "Fragmento de Mapa", "Achado em naufrágios e no fundo do mar. Junte 4 e revele ilhas no Tab (Navegação).", new Color(0.93f, 0.85f, 0.60f), 0, 10);
             Def(ItemType.Concha, "Concha", "Achada na praia. Bonita e vendável.", new Color(0.98f, 0.82f, 0.78f), 2);
             Def(ItemType.Coco, "Coco", "Clique com ele na mão: mata um pouco a fome e a sede (água de coco). Também vira muda e óleo.", new Color(0.45f, 0.32f, 0.18f), 3, 20);
             SetFood(ItemType.Coco, 10f, 20f, 5f);
@@ -131,6 +138,21 @@ namespace MarAberto
             SetFood(ItemType.AguaLimpa, 0f, 45f, 0f);
             Def(ItemType.VaraPescar, "Vara de Pescar", "Clique mirando na água para jogar a linha. Quando a boia afundar, clique de novo!", new Color(0.55f, 0.4f, 0.25f), 0, 1, true, 0);
             defs[ItemType.VaraPescar].Kind = ToolKind.Pesca;
+            Def(ItemType.Ouro, "Ouro", "Minério raro das ilhas distantes. Precisa de picareta nível 2.", new Color(1f, 0.82f, 0.25f), 20, 30);
+            SetRarity(ItemType.Ouro, 2);
+            Def(ItemType.Titanio, "Titânio", "Minério das ilhas mais distantes e vulcânicas. Precisa de picareta de ferro.", new Color(0.72f, 0.82f, 0.95f), 25, 30);
+            SetRarity(ItemType.Titanio, 2);
+            Def(ItemType.LingoteOuro, "Lingote de Ouro", "Ouro derretido na fundição.", new Color(1f, 0.8f, 0.2f), 45, 30);
+            SetRarity(ItemType.LingoteOuro, 2);
+            Def(ItemType.LingoteTitanio, "Lingote de Titânio", "Leve e resistente. Para o helicóptero e armas.", new Color(0.75f, 0.85f, 0.95f), 55, 30);
+            SetRarity(ItemType.LingoteTitanio, 2);
+            Def(ItemType.PicaretaFerro, "Picareta de Ferro", "Nível 3: minera titânio e quebra rochas mais rápido.", new Color(0.7f, 0.7f, 0.72f), 0, 1, true, 3);
+            defs[ItemType.PicaretaFerro].Kind = ToolKind.Picareta;
+            Def(ItemType.MachadoFerro, "Machado de Ferro", "Corta árvores bem mais rápido.", new Color(0.7f, 0.7f, 0.72f), 0, 1, true, 3);
+            defs[ItemType.MachadoFerro].Kind = ToolKind.Machado;
+            Def(ItemType.LancaTitanio, "Lança de Titânio", "A arma corpo a corpo mais forte.", new Color(0.75f, 0.85f, 0.95f), 0, 1, true, 1);
+            defs[ItemType.LancaTitanio].Kind = ToolKind.Arma;
+            SetRarity(ItemType.LancaTitanio, 2);
             Def(ItemType.Madeira, "Madeira", "Toras de árvore. Base de quase toda construção.", new Color(0.55f, 0.38f, 0.22f), 1, 30);
             Def(ItemType.Graveto, "Graveto", "Galho seco. Cabos de ferramentas e tochas.", new Color(0.6f, 0.45f, 0.28f), 1, 40);
             Def(ItemType.Folha, "Folha", "Folha de coqueiro. Vira corda e telhado.", new Color(0.35f, 0.6f, 0.2f), 1, 40);

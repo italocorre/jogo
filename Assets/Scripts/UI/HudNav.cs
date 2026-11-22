@@ -51,6 +51,18 @@ namespace MarAberto
                     if (used > 8) break;
                 }
             }
+            // Ilhas reveladas pelos fragmentos de mapa (sempre visíveis até serem descobertas).
+            if (hudOn && cam != null && game.World != null)
+            {
+                Vector3 pp = p.transform.position;
+                foreach (var isl in game.World.Islands)
+                {
+                    if (!isl.Revealed || isl.Discovered) continue;
+                    Vector3 d = isl.transform.position - pp; d.y = 0;
+                    Place(GetNav(used++), cam, isl.transform.position + Vector3.up * 60f,
+                        isl.IslandName.ToUpperInvariant() + "\n<size=15>" + Km(Mathf.Max(0, d.magnitude - isl.Radius)) + "</size>", new Color(1f, 0.6f, 0.2f));
+                }
+            }
             // Nome dos outros jogadores por perto.
             if (hudOn && cam != null)
             {
