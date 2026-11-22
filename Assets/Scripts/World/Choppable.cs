@@ -12,6 +12,9 @@ namespace MarAberto
         public int Wood = 3, Leaves = 2, Sticks = 1, Coconuts = 0;
         public float RegrowTime = 480f;
         public string DisplayName = "Coqueiro";
+        public Island Island;   // para sincronizar no multiplayer
+        public int Index = -1;
+        bool remote;            // derrubada por outro jogador: não solta itens aqui
 
         public float Health { get; private set; }
         public bool IsDown => state != State.Standing;
@@ -49,7 +52,19 @@ namespace MarAberto
                 fallAxis = Vector3.Cross(Vector3.up, away.normalized);
                 foreach (var c in cols) c.enabled = false;
                 Sfx.Play(Sfx.Break, point, 1f);
+                NetGame.TreeFelledLocal(this, fallAxis);
             }
+        }
+
+        /// <summary>Outro jogador derrubou esta árvore.</summary>
+        public void RemoteFell(Vector3 axis)
+        {
+            if (state != State.Standing) return;
+            remote = true;
+            state = State.Falling;
+            t = 0f;
+            fallAxis = axis.sqrMagnitude > 0.01f ? axis : Vector3.right;
+            foreach (var c in cols) c.enabled = false;
         }
 
         void Drop()
@@ -91,7 +106,8 @@ namespace MarAberto
                     transform.rotation = Quaternion.AngleAxis(ang, fallAxis) * baseRot;
                     if (k >= 1f)
                     {
-                        Drop();
+                        if (!remote) Drop();
+                        remote = false;
                         state = State.Gone;
                         t = 0f;
                         SetVisible(false);

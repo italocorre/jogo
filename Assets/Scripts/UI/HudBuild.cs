@@ -157,7 +157,13 @@ namespace MarAberto
                 int idx = i;
                 var b = img.gameObject.AddComponent<Button>();
                 b.transition = Selectable.Transition.None;
-                b.onClick.AddListener(() => MoveStack(fromChest ? openChest.Storage : game.Inventory, fromChest ? game.Inventory : openChest.Storage, idx));
+                b.onClick.AddListener(() =>
+                {
+                    if (openChest == null) return;
+                    if (fromChest) NetGame.ChestTake(openChest, idx); else NetGame.ChestPut(openChest, idx);
+                    Sfx.UI(Sfx.Pickup, 0.4f);
+                    chestVersion = -1;
+                });
             }
         }
 

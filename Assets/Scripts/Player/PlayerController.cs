@@ -361,6 +361,10 @@ namespace MarAberto
         Vector3 firstSpawn, firstLook;
         bool firstSaved;
 
+        public bool HasBedRespawn => firstSaved && (spawnPos != firstSpawn);
+        public Vector3 RespawnPos => spawnPos;
+        public Vector3 RespawnLook => spawnLook;
+
         /// <summary>Cama marcada: renasce aqui.</summary>
         public void SetRespawn(Vector3 pos, Vector3 look)
         {
@@ -402,7 +406,7 @@ namespace MarAberto
             int coins = game.TakeAllCoins();
             if (items.Count > 0 || coins > 0)
             {
-                LostBackpack.Spawn(deathPos + Vector3.up * 0.4f, items, coins);
+                NetGame.DropBackpack(deathPos + Vector3.up * 0.4f, items);
                 game.Hud.Toast("Você desmaiou e perdeu tudo! Sua mochila ficou onde você caiu.", Hud.Bad);
             }
             else game.Hud.Toast("Você desmaiou e acordou na praia...", Hud.Bad);

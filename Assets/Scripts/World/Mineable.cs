@@ -11,6 +11,8 @@ namespace MarAberto
         public float MaxHealth = 3;
         public float Health { get; private set; }
         public float RespawnTime = 90f;
+        public Island Island;   // para sincronizar no multiplayer
+        public int Index = -1;
 
         MeshRenderer rend;
         GameObject visual;
@@ -218,6 +220,17 @@ namespace MarAberto
             }
             if (Underwater && rng.NextDouble() < 0.1) Drop(ItemType.FragmentoMapa, 1);
 
+            SetVisible(false);
+            col.enabled = false;
+            respawnAt = Time.time + RespawnTime;
+            NetGame.OreBrokenLocal(this);
+        }
+
+        /// <summary>Outro jogador quebrou esta rocha: some sem soltar nada aqui.</summary>
+        public void RemoteBreak()
+        {
+            if (IsBroken) return;
+            Debris.Burst(transform.position + Vector3.up * 0.5f, Vector3.up, 8, oreColor);
             SetVisible(false);
             col.enabled = false;
             respawnAt = Time.time + RespawnTime;

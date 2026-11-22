@@ -28,6 +28,8 @@ namespace MarAberto
         bool newRaft;            // piso na água: começa uma jangada nova
         static readonly Collider[] overlap = new Collider[16];
 
+        public Transform Root => root;
+
         public void Init(Game g)
         {
             game = g;
@@ -248,33 +250,23 @@ namespace MarAberto
         void Place(Recipe r)
         {
             foreach (var (t, n) in r.Cost) game.Inventory.Remove(t, n);
-            Raft raft = null;
-            Transform parent = root;
-            if (newRaft)
-            {
-                raft = Raft.Create(placePos, placeRot);
-                parent = raft.transform;
-                game.Hud.Toast("Jangada nova! Aumente com mais pisos e ponha leme, motor e âncora.", Hud.Good);
-            }
-            else if (placeParent != null) { parent = placeParent; raft = placeParent.GetComponent<Raft>(); }
-            var go = Building.Create(Selected, placePos, placeRot, parent);
-            var bp = go.GetComponent<BuildPiece>();
-            bp.Recipe = r;
-            if (raft != null) raft.Recompute();
+            // Quem hospeda cria a peça e avisa todos (no modo sozinho é na hora).
+            Raft raft = placeParent != null ? placeParent.GetComponent<Raft>() : null;
+            NetGame.RequestPlace(Selected, raft, newRaft, placePos, placeRot);
+            if (newRaft) game.Hud.Toast("Jangada nova! Aumente com mais pisos e ponha leme, motor e âncora.", Hud.Good);
             Sfx.Play(Sfx.Hit, placePos, 0.8f);
             Debris.Burst(placePos + Vector3.up * 0.3f, Vector3.up, 6, new Color(0.6f, 0.45f, 0.3f));
-            if (Selected == PieceKind.Cama && Bed.Current == null)
-            {
-                var bed = go.GetComponent<Bed>();
-                if (bed != null) bed.Interact(game.Player);
-            }
         }
 
         void Dismantle(BuildPiece bp)
         {
             var r = bp.Recipe ?? RecipeFor(bp.Kind);
             var chest = bp.GetComponent<Chest>();
-            if (chest != null) chest.SpillContents();
+            if (chest != null)
+            {
+                if (NetGame.IsClient && !chest.Synced) { game.Hud.Toast("Abra o baú (E) antes de desmontar.", Hud.Bad); return; }
+                foreach (var s in chest.Storage.Slots) if (!s.IsEmpty) { game.Hud.Toast("Esvazie o baú antes de desmontar.", Hud.Bad); return; }
+            }
             if (r != null)
                 foreach (var (t, n) in r.Cost)
                 {
@@ -284,24 +276,18 @@ namespace MarAberto
             Sfx.Play(Sfx.Break, bp.transform.position, 0.8f);
             game.Hud.Toast(Building.Name(bp.Kind) + " desmontado: materiais devolvidos.", Hud.Info);
             var raft = bp.GetComponentInParent<Raft>();
-            bp.transform.SetParent(null, true);
-            Destroy(bp.gameObject);
-            Aimed = null;
-            if (raft != null)
+            if (raft != null && bp.Kind == PieceKind.Piso && raft.FloorCount <= 1)
             {
-                raft.Recompute();
-                if (raft.FloorCount == 0)
+                // Último piso: a jangada inteira é desmontada (devolve tudo).
+                foreach (var other in raft.GetComponentsInChildren<BuildPiece>())
                 {
-                    // Sem pisos não flutua: desmonta o resto e devolve tudo.
-                    foreach (var other in raft.GetComponentsInChildren<BuildPiece>())
-                    {
-                        var rr = other.Recipe ?? RecipeFor(other.Kind);
-                        if (rr != null) foreach (var (t, n) in rr.Cost) { int left = game.Inventory.Add(t, n, false); if (left > 0) WorldItem.Spawn(new ItemStack(t, left), other.transform.position + Vector3.up, Vector3.up); }
-                    }
-                    if (game.Player != null && game.Player.Driving == raft) game.Player.StopDriving();
-                    Destroy(raft.gameObject);
+                    if (other == bp) continue;
+                    var rr = other.Recipe ?? RecipeFor(other.Kind);
+                    if (rr != null) foreach (var (t, n) in rr.Cost) { int left = game.Inventory.Add(t, n, false); if (left > 0) WorldItem.Spawn(new ItemStack(t, left), other.transform.position + Vector3.up, Vector3.up); }
                 }
             }
+            NetGame.RequestRemove(bp);
+            Aimed = null;
         }
 
         void ShowGhost(PieceKind k)

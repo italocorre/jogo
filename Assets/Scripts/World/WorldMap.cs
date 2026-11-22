@@ -77,6 +77,7 @@ namespace MarAberto
                 go.transform.position = new Vector3(pos.x, 0, pos.y);
                 var isl = go.AddComponent<Island>();
                 isl.IslandName = names[i % names.Length];
+                isl.Index = i;
                 isl.Seed = seed * 131 + i * 977 + 11;
                 isl.Type = type;
                 isl.Tier = tier;

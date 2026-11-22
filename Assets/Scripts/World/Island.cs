@@ -19,6 +19,10 @@ namespace MarAberto
         public bool Generated { get; private set; }
         public bool Generating { get; private set; }
         public bool Discovered;
+        public int Index;
+        public readonly List<Choppable> Trees = new List<Choppable>();
+        public readonly List<Mineable> Ores = new List<Mineable>();
+        public readonly HashSet<int> PendingFelled = new HashSet<int>(), PendingBroken = new HashSet<int>();
         public Transform Detail { get; private set; }   // tudo que é gerado de perto
         GameObject silhouette;                          // terreno simplificado visto de longe
 
@@ -152,6 +156,17 @@ namespace MarAberto
 
         // ---------- Geração ----------
 
+        void RegisterTree(Choppable c) { c.Island = this; c.Index = Trees.Count; Trees.Add(c); }
+        void RegisterOre(Mineable m) { m.Island = this; m.Index = Ores.Count; Ores.Add(m); }
+
+        /// <summary>Aplica o que outros jogadores derrubaram/quebraram antes desta ilha ser gerada aqui.</summary>
+        void ApplyPending()
+        {
+            foreach (int i in PendingFelled) if (i >= 0 && i < Trees.Count) Trees[i].RemoteFell(Vector3.right);
+            foreach (int i in PendingBroken) if (i >= 0 && i < Ores.Count) Ores[i].RemoteBreak();
+            PendingFelled.Clear(); PendingBroken.Clear();
+        }
+
         void InitNoise()
         {
             rng = new System.Random(Seed);
@@ -198,6 +213,7 @@ namespace MarAberto
             if (silhouette != null) silhouette.SetActive(false);
             Generating = false;
             Generated = true;
+            ApplyPending();
         }
 
         /// <summary>Some o detalhe quando o jogador está muito longe (volta a silhueta).</summary>
@@ -508,6 +524,7 @@ namespace MarAberto
                 cap.height = height * 0.7f;
                 cap.center = Vector3.up * (height * 0.35f) + lean * 0.15f;
                 var ch = palm.AddComponent<Choppable>();
+                RegisterTree(ch);
                 ch.DisplayName = "Coqueiro";
                 ch.MaxHealth = 5f; ch.Wood = 3; ch.Leaves = 4; ch.Sticks = 1; ch.Coconuts = rng.Next(0, 3);
             }
@@ -595,6 +612,7 @@ namespace MarAberto
                     var cap = t.AddComponent<CapsuleCollider>();
                     cap.radius = 0.35f; cap.height = 4f; cap.center = new Vector3(0, 2f, 0);
                     var ch = t.AddComponent<Choppable>();
+                    RegisterTree(ch);
                     ch.DisplayName = "Árvore";
                     ch.MaxHealth = 7f; ch.Wood = 5; ch.Leaves = 2; ch.Sticks = 3;
                 }
@@ -816,7 +834,7 @@ namespace MarAberto
                 ItemType t = roll < 0.4 ? ItemType.Pedra : roll < 0.7 ? ItemType.Carvao : ItemType.Cobre;
                 // Ilhas mais longe têm ferro em terra (e mais cobre).
                 if (Tier >= 2 && rng.NextDouble() < (Tier == 2 ? 0.2 : 0.35)) t = ItemType.Ferro;
-                Mineable.Create(parent, p, t, rng.Next(), false);
+                RegisterOre(Mineable.Create(parent, p, t, rng.Next(), false));
             }
             int sea = 0;
             for (int i = 0; i < 1200 && sea < N(45, 1f); i++)
@@ -825,7 +843,7 @@ namespace MarAberto
                 sea++;
                 double roll = rng.NextDouble();
                 ItemType t = roll < 0.5 ? ItemType.Cobre : roll < 0.68 ? ItemType.Carvao : ItemType.Ferro;
-                Mineable.Create(parent, p, t, rng.Next(), true);
+                RegisterOre(Mineable.Create(parent, p, t, rng.Next(), true));
             }
         }
 

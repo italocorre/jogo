@@ -104,6 +104,14 @@ namespace MarAberto
             return true;
         }
 
+        public static List<string> GetUnlocked() => new List<string>(unlocked);
+        public static void SetUnlocked(IEnumerable<string> ids)
+        {
+            unlocked.Clear();
+            foreach (var id in ids) unlocked.Add(id);
+            OnChanged?.Invoke();
+        }
+
         public static void UnlockAll()
         {
             foreach (var r in All) if (!IsComing(r)) unlocked.Add(r.Id);

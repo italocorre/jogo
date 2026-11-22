@@ -19,6 +19,31 @@ namespace MarAberto
         static int counter;
 
         public int FloorCount => floatPoints.Count;
+        public int Id;
+        public float netTimer;
+        public bool IsRemote { get; private set; }
+        Vector3 netPos; Quaternion netRot; bool hasNet;
+
+        /// <summary>No cliente: quem hospeda simula; aqui só segue a posição recebida.</summary>
+        public void MakeRemote()
+        {
+            IsRemote = true;
+            if (rb != null) { rb.isKinematic = true; rb.interpolation = RigidbodyInterpolation.None; }
+        }
+
+        public void SetRemoteState(Vector3 pos, Quaternion rot, bool anchored, float speed)
+        {
+            netPos = pos; netRot = rot; hasNet = true;
+            Anchor = anchored ? AnchorState.Set : AnchorState.Up;
+            Speed = speed;
+        }
+
+        void Update()
+        {
+            if (!IsRemote || !hasNet) return;
+            float k = 1f - Mathf.Exp(-Time.deltaTime * 10f);
+            transform.SetPositionAndRotation(Vector3.Lerp(transform.position, netPos, k), Quaternion.Slerp(transform.rotation, netRot, k));
+        }
         public override bool HasAnchor => hasAnchorPiece;
 
         public static Raft Create(Vector3 pos, Quaternion rot)
@@ -69,6 +94,7 @@ namespace MarAberto
 
         public override void ToggleAnchor()
         {
+            if (IsRemote) { NetGame.RequestAnchor(this); return; }
             if (!hasAnchorPiece) { Game.Instance.Hud.Toast("Esta jangada não tem âncora (construa uma).", Hud.Bad); return; }
             if (Anchor == AnchorState.Set || Anchor == AnchorState.Hanging)
             {
@@ -101,7 +127,7 @@ namespace MarAberto
 
         void FixedUpdate()
         {
-            if (floatPoints.Count == 0) return;
+            if (IsRemote || floatPoints.Count == 0) return;
             float g = Physics.gravity.magnitude;
             float perPoint = rb.mass * g / floatPoints.Count / 0.14f;
             int under = 0;
@@ -207,7 +233,7 @@ namespace MarAberto
             int n = Mathf.Min(inv.Count(ItemType.Carvao), 5);
             if (n <= 0) { Game.Instance.Hud.Toast("Precisa de carvão para o motor.", Hud.Bad); return; }
             inv.Remove(ItemType.Carvao, n);
-            Fuel += n * 60f;
+            NetGame.RequestRefuel(this, n * 60f);
             Sfx.Play(Sfx.Clank, transform.position, 0.5f);
             Game.Instance.Hud.Toast("+" + n + " carvão no motor.", Hud.Good);
         }

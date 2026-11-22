@@ -12,6 +12,7 @@ namespace MarAberto
         public readonly List<ItemStack> Items = new List<ItemStack>();
         public int Coins;
         public string Owner = "Você";
+        public int NetId;
         Rigidbody rb;
         float spawnTime, stillTime;
         bool touching;
@@ -93,6 +94,7 @@ namespace MarAberto
         public void Interact(PlayerController player)
         {
             var game = Game.Instance;
+            if (NetGame.RequestTakeBag(this)) { game.Hud.Toast("Pegando a mochila...", Hud.Info); return; }
             int took = 0;
             for (int i = Items.Count - 1; i >= 0; i--)
             {
@@ -107,6 +109,7 @@ namespace MarAberto
             if (Items.Count == 0)
             {
                 game.Hud.Toast("Mochila recuperada!", Hud.Good);
+                NetGame.BagTakenLocally(this);
                 Destroy(gameObject);
             }
             else game.Hud.Toast("Sua mochila está cheia: ficaram " + ItemCount + " itens na mochila perdida.", Hud.Bad);

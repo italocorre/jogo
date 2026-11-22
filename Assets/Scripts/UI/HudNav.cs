@@ -51,6 +51,23 @@ namespace MarAberto
                     if (used > 8) break;
                 }
             }
+            // Nome dos outros jogadores por perto.
+            if (hudOn && cam != null)
+            {
+                foreach (var rp in RemotePlayer.All)
+                {
+                    float dist = Vector3.Distance(cam.transform.position, rp.transform.position);
+                    if (dist > 150f) continue;
+                    Vector3 sp = cam.WorldToScreenPoint(rp.transform.position + Vector3.up * 2.1f);
+                    if (sp.z < 0) continue;
+                    var m = GetNav(used++);
+                    m.Rt.gameObject.SetActive(true);
+                    m.Text.text = rp.PlayerName + "\n<size=14>" + Km(dist) + "</size>";
+                    m.Dot.color = new Color(1, 1, 1, 0.8f);
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(root, sp, canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : cam, out var lp);
+                    m.Rt.anchoredPosition = lp;
+                }
+            }
             for (int i = used; i < navMarkers.Count; i++) navMarkers[i].Rt.gameObject.SetActive(false);
         }
 

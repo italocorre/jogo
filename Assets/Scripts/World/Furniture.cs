@@ -8,6 +8,7 @@ namespace MarAberto
     {
         public const int Size = 18;
         public Inventory Storage;
+        public bool Synced;   // no cliente: já recebeu o conteúdo de quem hospeda
 
         void Awake()
         {
@@ -16,7 +17,11 @@ namespace MarAberto
 
         public string Prompt => "Abrir baú";
         public bool CanInteract => true;
-        public void Interact(PlayerController player) => Game.Instance.Hud.OpenChest(this);
+        public void Interact(PlayerController player)
+        {
+            NetGame.ChestOpened(this);
+            Game.Instance.Hud.OpenChest(this);
+        }
 
         /// <summary>Ao desmontar: solta tudo no chão.</summary>
         public void SpillContents()

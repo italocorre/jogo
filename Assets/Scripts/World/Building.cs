@@ -13,6 +13,7 @@ namespace MarAberto
         public PieceKind Kind;
         public Recipe Recipe;
         public string Owner = "";
+        public int Id;   // número da peça na partida (multiplayer/jogo salvo)
         public static readonly List<BuildPiece> All = new List<BuildPiece>();
 
         void OnEnable() => All.Add(this);

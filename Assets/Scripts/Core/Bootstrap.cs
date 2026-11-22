@@ -15,9 +15,9 @@ namespace MarAberto
         {
             if (started) return;
             started = true;
-            var go = new GameObject("Game");
-            Object.DontDestroyOnLoad(go);
-            go.AddComponent<Game>();
+            // Primeiro o menu (sozinho / hospedar / entrar); ele cria o Game.
+            var go = new GameObject("Menu");
+            go.AddComponent<MainMenu>();
         }
     }
 }

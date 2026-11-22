@@ -42,6 +42,21 @@ O design completo está em [`docs/GDD.md`](docs/GDD.md). Sons e fontes de uso li
 7. Melhore o barco no mercador: **motor a vapor nível 2 e 3** e **corda longa da âncora** (recifes mais fundos).
 8. Há outros recifes escondidos mais longe da ilha. Explore!
 
+## 👥 Jogar com amigos (até 20)
+
+1. **Quem hospeda** abre o jogo, digita o nome e clica **HOSPEDAR PARTIDA** (escolha quantos jogadores).
+   O mundo fica salvo no computador de quem hospeda e continua de onde parou na próxima vez.
+2. **Os amigos** abrem o jogo, digitam o IP de quem hospeda e clicam **ENTRAR**.
+3. Como conectar:
+   - **Mesma casa (Wi-Fi):** use o IP que aparece na tela de quem hospeda (ex.: `192.168.0.10`).
+   - **Pela internet, jeito fácil:** todos instalam **Radmin VPN** ou **ZeroTier** (grátis), entram na mesma rede
+     e usam o IP da rede virtual de quem hospeda.
+   - **Pela internet, sem VPN:** quem hospeda libera a **porta 7777 (TCP)** no roteador e passa o IP público.
+   - Na primeira vez, o Windows pergunta se pode liberar o jogo no firewall: clique **Permitir**.
+4. Todos precisam da **mesma versão** do jogo (mesmo build).
+
+O jogo salva sozinho a cada minuto e ao fechar. Cada jogador tem sua mochila, receitas e cama guardadas pelo nome.
+
 ## ⚙️ Configurar o build automático (uma vez só)
 
 Toda vez que o código muda na branch `main`, o GitHub compila o jogo sozinho e publica o `.exe` em **Releases**.

@@ -125,6 +125,13 @@ namespace MarAberto
         }
 
         /// <summary>Esvazia tudo e devolve o que havia (usado ao desmaiar).</summary>
+        /// <summary>Substitui todo o conteúdo (carregar jogo salvo / baú vindo da rede).</summary>
+        public void Load(IList<ItemStack> slots)
+        {
+            for (int i = 0; i < Slots.Length; i++) Slots[i] = i < slots.Count ? slots[i] : ItemStack.Empty;
+            Changed();
+        }
+
         public List<ItemStack> TakeAll()
         {
             var list = new List<ItemStack>();
