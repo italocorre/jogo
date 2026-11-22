@@ -1,80 +1,88 @@
-# Mar Aberto — Documento de Design (GDD)
+# Mar Aberto — Documento de Design (GDD) v2
 
 ## 1. Visão geral
-- **Gênero:** sobrevivência/progressão em mundo aberto no mar, primeira pessoa, multiplayer com PvP.
-- **Plataforma:** PC (Windows, `.exe`).
-- **Visual:** estilizado, colorido, low-poly com mar bonito (no estilo de jogos de sobrevivência no oceano), com arte própria.
-- **Jogadores:** até 20 por servidor — quem hospeda escolhe o limite.
-- **Progresso:** o mundo fica salvo no PC de quem hospeda e continua entre sessões.
+Sobrevivência e construção em mar aberto, em primeira pessoa, para jogar com amigos (até 20 por servidor, quem hospeda decide).
+Mistura de **Raft** (jangada que você monta do seu jeito) com **Stranded Deep** (ilhas, coleta, crafting).
+PC (Windows), Unity 6, visual realista. O mundo fica salvo entre as sessões.
 
 ## 2. Ciclo de jogo
-1. Nasce na **Ilha do Porto** com uma **picareta de pedra**.
-2. Minera rochas na ilha (pedra, carvão, cobre).
-3. Vende ao **Mercador** e compra o **primeiro barco**.
-4. Vai para o mar, **ancora** e mergulha para minerar no fundo (minérios melhores, peixes perigosos, oxigênio limitado).
-5. Melhora o barco (motor, casco, âncora, canhões...).
-6. Encontra novas ilhas, que liberam minérios, barcos e picaretas melhores.
-7. Guerra: afunda e saqueia os barcos dos amigos.
+1. Nasce em uma ilha aleatória, de mãos vazias.
+2. Coleta: quebra pedras, corta árvores, pega folhas, galhos, cocos, conchas e fibras.
+3. Abre o **Tab**, pesquisa receitas com materiais e fabrica ferramentas, estruturas e máquinas.
+4. Monta uma jangada, sai para o mar e descobre ilhas novas com o **receptor**.
+5. Finca uma **bandeira** numa ilha, constrói a base (baús, fundição, cama, plantações).
+6. Evolui: motores melhores, estruturas reforçadas, armas, máquinas, gasolina e **helicóptero**.
+7. Defende os baús e ataca os baús dos outros.
 
-## 3. Ilhas
-| Ilha | Bioma | Libera | Minério principal | Barreira para chegar |
-|---|---|---|---|---|
-| 1. Ilha do Porto | Tropical | Bote, picareta de pedra | Pedra, Carvão, Cobre | — |
-| 2. Ilha Rochosa | Montanhosa | Barco de pesca, picareta de ferro | Ferro | Correntezas (motor nv. 2) |
-| 3. Ilha Vulcânica | Lava | Barco blindado, picareta de ouro | Ouro, Obsidiana | Água fervente (casco térmico) |
-| 4. Ilha Gelada | Neve | Quebra-gelo, picareta de diamante | Diamante | Gelo (quebra-gelo) |
-| 5. Ilha Abissal | Ruínas | Navio de guerra, picareta lendária | Cristal Abissal | Tempestade + monstro (casco e armas máximos) |
+## 3. Mundo
+- **30 ilhas** espalhadas no oceano, de tamanhos e tipos diferentes (praia, floresta, montanha, rochosa, vulcânica).
+- As ilhas mais longe têm minérios melhores (cobre → ferro → ouro → titânio) e são mais perigosas.
+- Cada jogador nasce em uma ilha qualquer.
+- Não há mercador nem NPC nas ilhas.
 
-## 4. Descobrir ilhas
-- **Névoa no mapa:** só aparece o que você já navegou; ilhas escondidas pela neblina.
-- **Fragmentos de mapa:** chance rara ao minerar (principalmente debaixo d'água). 3–5 fragmentos revelam a **área aproximada** da próxima ilha.
-- **Zonas de perigo:** cada ilha é cercada por um perigo que exige equipamento (tabela acima).
-- **Combustível limitado:** cada viagem é um risco calculado.
-- Quem descobre uma ilha primeiro ganha bônus.
+## 4. Coleta
+| Ação | Ferramenta | Recurso |
+|---|---|---|
+| Quebrar pedra | mão / picareta | pedra, sílex |
+| Minerar veio | picareta | carvão, cobre, ferro… |
+| Cortar árvore | machado | toras, galhos, folhas |
+| Pegar no chão | mão | gravetos, folhas, cocos, conchas, fibra |
+| Plantar | semente / muda | árvores e plantas crescem com o tempo |
 
-## 5. Mineração
-- Picaretas: Pedra (nv. 1) → Ferro (2) → Ouro (3) → Diamante (4) → Lendária (5).
-- Cada minério exige um nível mínimo de picareta (ex.: Ferro exige nv. 2).
-- Debaixo d'água: barra de oxigênio (melhorável com tanque); mais fundo = minério melhor e peixe pior.
-- Rochas reaparecem depois de um tempo.
+## 5. Tab — mochila, pesquisa e fabricação
+Tudo fica no **Tab**, organizado em categorias (abas com ícone):
+**Ferramentas · Armas · Construção · Jangada · Máquinas · Veículos · Navegação · Comida · Itens**.
 
-## 6. Barcos e melhorias
-Barcos: Bote → Barco de pesca → Blindado → Quebra-gelo → Navio de guerra.
+- **Pesquisa (como no Raft):** cada receita bloqueada mostra um custo em materiais. Pagou, desbloqueou para sempre.
+- **Fabricar:** receitas desbloqueadas mostram os ingredientes; fabrica na hora (mão) ou exige máquina (bancada, fundição).
+- Receitas mostram o que desbloqueiam a seguir (árvore de progressão visível).
 
-| Peça | Efeito |
-|---|---|
-| Motor | Velocidade máxima |
-| Hélice | Aceleração e manobra |
-| Casco | Vida e resistência às zonas de perigo |
-| Âncora | Ancorar mais fundo e mais rápido |
-| Tanque de combustível | Alcance |
-| Porão | Carga |
-| Sonar | Mostra minérios e peixes por perto |
-| Suporte de armas | Mais canhões |
+## 6. Construção (jangada e ilha)
+- Modo construção com martelo: grade de peças (piso, parede, pilar, escada, telhado), encaixe e pré-visualização.
+- Peças em tiers: madeira → madeira reforçada → metal.
+- Estruturas: baú, fundição, bancada, cama, plantação, coletor de água, refinaria de gasolina, suporte de motor, leme, âncora.
+- Jangada: qualquer forma; motor e leme dão direção. Quantas jangadas quiser.
+- **Construções nunca são destruídas por outros jogadores** (só os baús podem ser roubados).
 
-## 7. Inimigos do mar
-- Piranhas (cardume, dano contínuo), Tubarão (ataca mergulhador), Enguia elétrica (atordoa, fundo),
-  Lula gigante (agarra e danifica o barco), Monstro abissal (chefe da ilha final).
-- Mais agressivos à noite e em águas fundas.
+## 7. Território
+- **Bandeira de território:** fincada numa ilha, deixa a ilha sua (e do seu grupo).
+- Só o dono constrói na ilha. Inimigos entram, abrem baús e roubam, mas não quebram nada.
+- O dono recebe um alerta quando um inimigo entra no território.
 
-## 8. Armas (equilibradas)
-Dano bom, mas recarga lenta e munição limitada (comprada ou feita com minério).
+## 8. Morte e cama
+- Ao morrer, perde tudo o que carrega. Fica uma **mochila** no lugar, que qualquer jogador pode pegar.
+- Renasce na **última cama marcada** (interagir com a cama → "Marcar como ponto de renascer").
+- Sem cama: renasce numa ilha aleatória.
 
-| Arma | Onde | Ponto forte | Fraqueza |
-|---|---|---|---|
-| Arpão | Mão | Bom contra peixe, puxa alvo | Lento, curto alcance |
-| Sinalizador | Mão | Revela inimigos, fogo leve | Dano baixo |
-| Canhão leve | Barco | Dano bom contra barcos | Recarga 4–5 s, tiro em arco |
-| Canhão pesado | Barco | Dano alto | Recarga lenta, munição cara |
-| Mina marítima | Barco | Armadilha | Some com o tempo, máx. 2 |
+## 9. Navegação
+- **Receptor** (fabricável, colocado na jangada ou na ilha): mostra a ilha mais próxima e todos os outros receptores (barcos) dentro do alcance.
+- Todos na mesma frequência: cada receptor capta o sinal dos outros a uma certa distância (melhorias de antena aumentam o alcance).
 
-## 9. PvP
-- Zona segura perto de cada mercador.
-- Barco afundado: perde **50% da carga** (fica num baú boiando); barco e melhorias não são perdidos, só paga o reparo.
-- Quem afunda muitos barcos ganha recompensa e aparece no mapa.
-- Times/clãs opcionais.
+## 10. Veículos
+- **Jangada** (madeira) → motores: remo, motor a vapor (carvão), motor a gasolina.
+- **Helicóptero**: receita final (titânio + peças de motor + gasolina). Gasta gasolina; aceita **arma montada**.
+- **Gasolina**: refinaria (máquina) transforma óleo/carvão em gasolina.
 
-## 10. Multiplayer
-- Quem hospeda clica em "Hospedar"; os amigos entram pelo IP.
-- Sem servidor pago: usar **Radmin VPN** (grátis) ou abrir a porta no roteador.
-- O PC do host controla peixes, minérios e o mundo, e salva tudo num arquivo.
+## 11. Armas (não muito fortes)
+Lança, arco, besta, pistola de pólvora, canhão para jangada, metralhadora leve para helicóptero.
+Servem contra peixes e outros jogadores.
+
+## 12. Perigos
+Tubarões e peixes agressivos atacam quem está na água e mordem a jangada (sem destruí-la). Ilhas longe têm mais perigo.
+
+## 13. Multiplayer
+Servidor hospedado por um jogador (até 20). Salva o mundo, as construções e os baús.
+
+---
+
+## Plano de etapas (um build jogável por etapa)
+1. **Coleta e Tab** — remover mercador; machado; cortar árvores (toras, galhos, folhas); pegar gravetos e fibras; Tab com categorias, pesquisa e fabricação.
+2. **Construção** — martelo, peças de jangada e base com encaixe; baú, cama (renascer), fundição, bancada.
+3. **Jangada** — jangada montável que flutua; motor, leme e âncora como peças; várias jangadas.
+4. **Mundo com 30 ilhas** — gerador de vários tipos de ilha, nascer em ilha aleatória, receptor e mapa.
+5. **Multiplayer** — servidor, até 20 jogadores, sincronizar mundo, construções, baús e jangadas; salvar.
+6. **Território e PvP** — bandeira, alerta de invasor, roubo de baús, armas.
+7. **Plantio, comida e máquinas** — mudas que crescem, refinaria de gasolina.
+8. **Helicóptero** — receita final, gasolina e arma montada.
+9. **Perigos do mar** — tubarões e peixes.
+10. **Personagens realistas** (Mixamo) — jogadores animados.
