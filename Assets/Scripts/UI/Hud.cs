@@ -221,7 +221,7 @@ namespace MarAberto
                 K("WASD") + " andar     " + K("Shift") + " correr     " + K("Espaço") + " pular\n" +
                 K("Clique") + " minerar     " + K("E") + " pegar, falar, pilotar\n" +
                 K("1-6") + " item     " + K("Tab") + " mochila     " + K("B") + " fabricar     " + K("M") + " mapa     " + K("J") + " diário     " + K("Q") + " largar\n" +
-                K("R") + " âncora     " + K("Ctrl") + " mergulhar     " + K("H") + " esconder",
+                K("R") + " âncora     " + K("Ctrl") + " mergulhar     " + K("V") + " câmera     " + K("H") + " esconder",
                 UIKit.BodyMed, 22, UIKit.Text, TextAnchor.MiddleLeft);
             ht.rectTransform.Fill(22, 12, 16, 12);
         }

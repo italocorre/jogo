@@ -19,6 +19,8 @@ namespace MarAberto
         public int Id;
         public string PlayerName;
         public bool IsSwimming => swimming;
+        /// <summary>O seu próprio personagem (câmera em 3ª pessoa): não conta como outro jogador.</summary>
+        public bool IsLocal;
         Vector3 netPos;
         float netYaw, netPitch;
         bool hasState, swimming, driving;
@@ -37,7 +39,8 @@ namespace MarAberto
         Animation anim;
         Transform model;
         string clipIdle, clipWalk, clipPunch, clipHit, clipSit;
-        float actionUntil;
+        float actionUntil, swingT = -1f;
+        Transform rightArm;
 
         public static RemotePlayer Create(int id, string name, int skin = 0)
         {
@@ -109,7 +112,11 @@ namespace MarAberto
             if (clipIdle != null) anim.Play(clipIdle);
             // Item na mão direita.
             Transform hand = null;
-            foreach (var t in inst.GetComponentsInChildren<Transform>(true)) if (t.name == "RightHand") { hand = t; break; }
+            foreach (var t in inst.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == "RightHand") hand = t;
+                if (t.name == "RightArm") rightArm = t;
+            }
             handItem = new GameObject("Item").transform;
             handItem.SetParent(hand != null ? hand : model, false);
             handItem.localPosition = Vector3.zero;
@@ -141,13 +148,21 @@ namespace MarAberto
         public void PlayAction(bool hit)
         {
             if (anim == null) return;
-            string c = hit ? clipHit : clipPunch;
-            if (c == null) return;
-            anim.CrossFade(c, 0.08f);
-            actionUntil = Time.time + 0.6f;
+            if (hit) { if (clipHit != null) { anim.CrossFade(clipHit, 0.08f); actionUntil = Time.time + 0.6f; } return; }
+            swingT = 0f;   // golpe: o braço direito desce (feito por código, por cima da animação)
         }
 
-        void OnEnable() => All.Add(this);
+        void LateUpdate()
+        {
+            if (swingT < 0 || rightArm == null) return;
+            swingT += Time.deltaTime / 0.45f;
+            if (swingT >= 1f) { swingT = -1f; return; }
+            // Levanta rápido e desce batendo.
+            float a = swingT < 0.35f ? Mathf.SmoothStep(0, 1, swingT / 0.35f) : 1f - Mathf.SmoothStep(0, 1, (swingT - 0.35f) / 0.65f);
+            rightArm.localRotation = rightArm.localRotation * Quaternion.Euler(-110f * a, 0, -25f * a);
+        }
+
+        void OnEnable() { if (!IsLocal) All.Add(this); }
         void OnDisable() => All.Remove(this);
 
         void Build(Color shirt)
@@ -221,7 +236,7 @@ namespace MarAberto
             if (!hasState) return;
             float k = 1f - Mathf.Exp(-Time.deltaTime * 12f);
             Vector3 before = transform.position;
-            transform.position = Vector3.Lerp(transform.position, netPos, k);
+            transform.position = IsLocal ? netPos : Vector3.Lerp(transform.position, netPos, k);
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0, netYaw, 0), k);
             if (anim == null) head.localRotation = Quaternion.Slerp(head.localRotation, Quaternion.Euler(Mathf.DeltaAngle(0, netPitch) * 0.7f, 0, 0), k);
             // Balanço simples ao andar; deitado ao nadar.
@@ -229,6 +244,13 @@ namespace MarAberto
             walkT += Time.deltaTime * Mathf.Clamp(speed, 0, 6f) * 2.2f;
             if (anim != null)
             {
+                // Pulo: subindo rápido fora d'água.
+                float vy = (transform.position.y - before.y) / Mathf.Max(Time.deltaTime, 0.0001f);
+                if (vy > 2.2f && !swimming && !driving && Time.time > actionUntil && clipPunch != null)
+                {
+                    anim.CrossFade(clipPunch, 0.1f);
+                    actionUntil = Time.time + 0.75f;
+                }
                 if (Time.time > actionUntil)
                 {
                     if (driving && clipSit != null) { if (!anim.IsPlaying(clipSit)) anim.CrossFade(clipSit, 0.2f); }

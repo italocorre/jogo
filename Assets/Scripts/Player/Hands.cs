@@ -184,7 +184,7 @@ namespace MarAberto
             ToolTier = def != null && def.IsTool ? def.ToolTier : 0;
             Kind = def != null ? def.Kind : ToolKind.Nenhuma;
 
-            root.gameObject.SetActive(!driving);
+            root.gameObject.SetActive(!driving && !ThirdPerson.Active);
 
             Target = null;
             TargetTree = null;

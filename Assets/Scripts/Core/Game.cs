@@ -80,6 +80,7 @@ namespace MarAberto
             Hands = playerGo.AddComponent<Hands>();
             Hands.Init(Player);
             playerGo.AddComponent<Highlight>().Init(Player);
+            if (!preview) playerGo.AddComponent<ThirdPerson>();
 
             Environment = gameObject.AddComponent<WorldEnvironment>();
             Environment.Init(Player.Cam);
