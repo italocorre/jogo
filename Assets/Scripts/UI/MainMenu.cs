@@ -8,7 +8,9 @@ namespace MarAberto
     public class MainMenu : MonoBehaviour
     {
         RectTransform root;
-        InputField nameField, ipField, portField;
+        InputField nameField, ipField, portField, clanField;
+        Text skinText;
+        int skin;
         Text maxText, status;
         Toggle newWorld;
         int maxPlayers = 8;
@@ -59,7 +61,16 @@ namespace MarAberto
 
             // Nome
             Label(win, "SEU NOME", new Vector2(60, -40));
-            nameField = Field(win, PlayerPrefsGet("nome", "Marujo"), new Vector2(60, -76), 380);
+            nameField = Field(win, PlayerPrefsGet("nome", "Marujo"), new Vector2(60, -76), 260);
+            Label(win, "CLÃ (OPCIONAL)", new Vector2(340, -40));
+            clanField = Field(win, PlayerPrefsGet("cla", ""), new Vector2(340, -76), 240);
+            Label(win, "PERSONAGEM", new Vector2(640, -40));
+            int.TryParse(PlayerPrefsGet("skin", "0"), out skin);
+            Btn(win, "<", new Vector2(640, -76), 70, () => { skin--; UpdateSkin(); });
+            skinText = UIKit.Txt(win, "Skin", "", UIKit.Title, 24, UIKit.Gold, TextAnchor.MiddleCenter);
+            skinText.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(715, -76), new Vector2(330, 54));
+            Btn(win, ">", new Vector2(1050, -76), 70, () => { skin++; UpdateSkin(); });
+            UpdateSkin();
 
             // Coluna esquerda: sozinho / hospedar
             Label(win, "JOGAR NO SEU COMPUTADOR", new Vector2(60, -170));
@@ -95,6 +106,7 @@ namespace MarAberto
         static string PlayerPrefsGet(string k, string d) { try { return PlayerPrefs.GetString(k, d); } catch { return d; } }
 
         void UpdateMax() => maxText.text = maxPlayers.ToString();
+        void UpdateSkin() { skin = ((skin % CharacterSkins.Count) + CharacterSkins.Count) % CharacterSkins.Count; skinText.text = CharacterSkins.Label(skin).ToUpperInvariant(); }
 
         void Label(RectTransform parent, string text, Vector2 pos, int size = 20)
         {
@@ -151,7 +163,9 @@ namespace MarAberto
             NetConfig.Port = port;
             NetConfig.MaxPlayers = maxPlayers;
             NetConfig.NewWorld = newWorld.isOn && mode != NetMode.Client;
-            try { PlayerPrefs.SetString("nome", name); PlayerPrefs.SetString("ip", NetConfig.Address); PlayerPrefs.SetString("porta", port.ToString()); PlayerPrefs.Save(); } catch { }
+            NetConfig.Skin = skin;
+            NetConfig.Clan = clanField.text.Trim();
+            try { PlayerPrefs.SetString("skin", skin.ToString()); PlayerPrefs.SetString("cla", NetConfig.Clan); PlayerPrefs.SetString("nome", name); PlayerPrefs.SetString("ip", NetConfig.Address); PlayerPrefs.SetString("porta", port.ToString()); PlayerPrefs.Save(); } catch { }
 
             status.text = "<color=#FFD27A>Carregando o mundo...</color>";
             var go = new GameObject("Game");

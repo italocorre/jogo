@@ -8,6 +8,18 @@ namespace MarAberto.EditorTools
     {
         void OnPreprocessModel()
         {
+            if (assetPath.Contains("Resources/Characters/"))
+            {
+                // Personagens animados (Quaternius, CC0): animação "Legacy" tocada por código.
+                var ci = (ModelImporter)assetImporter;
+                ci.animationType = ModelImporterAnimationType.Legacy;
+                ci.importAnimation = true;
+                ci.generateAnimations = ModelImporterGenerateAnimations.GenerateAnimations;
+                ci.importCameras = false;
+                ci.importLights = false;
+                ci.globalScale = 1f;
+                return;
+            }
             if (!assetPath.Contains("Resources/Models/")) return;
             var mi = (ModelImporter)assetImporter;
             mi.isReadable = true;            // colisores criados em tempo de jogo precisam ler a malha

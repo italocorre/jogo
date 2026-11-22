@@ -28,6 +28,7 @@ namespace MarAberto
         LingoteFerro,
         PicaretaCobre,
         Receptor,
+        LancaCobre,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo }
@@ -84,6 +85,8 @@ namespace MarAberto
             SetRarity(ItemType.LingoteFerro, 1);
             Def(ItemType.Receptor, "Receptor", "Na mochila, mostra a ilha não descoberta mais próxima e o sinal de outras antenas.", new Color(0.8f, 0.6f, 0.3f), 0, 1);
             SetRarity(ItemType.Receptor, 1);
+            Def(ItemType.LancaCobre, "Lança de Cobre", "Arma: acerta mais forte que a lança de pedra.", new Color(0.85f, 0.5f, 0.3f), 0, 1, true, 1);
+            defs[ItemType.LancaCobre].Kind = ToolKind.Arma;
             Def(ItemType.Madeira, "Madeira", "Toras de árvore. Base de quase toda construção.", new Color(0.55f, 0.38f, 0.22f), 1, 30);
             Def(ItemType.Graveto, "Graveto", "Galho seco. Cabos de ferramentas e tochas.", new Color(0.6f, 0.45f, 0.28f), 1, 40);
             Def(ItemType.Folha, "Folha", "Folha de coqueiro. Vira corda e telhado.", new Color(0.35f, 0.6f, 0.2f), 1, 40);

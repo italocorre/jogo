@@ -114,6 +114,19 @@ namespace MarAberto
             if (r == null) { Reason = "Peça desconhecida"; return false; }
             if (!Crafting.IsUnlocked(r)) { Reason = "Pesquise no Tab (" + Crafting.CategoryName(r.Category) + ")"; return false; }
             if (!Crafting.Has(game.Inventory, r.Cost)) { Reason = "Faltam materiais"; return false; }
+            // Território: só o time dono da bandeira constrói na ilha (jangadas são livres).
+            if (!newRaft && placeParent == null && game.World != null && game.Net != null)
+            {
+                var isl = game.World.IslandAt(placePos);
+                string claim = game.Net.ClaimOf(isl);
+                if (claim != null && claim != NetConfig.Team) { Reason = "Território de " + claim; return false; }
+                if (Selected == PieceKind.Bandeira)
+                {
+                    if (isl == null) { Reason = "A bandeira vai numa ilha"; return false; }
+                    if (claim != null) { Reason = "Esta ilha já tem bandeira"; return false; }
+                }
+            }
+            if (Selected == PieceKind.Bandeira && (newRaft || placeParent != null)) { Reason = "A bandeira vai em terra firme"; return false; }
             // Não pode entrar dentro de outra peça.
             Vector3 size = Building.Size(Selected) - Vector3.one * 0.12f;
             Vector3 center = placePos + placeRot * new Vector3(0, Building.Size(Selected).y * 0.5f, 0);
@@ -260,6 +273,11 @@ namespace MarAberto
 
         void Dismantle(BuildPiece bp)
         {
+            if (!string.IsNullOrEmpty(bp.Owner) && bp.Owner != NetConfig.Team && bp.Owner != NetConfig.PlayerName)
+            {
+                game.Hud.Toast("Só o dono (" + bp.Owner + ") pode desmontar isto.", Hud.Bad);
+                return;
+            }
             var r = bp.Recipe ?? RecipeFor(bp.Kind);
             var chest = bp.GetComponent<Chest>();
             if (chest != null)

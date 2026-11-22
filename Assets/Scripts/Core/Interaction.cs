@@ -10,8 +10,9 @@ namespace MarAberto
         public const int Player = 10;
         public const int Grass = 11;
         public const int Detail = 12;  // objetos pequenos: somem de longe (desempenho)
-        public const int Props = 13;
-        public const int Build = 14;   // construções do jogador   // árvores e pedras médias: somem bem mais longe
+        public const int Props = 13;   // árvores e pedras médias: somem bem mais longe
+        public const int Build = 14;   // construções do jogador
+        public const int Remote = 15;  // outros jogadores (dá para acertar)
         public const int UI = 5;
         public const int Icons = 31;
 

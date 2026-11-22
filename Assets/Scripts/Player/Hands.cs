@@ -166,6 +166,7 @@ namespace MarAberto
             {
                 swingT = 0;
                 impactDone = false;
+                NetGame.SendSwing(false);
                 Sfx.Play(Sfx.Swing, cam.position + cam.forward, 0.3f);
             }
 
@@ -223,6 +224,17 @@ namespace MarAberto
         {
             if (!Physics.Raycast(cam.position, cam.forward, out var hit, Range, mask, QueryTriggerInteraction.Ignore))
                 return;
+            // Outro jogador (PvP): armas acertam mais forte, ferramentas um pouco.
+            var other = hit.collider.GetComponentInParent<RemotePlayer>();
+            if (other != null)
+            {
+                var held = Game.Instance.Inventory.SelectedStack.Type;
+                float dmg = held == ItemType.LancaCobre ? 24f : held == ItemType.Lanca ? 16f : Kind == ToolKind.Machado ? 12f : 9f;
+                NetGame.HitPlayer(other, dmg);
+                Debris.Burst(hit.point, hit.normal, 4, new Color(0.7f, 0.1f, 0.1f));
+                Sfx.Play(Sfx.Hit, hit.point, 0.7f);
+                return;
+            }
             var m = hit.collider.GetComponentInParent<Mineable>();
             var tree = m == null ? hit.collider.GetComponentInParent<Choppable>() : null;
             if (m != null && Kind == ToolKind.Picareta)

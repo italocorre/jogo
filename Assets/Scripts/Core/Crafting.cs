@@ -149,8 +149,10 @@ namespace MarAberto
             // ---- Armas ----
             Add(new Recipe { Id = "lanca", Name = "Lança", Category = CraftCategory.Armas, Output = ItemType.Lanca,
                 Description = "Arma simples contra peixes e outros jogadores.", Cost = L((Gra, 3), (Ped, 1), (Cor, 2)), Research = L((Gra, 4), (Ped, 2), (Cor, 2)) });
-            Add(new Recipe { Id = "arco", Name = "Arco e flechas", Category = CraftCategory.Armas, ComingIn = "Etapa 6", Description = "Ataque à distância." });
-            Add(new Recipe { Id = "canhao", Name = "Canhão de jangada", Category = CraftCategory.Armas, ComingIn = "Etapa 6", Description = "Montado na jangada." });
+            Add(new Recipe { Id = "lanca_cobre", Name = "Lança de cobre", Category = CraftCategory.Armas, Output = ItemType.LancaCobre, Station = Station.Bancada,
+                Description = "Mais forte que a de pedra. Feita na bancada.", Cost = L((ItemType.LingoteCobre, 2), (Gra, 3), (Cor, 2)), Research = L((ItemType.LingoteCobre, 3)) });
+            Add(new Recipe { Id = "arco", Name = "Arco e flechas", Category = CraftCategory.Armas, ComingIn = "Etapa 9", Description = "Ataque à distância." });
+            Add(new Recipe { Id = "canhao", Name = "Canhão de jangada", Category = CraftCategory.Armas, ComingIn = "Etapa 9", Description = "Montado na jangada." });
 
             // ---- Construção (peças: pesquisa aqui, constrói com o martelo) ----
             Add(new Recipe { Id = "piso", Name = "Piso de madeira", Category = CraftCategory.Construcao, Piece = PieceKind.Piso, StartUnlocked = true,
@@ -167,7 +169,9 @@ namespace MarAberto
                 Description = "Guarda 18 espaços de itens. Cuidado: outros jogadores podem abrir!", Cost = L((Mad, 6), (Cor, 2)), Research = L((Mad, 6), (Cor, 2)) });
             Add(new Recipe { Id = "cama", Name = "Cama", Category = CraftCategory.Construcao, Piece = PieceKind.Cama, IconOverride = Fol,
                 Description = "Marque a cama (E) e você renasce nela ao desmaiar.", Cost = L((Mad, 6), (Fol, 8), (Cor, 3)), Research = L((Fol, 8), (Cor, 4)) });
-            Add(new Recipe { Id = "bandeira", Name = "Bandeira de território", Category = CraftCategory.Construcao, ComingIn = "Etapa 6", Description = "Domina uma ilha." });
+            Add(new Recipe { Id = "bandeira", Name = "Bandeira de território", Category = CraftCategory.Construcao, Piece = PieceKind.Bandeira, IconOverride = Cor,
+                Description = "Finque numa ilha: só o seu time constrói nela e vocês recebem alerta quando um inimigo entra. Uma por ilha.",
+                Cost = L((Mad, 6), (Cor, 4), (Fol, 6)), Research = L((Mad, 8), (Cor, 6)) });
 
             // ---- Jangada (peças: constrói com o martelo em cima de um piso na água) ----
             Add(new Recipe { Id = "leme", Name = "Leme", Category = CraftCategory.Jangada, Piece = PieceKind.Leme, IconOverride = Mad,

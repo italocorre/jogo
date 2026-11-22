@@ -27,6 +27,10 @@ namespace MarAberto
         readonly Dictionary<int, LostBackpack> bags = new Dictionary<int, LostBackpack>();
         readonly Dictionary<int, RemotePlayer> remotes = new Dictionary<int, RemotePlayer>();
         readonly Dictionary<int, string> names = new Dictionary<int, string>();
+        readonly Dictionary<int, string> teams = new Dictionary<int, string>();
+        readonly Dictionary<int, int> skins = new Dictionary<int, int>();
+        float alertTimer;
+        readonly Dictionary<(int, int), float> alerted = new Dictionary<(int, int), float>();
         readonly Dictionary<int, float> remoteDriveUntil = new Dictionary<int, float>();
         readonly HashSet<int> pendingWelcome = new HashSet<int>();
         // Árvores e rochas derrubadas (para quem entrar depois): ilha → índices
@@ -48,7 +52,7 @@ namespace MarAberto
                 try
                 {
                     link.Join(NetConfig.Address, NetConfig.Port);
-                    link.SendToServer(new NetWriter(Msg.Hello).Int(NetConfig.Version).Str(NetConfig.PlayerName));
+                    link.SendToServer(new NetWriter(Msg.Hello).Int(NetConfig.Version).Str(NetConfig.PlayerName).Int(NetConfig.Skin).Str(NetConfig.Team));
                     game.Hud.Toast("Conectando a " + NetConfig.Address + "...", Hud.Info);
                 }
                 catch (System.Exception e)
@@ -82,6 +86,8 @@ namespace MarAberto
                 }
             }
             names[0] = NetConfig.PlayerName;
+            teams[0] = NetConfig.Team;
+            skins[0] = NetConfig.Skin;
         }
 
         static string LocalIPs()
@@ -209,6 +215,8 @@ namespace MarAberto
             }
             saveTimer -= dt;
             if (saveTimer <= 0) { saveTimer = 60f; SaveNow(); }
+            alertTimer -= dt;
+            if (alertTimer <= 0) { alertTimer = 2f; CheckInvaders(); }
         }
 
         NetWriter StateMsg(int id)
@@ -296,13 +304,15 @@ namespace MarAberto
             {
                 case Msg.Hello when server:
                 {
-                    int ver = m.Int(); string name = m.Str();
+                    int ver = m.Int(); string name = m.Str(); int skin = m.Int(); string team = m.Str();
                     if (ver != NetConfig.Version) { link.SendTo(m.From, new NetWriter(Msg.Reject).Str("Versão diferente do jogo. Baixe a mesma versão de quem hospeda.")); link.Kick(m.From); return; }
                     foreach (var kv in names) if (kv.Value == name) { link.SendTo(m.From, new NetWriter(Msg.Reject).Str("Já tem um jogador com o nome " + name + ".")); link.Kick(m.From); return; }
                     names[m.From] = name;
+                    teams[m.From] = team;
+                    skins[m.From] = skin;
                     pendingWelcome.Remove(m.From);
                     SendWelcome(m.From, name);
-                    link.Broadcast(new NetWriter(Msg.PlayerJoined).Int(m.From).Str(name), m.From);
+                    link.Broadcast(new NetWriter(Msg.PlayerJoined).Int(m.From).Str(name).Int(skin).Str(team), m.From);
                     SpawnRemote(m.From, name);
                     game.Hud.Toast(name + " entrou na partida.", Hud.Gold);
                     break;
@@ -312,7 +322,7 @@ namespace MarAberto
                     myId = m.Int();
                     if (game.Environment != null) game.Environment.TimeOfDay = m.Float();
                     int nPlayers = m.Int();
-                    for (int i = 0; i < nPlayers; i++) { int id = m.Int(); string n = m.Str(); names[id] = n; if (id != myId) SpawnRemote(id, n); }
+                    for (int i = 0; i < nPlayers; i++) { int id = m.Int(); string n = m.Str(); skins[id] = m.Int(); teams[id] = m.Str(); names[id] = n; if (id != myId) SpawnRemote(id, n); }
                     string json = m.Str();
                     if (!string.IsNullOrEmpty(json)) ApplyPlayer(JsonUtility.FromJson<PlayerSaveData>(json));
                     welcomed = true;
@@ -325,7 +335,7 @@ namespace MarAberto
                     break;
                 case Msg.PlayerJoined when !server:
                 {
-                    int id = m.Int(); string n = m.Str(); names[id] = n;
+                    int id = m.Int(); string n = m.Str(); skins[id] = m.Int(); teams[id] = m.Str(); names[id] = n;
                     if (id != myId) SpawnRemote(id, n);
                     game.Hud.Toast(n + " entrou na partida.", Hud.Gold);
                     break;
@@ -345,7 +355,7 @@ namespace MarAberto
                 case Msg.PlaceRequest when server:
                 {
                     var k = (PieceKind)m.Int(); int raftId = m.Int(); bool newRaft = m.Bool(); Vector3 pos = m.Vec(); Quaternion rot = m.Rot();
-                    HostPlace(k, raftId, newRaft, pos, rot, names.TryGetValue(m.From, out var on) ? on : "");
+                    HostPlace(k, raftId, newRaft, pos, rot, teams.TryGetValue(m.From, out var on) ? on : "");
                     break;
                 }
                 case Msg.RaftCreated when !server:
@@ -491,6 +501,24 @@ namespace MarAberto
                     if (d != null && names.TryGetValue(m.From, out var on)) { d.name = on; save.StorePlayer(d); }
                     break;
                 }
+                case Msg.Damage:
+                {
+                    int target = m.Int(); float amount = m.Float(); string from = m.Str();
+                    if (server && target != 0) { link.SendTo(target, new NetWriter(Msg.Damage).Int(target).Float(amount).Str(from)); break; }
+                    TakeHit(amount, from);
+                    break;
+                }
+                case Msg.Swing:
+                {
+                    int id = server ? m.From : m.Int(); bool hit = m.Bool();
+                    if (remotes.TryGetValue(id, out var rp) && rp != null) rp.PlayAction(hit);
+                    if (server) link.Broadcast(new NetWriter(Msg.Swing).Int(id).Bool(hit), id);
+                    break;
+                }
+                case Msg.Alert when !server:
+                    game.Hud.Toast(m.Str(), Hud.Bad);
+                    Sfx.UI(Sfx.Error, 0.6f);
+                    break;
                 case Msg.Chat:
                 {
                     string text = m.Str();
@@ -505,7 +533,7 @@ namespace MarAberto
         {
             var w = new NetWriter(Msg.Welcome).Int(id).Float(game.Environment != null ? game.Environment.TimeOfDay : 0.3f);
             w.Int(names.Count);
-            foreach (var kv in names) w.Int(kv.Key).Str(kv.Value);
+            foreach (var kv in names) w.Int(kv.Key).Str(kv.Value).Int(skins.TryGetValue(kv.Key, out var sk) ? sk : 0).Str(teams.TryGetValue(kv.Key, out var tm) ? tm : kv.Value);
             var saved = save.FindPlayer(name);
             w.Str(saved != null ? JsonUtility.ToJson(saved) : "");
             // Mundo atual: jangadas, peças, mochilas, árvores e rochas derrubadas.
@@ -532,6 +560,7 @@ namespace MarAberto
             {
                 game.Hud.Toast(n + " saiu da partida.", Hud.Info);
                 names.Remove(id);
+                teams.Remove(id);
             }
             RemoveRemote(id);
             link.Broadcast(new NetWriter(Msg.PlayerLeft).Int(id));
@@ -540,7 +569,7 @@ namespace MarAberto
         void SpawnRemote(int id, string name)
         {
             if (remotes.ContainsKey(id)) return;
-            remotes[id] = RemotePlayer.Create(id, name);
+            remotes[id] = RemotePlayer.Create(id, name, skins.TryGetValue(id, out var sk) ? sk : id);
         }
 
         void RemoveRemote(int id)
@@ -569,7 +598,7 @@ namespace MarAberto
             if (n != null && n.mode == NetMode.Client)
                 n.link.SendToServer(new NetWriter(Msg.PlaceRequest).Int((int)k).Int(raft != null ? raft.Id : -1).Bool(newRaft).Vec(pos).Rot(rot));
             else if (n != null)
-                n.HostPlace(k, raft != null ? raft.Id : -1, newRaft, pos, rot, NetConfig.PlayerName);
+                n.HostPlace(k, raft != null ? raft.Id : -1, newRaft, pos, rot, NetConfig.Team);
         }
 
         void HostPlace(PieceKind k, int raftId, bool newRaft, Vector3 pos, Quaternion rot, string owner)
@@ -612,7 +641,7 @@ namespace MarAberto
             var c = go.GetComponent<Chest>();
             if (c != null && chest != null && chest.Count > 0) { if (c.Storage == null) c.Storage = new Inventory(Chest.Size); c.Storage.Load(WorldSave.Stacks(chest)); }
             Pieces[id] = bp;
-            if (k == PieceKind.Cama && owner == NetConfig.PlayerName && game.Player != null && !game.Player.HasBedRespawn)
+            if (k == PieceKind.Cama && owner == NetConfig.Team && game.Player != null && !game.Player.HasBedRespawn)
                 go.GetComponent<Bed>()?.Interact(game.Player);
             return bp;
         }
@@ -826,6 +855,73 @@ namespace MarAberto
         {
             if (bags.TryGetValue(id, out var b) && b != null) Destroy(b.gameObject);
             bags.Remove(id);
+        }
+
+        // ---------- PvP e território ----------
+
+        /// <summary>Acertou outro jogador.</summary>
+        public static void HitPlayer(RemotePlayer target, float amount)
+        {
+            var n = Instance;
+            if (n == null || n.link == null) return;
+            var w = new NetWriter(Msg.Damage).Int(target.Id).Float(amount).Str(NetConfig.PlayerName);
+            if (n.mode == NetMode.Client) n.link.SendToServer(w); else n.link.SendTo(target.Id, w);
+        }
+
+        void TakeHit(float amount, string from)
+        {
+            if (game.Player == null) return;
+            game.Player.Damage(amount);
+            game.Hud.Toast(from + " te acertou!", Hud.Bad);
+            SendSwing(true);
+        }
+
+        /// <summary>Animação de golpe/levar golpe para os outros verem.</summary>
+        public static void SendSwing(bool hit)
+        {
+            var n = Instance;
+            if (n == null || n.link == null) return;
+            if (n.mode == NetMode.Client) n.link.SendToServer(new NetWriter(Msg.Swing).Int(n.myId).Bool(hit));
+            else n.link.Broadcast(new NetWriter(Msg.Swing).Int(0).Bool(hit));
+        }
+
+        /// <summary>Equipe dona da ilha (bandeira), ou null.</summary>
+        public string ClaimOf(Island isl)
+        {
+            if (isl == null) return null;
+            foreach (var bp in Pieces.Values)
+                if (bp != null && bp.Kind == PieceKind.Bandeira && game.World.IslandAt(bp.transform.position) == isl) return bp.Owner;
+            return null;
+        }
+
+        /// <summary>Quem hospeda: avisa a equipe dona quando um inimigo entra no território.</summary>
+        void CheckInvaders()
+        {
+            if (game.World == null) return;
+            var claims = new List<(Island isl, string team)>();
+            foreach (var bp in Pieces.Values)
+                if (bp != null && bp.Kind == PieceKind.Bandeira) { var isl = game.World.IslandAt(bp.transform.position); if (isl != null) claims.Add((isl, bp.Owner)); }
+            if (claims.Count == 0) return;
+            var players = new List<(int id, Vector3 pos)>();
+            if (game.Player != null) players.Add((0, game.Player.transform.position));
+            foreach (var kv in remotes) if (kv.Value != null) players.Add((kv.Key, kv.Value.transform.position));
+            foreach (var (isl, team) in claims)
+                foreach (var (id, pos) in players)
+                {
+                    string pt = teams.TryGetValue(id, out var t) ? t : "";
+                    if (pt == team) continue;
+                    Vector3 d = isl.transform.position - pos; d.y = 0;
+                    if (d.magnitude > isl.Radius * 1.3f) continue;
+                    if (alerted.TryGetValue((isl.Index, id), out float until) && Time.time < until) continue;
+                    alerted[(isl.Index, id)] = Time.time + 60f;
+                    string text = "Invasor no seu território (" + isl.IslandName + "): " + Name(id);
+                    foreach (var kv in teams)
+                    {
+                        if (kv.Value != team) continue;
+                        if (kv.Key == 0) { game.Hud.Toast(text, Hud.Bad); Sfx.UI(Sfx.Error, 0.6f); }
+                        else link?.SendTo(kv.Key, new NetWriter(Msg.Alert).Str(text));
+                    }
+                }
         }
 
         public string Name(int id) => names.TryGetValue(id, out var n) ? n : "?";

@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira }
     public enum Station { Nenhuma, Bancada, Fundicao }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
@@ -50,12 +50,13 @@ namespace MarAberto
                 case PieceKind.Motor: return "Motor a vapor";
                 case PieceKind.Ancora: return "Âncora";
                 case PieceKind.Antena: return "Antena receptora";
+                case PieceKind.Bandeira: return "Bandeira de território";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
-            || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena;
+            || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -74,6 +75,7 @@ namespace MarAberto
                 case PieceKind.Motor: return new Vector3(0.9f, 1.3f, 0.9f);
                 case PieceKind.Ancora: return new Vector3(1.0f, 0.8f, 0.7f);
                 case PieceKind.Antena: return new Vector3(0.6f, 2.8f, 0.6f);
+                case PieceKind.Bandeira: return new Vector3(0.5f, 4.2f, 0.5f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -333,6 +335,33 @@ namespace MarAberto
                     other.AddCylinder(b, b + new Vector3(0.22f, 0.18f, 0), 0.03f, 0.02f, 8, iron);
                     Box(root, new Vector3(0, 0.4f, 0), new Vector3(1.0f, 0.8f, 0.5f));
                     root.AddComponent<RaftAnchorPiece>();
+                    break;
+                }
+                case PieceKind.Bandeira:
+                {
+                    // Mastro alto com bandeira de pano que balança ao vento e pedras na base.
+                    poles.AddTube(new[] { Vector3.zero, Vector3.up * 4.2f }, new[] { 0.08f, 0.05f }, 10, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                    var rng = new System.Random(3);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i * 1.05f;
+                        other.AddRock(new Vector3(Mathf.Cos(a) * 0.28f, 0.08f, Mathf.Sin(a) * 0.28f), 0.14f, rng.Next(), _ => C(0.5f, 0.49f, 0.46f), 0.2f);
+                    }
+                    var cloth = new MeshBuilder();
+                    int cols = 8, rows = 4;
+                    for (int x = 0; x < cols; x++)
+                        for (int y = 0; y < rows; y++)
+                        {
+                            float u0 = x / (float)cols, u1 = (x + 1) / (float)cols, v0 = y / (float)rows, v1 = (y + 1) / (float)rows;
+                            Vector3 P(float u, float v) => new Vector3(0.06f + u * 1.3f, 3.2f + v * 0.85f, Mathf.Sin(u * 5f) * 0.06f * u);
+                            Color c = (x + y) % 2 == 0 ? C(0.75f, 0.15f, 0.12f) : C(0.12f, 0.10f, 0.10f);
+                            Color A(float u) { var cc = c; cc.a = u; return cc; }
+                            cloth.AddTri(P(u0, v0), P(u0, v1), P(u1, v1), A(u0), A(u0), A(u1), Vector3.forward);
+                            cloth.AddTri(P(u0, v0), P(u1, v1), P(u1, v0), A(u0), A(u1), A(u1), Vector3.forward);
+                        }
+                    Part(root, "Pano", cloth, Mats.Foliage, true);
+                    Box(root, new Vector3(0, 2.1f, 0), new Vector3(0.4f, 4.2f, 0.4f));
+                    root.AddComponent<TerritoryFlag>();
                     break;
                 }
                 case PieceKind.Antena:

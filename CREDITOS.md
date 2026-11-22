@@ -30,3 +30,7 @@ Licenças em `Assets/Resources/Fonts/OFL-*.txt`.
     wooden_lantern_01, wooden_barrels_01, lateral_sea_marker (boia), fern_02 (samambaia), pachira_aquatica_01 (árvore).
   - Texturas do chão: coast_sand_01, aerial_grass_rock, rock_06, forrest_ground_01, bark_brown_02.
   - Baixados com `tools/baixar_modelos.py`.
+
+## Personagens animados (CC0 — domínio público)
+- **Ultimate Animated Character Pack** por [Quaternius](https://quaternius.com) — CC0 (via OpenGameArt).
+  Usados: Pirate, Viking, Worker, Cowboy e Casual (masculino e feminino).

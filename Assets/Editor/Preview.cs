@@ -124,6 +124,25 @@ namespace MarAberto.EditorTools
                 Vector3 eye = b0 + X * 0.5f - Z * 4.2f + Vector3.up * 2.2f;
                 Shot("05_construcao", eye, b0 + X * 0.5f + Z * 0.6f + Vector3.up * 1.0f, 0.42f);
             }
+            // Personagens (os outros jogadores aparecem assim)
+            {
+                Vector3 b0 = island.SpawnPoint + island.SpawnLook * 6f + side * 2f;
+                var made = new System.Collections.Generic.List<GameObject>();
+                for (int i = 0; i < 5; i++)
+                {
+                    Vector3 p = b0 + side * (i - 2) * 1.1f; p.y = island.Height(p.x, p.z);
+                    var rp = RemotePlayer.Create(100 + i, "Jogador " + (i + 1), i * 2 + (i % 2));
+                    rp.SetState(p, Quaternion.LookRotation(-island.SpawnLook).eulerAngles.y, 0, i == 1 ? ItemType.MachadoPedra : i == 3 ? ItemType.Lanca : ItemType.Nada, false, false);
+                    rp.transform.position = p;
+                    rp.transform.rotation = Quaternion.LookRotation(-island.SpawnLook);
+                    rp.PreviewPose(0.3f + i * 0.2f);
+                    made.Add(rp.gameObject);
+                }
+                Vector3 eye = b0 - island.SpawnLook * 4.5f + Vector3.up * 1.6f;
+                eye.y = Mathf.Max(eye.y, island.Height(eye.x, eye.z) + 1.6f);
+                Shot("18_personagens", eye, b0 + Vector3.up * 1.0f, 0.42f);
+                foreach (var g in made) UnityEngine.Object.DestroyImmediate(g);
+            }
             Shot("03_ilha_vista_do_mar", sea, c + Vector3.up * 35f, 0.62f);
             Vector3 dockEye = island.DockEnd + Vector3.up * 1.65f - dockDir * 4f - side * 0.6f;
             Shot("04_jangada", dockEye + Vector3.up * 1.5f, boat.transform.TransformPoint(new Vector3(0, 0.6f, 1f)), 0.45f);

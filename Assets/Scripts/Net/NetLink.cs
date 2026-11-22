@@ -20,7 +20,11 @@ namespace MarAberto
         public static int Port = 7777;
         public static int MaxPlayers = 20;
         public static bool NewWorld;
-        public const int Version = 1;
+        public static int Skin;
+        public static string Clan = "";
+        public const int Version = 2;
+        /// <summary>Equipe: o clã, ou o próprio nome se jogar sozinho.</summary>
+        public static string Team => string.IsNullOrWhiteSpace(Clan) ? PlayerName : "Clã " + Clan.Trim();
     }
 
     /// <summary>Tipos de mensagem entre jogadores e quem hospeda.</summary>
@@ -29,7 +33,7 @@ namespace MarAberto
         Hello = 1, Welcome, Reject, PlayerJoined, PlayerLeft, PlayerState,
         PlaceRequest, PiecePlaced, RemoveRequest, PieceRemoved, RaftCreated, RaftState, DriveInput, AnchorToggle, Refuel, MotorFuel,
         TreeFelled, OreBroken, ChestOpen, ChestContents, ChestTake, ChestPut, ChestGive,
-        BackpackDrop, BackpackSpawned, BackpackTake, BackpackTaken, TimeSync, PlayerSave, Chat,
+        BackpackDrop, BackpackSpawned, BackpackTake, BackpackTaken, TimeSync, PlayerSave, Chat, Damage, Alert, Swing,
     }
 
     /// <summary>Escreve uma mensagem (tipo + dados) em bytes.</summary>

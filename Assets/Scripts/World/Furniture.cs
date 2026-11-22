@@ -116,4 +116,21 @@ namespace MarAberto
             return false;
         }
     }
+
+    /// <summary>Bandeira: a ilha passa a ser do time de quem fincou.</summary>
+    public class TerritoryFlag : MonoBehaviour, IInteractable
+    {
+        public string Prompt
+        {
+            get
+            {
+                var bp = GetComponent<BuildPiece>();
+                var g = Game.Instance;
+                var isl = g != null && g.World != null ? g.World.IslandAt(transform.position) : null;
+                return "Território de " + (bp != null ? bp.Owner : "?") + (isl != null ? " (" + isl.IslandName + ")" : "");
+            }
+        }
+        public bool CanInteract => true;
+        public void Interact(PlayerController player) => Game.Instance.Hud.Toast("Só o time dono constrói nesta ilha. Os baús podem ser abertos por qualquer um!", Hud.Info);
+    }
 }

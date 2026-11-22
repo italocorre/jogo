@@ -107,6 +107,7 @@ namespace MarAberto
                 case ItemType.Martelo: return 0.3f;
                 case ItemType.PicaretaCobre: return 0.35f;
                 case ItemType.Lanca: return 0.5f;
+                case ItemType.LancaCobre: return 0.5f;
                 case ItemType.Madeira: return 0.2f;
                 case ItemType.Graveto: return 0.2f;
                 case ItemType.Folha: return 0.2f;
@@ -371,8 +372,9 @@ namespace MarAberto
                     break;
                 }
                 case ItemType.Lanca:
+                case ItemType.LancaCobre:
                 {
-                    Color wood = C(0.58f, 0.42f, 0.25f), stone = C(0.45f, 0.44f, 0.43f), rope = C(0.72f, 0.60f, 0.40f);
+                    Color wood = C(0.58f, 0.42f, 0.25f), stone = t == ItemType.LancaCobre ? C(0.85f, 0.5f, 0.28f) : C(0.45f, 0.44f, 0.43f), rope = C(0.72f, 0.60f, 0.40f);
                     mb.AddCylinder(new Vector3(0, -0.45f, 0), new Vector3(0, 0.45f, 0), 0.016f, 0.014f, 7, wood);
                     mb.AddRock(new Vector3(0, 0.52f, 0), 0.05f, 31, _ => stone, 0.1f, new Vector3(0.45f, 1.9f, 0.25f));
                     mb.AddCylinder(new Vector3(0, 0.42f, 0), new Vector3(0, 0.47f, 0), 0.022f, 0.022f, 8, rope);
