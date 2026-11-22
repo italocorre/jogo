@@ -381,6 +381,9 @@ namespace MarAberto
             spawnLook = firstLook;
         }
 
+        /// <summary>Comer: recupera um pouco de vida.</summary>
+        public void Heal(float amount) => Health = Mathf.Min(MaxHealth, Health + amount);
+
         public void Heal()
         {
             Health = MaxHealth;

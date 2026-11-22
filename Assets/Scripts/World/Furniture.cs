@@ -66,10 +66,10 @@ namespace MarAberto
         void OnEnable() => All.Add(this);
         void OnDisable() => All.Remove(this);
 
-        public string Prompt => "Usar " + (Kind == Station.Fundicao ? "fundição" : "bancada");
+        public string Prompt => "Usar " + (Kind == Station.Fundicao ? "fundição" : Kind == Station.Refinaria ? "refinaria" : "bancada");
         public bool CanInteract => true;
         public void Interact(PlayerController player) =>
-            Game.Instance.Hud.OpenCraft(Kind == Station.Fundicao ? CraftCategory.Itens : CraftCategory.Ferramentas);
+            Game.Instance.Hud.OpenCraft(Kind == Station.Bancada ? CraftCategory.Ferramentas : CraftCategory.Maquinas);
 
         public static bool Near(Station s, Vector3 pos, float range = 5f)
         {
@@ -79,7 +79,7 @@ namespace MarAberto
             return false;
         }
 
-        public static string Name(Station s) => s == Station.Fundicao ? "Fundição" : s == Station.Bancada ? "Bancada" : "";
+        public static string Name(Station s) => s == Station.Fundicao ? "Fundição" : s == Station.Bancada ? "Bancada" : s == Station.Refinaria ? "Refinaria" : "";
     }
 
     /// <summary>Antena receptora: emite o sinal da jangada/base e funciona como receptor para quem está perto.</summary>

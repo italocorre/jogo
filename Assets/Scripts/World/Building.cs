@@ -4,8 +4,8 @@ using UnityEngine.Rendering;
 
 namespace MarAberto
 {
-    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira }
-    public enum Station { Nenhuma, Bancada, Fundicao }
+    public enum PieceKind { Piso, Parede, Pilar, Escada, Telhado, Bau, Cama, Fundicao, Bancada, Leme, Motor, Ancora, Antena, Bandeira, MudaCoqueiro, MudaArvore, Refinaria, MotorGas }
+    public enum Station { Nenhuma, Bancada, Fundicao, Refinaria }
 
     /// <summary>Uma peça construída (piso, parede, baú...). Fica na camada Build.</summary>
     public class BuildPiece : MonoBehaviour
@@ -51,12 +51,17 @@ namespace MarAberto
                 case PieceKind.Ancora: return "Âncora";
                 case PieceKind.Antena: return "Antena receptora";
                 case PieceKind.Bandeira: return "Bandeira de território";
+                case PieceKind.MudaCoqueiro: return "Muda de coqueiro";
+                case PieceKind.MudaArvore: return "Muda de árvore";
+                case PieceKind.Refinaria: return "Refinaria de gasolina";
+                case PieceKind.MotorGas: return "Motor a gasolina";
                 default: return "Bancada";
             }
         }
 
         public static bool IsFurniture(PieceKind k) => k == PieceKind.Bau || k == PieceKind.Cama || k == PieceKind.Fundicao || k == PieceKind.Bancada
-            || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira;
+            || k == PieceKind.Leme || k == PieceKind.Motor || k == PieceKind.Ancora || k == PieceKind.Antena || k == PieceKind.Bandeira
+            || k == PieceKind.MudaCoqueiro || k == PieceKind.MudaArvore || k == PieceKind.Refinaria || k == PieceKind.MotorGas;
 
         /// <summary>Tamanho da caixa usada para checar se cabe (no espaço da peça; pé em y = 0).</summary>
         public static Vector3 Size(PieceKind k)
@@ -76,6 +81,10 @@ namespace MarAberto
                 case PieceKind.Ancora: return new Vector3(1.0f, 0.8f, 0.7f);
                 case PieceKind.Antena: return new Vector3(0.6f, 2.8f, 0.6f);
                 case PieceKind.Bandeira: return new Vector3(0.5f, 4.2f, 0.5f);
+                case PieceKind.MudaCoqueiro:
+                case PieceKind.MudaArvore: return new Vector3(0.5f, 0.5f, 0.5f);
+                case PieceKind.Refinaria: return new Vector3(1.6f, 2.4f, 1.2f);
+                case PieceKind.MotorGas: return new Vector3(0.9f, 1.1f, 0.9f);
                 default: return new Vector3(1.7f, 1.0f, 0.85f);
             }
         }
@@ -292,10 +301,60 @@ namespace MarAberto
                     root.AddComponent<RaftHelm>();
                     break;
                 }
-                case PieceKind.Motor:
+                case PieceKind.MudaCoqueiro:
+                case PieceKind.MudaArvore:
                 {
-                    // Caldeira de ferro, chaminé de latão e hélice atrás.
-                    Color iron = C(0.2f, 0.2f, 0.22f), brass = C(0.85f, 0.65f, 0.3f);
+                    // Montinho de terra com broto (cresce sozinho).
+                    other.AddRock(new Vector3(0, 0.02f, 0), 0.28f, 5, _ => C(0.33f, 0.24f, 0.16f), 0.15f, new Vector3(1f, 0.3f, 1f));
+                    var broto = new GameObject("Broto");
+                    broto.transform.SetParent(root.transform, false);
+                    var sb = new MeshBuilder();
+                    int nLeaves = k == PieceKind.MudaCoqueiro ? 5 : 7;
+                    Color leaf = k == PieceKind.MudaCoqueiro ? C(0.35f, 0.58f, 0.2f) : C(0.25f, 0.5f, 0.18f);
+                    sb.AddCylinder(Vector3.zero, Vector3.up * 0.25f, 0.02f, 0.012f, 6, C(0.45f, 0.35f, 0.2f));
+                    for (int i = 0; i < nLeaves; i++)
+                    {
+                        float a = i * Mathf.PI * 2f / nLeaves;
+                        Vector3 d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                        Vector3 side = Vector3.Cross(Vector3.up, d) * 0.04f;
+                        Vector3 b0 = Vector3.up * 0.22f, tip = b0 + d * 0.22f + Vector3.up * 0.05f;
+                        Color c0 = leaf; c0.a = 0.3f; Color c1 = leaf; c1.a = 1f;
+                        sb.AddTri(b0 - side, tip, b0 + side, c0, c1, c0, Vector3.up);
+                        sb.AddTri(b0 + side, tip, b0 - side, c0, c1, c0, Vector3.up);
+                    }
+                    broto.AddComponent<MeshFilter>().sharedMesh = sb.Build("Broto");
+                    broto.AddComponent<MeshRenderer>().sharedMaterial = Mats.Foliage;
+                    Box(root, new Vector3(0, 0.2f, 0), new Vector3(0.5f, 0.4f, 0.5f));
+                    root.AddComponent<Sapling>().Palm = k == PieceKind.MudaCoqueiro;
+                    break;
+                }
+                case PieceKind.Refinaria:
+                {
+                    // Tanque de ferro, serpentina de cobre, fornalha e galões.
+                    Color iron = C(0.25f, 0.26f, 0.28f), copper = C(0.85f, 0.5f, 0.28f), red = C(0.75f, 0.15f, 0.12f);
+                    planks.AddBoxUV(new Vector3(0, 0.08f, 0), new Vector3(1.6f, 0.16f, 1.2f), Quaternion.identity, W(0.7f), 0.5f);
+                    other.AddCylinder(new Vector3(-0.35f, 0.16f, 0), new Vector3(-0.35f, 1.5f, 0), 0.42f, 0.42f, 18, iron);
+                    other.AddSphere(new Vector3(-0.35f, 1.5f, 0), new Vector3(0.42f, 0.2f, 0.42f), iron);
+                    other.AddCylinder(new Vector3(-0.35f, 1.65f, 0), new Vector3(-0.35f, 2.4f, 0), 0.07f, 0.06f, 10, iron);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float y = 0.4f + i * 0.16f;
+                        other.AddCylinder(new Vector3(0.1f, y, -0.25f), new Vector3(0.6f, y + 0.08f, 0.25f), 0.03f, 0.03f, 6, copper);
+                    }
+                    other.AddCylinder(new Vector3(-0.35f, 1.3f, 0), new Vector3(0.35f, 1.4f, 0), 0.04f, 0.04f, 8, copper);
+                    other.AddBox(new Vector3(0.55f, 0.36f, 0.3f), new Vector3(0.28f, 0.4f, 0.18f), Quaternion.identity, red);
+                    other.AddBox(new Vector3(0.55f, 0.36f, -0.05f), new Vector3(0.28f, 0.4f, 0.18f), Quaternion.Euler(0, 8, 0), red);
+                    other.AddSphere(new Vector3(-0.35f, 0.3f, 0.42f), new Vector3(0.16f, 0.1f, 0.04f), C(1f, 0.5f, 0.1f), 2);
+                    Box(root, new Vector3(0, 1.0f, 0), new Vector3(1.6f, 2.0f, 1.2f));
+                    root.AddComponent<CraftStation>().Kind = Station.Refinaria;
+                    break;
+                }
+                case PieceKind.Motor:
+                case PieceKind.MotorGas:
+                {
+                    // Caldeira de ferro (vapor) ou motor vermelho (gasolina) e hélice atrás.
+                    bool gas = k == PieceKind.MotorGas;
+                    Color iron = gas ? C(0.7f, 0.12f, 0.1f) : C(0.2f, 0.2f, 0.22f), brass = gas ? C(0.6f, 0.6f, 0.62f) : C(0.85f, 0.65f, 0.3f);
                     planks.AddBoxUV(new Vector3(0, 0.05f, 0), new Vector3(0.9f, 0.1f, 0.9f), Quaternion.identity, W(0.7f), 0.5f);
                     other.AddCylinder(new Vector3(0, 0.1f, 0), new Vector3(0, 0.75f, 0), 0.32f, 0.32f, 18, iron);
                     other.AddSphere(new Vector3(0, 0.75f, 0), new Vector3(0.32f, 0.14f, 0.32f), iron);
@@ -314,7 +373,8 @@ namespace MarAberto
                     helice.AddComponent<MeshFilter>().sharedMesh = pm.Build("Helice");
                     helice.AddComponent<MeshRenderer>().sharedMaterial = Mats.LowPoly;
                     Box(root, new Vector3(0, 0.6f, 0), new Vector3(0.8f, 1.2f, 0.8f));
-                    root.AddComponent<RaftMotor>();
+                    var rm = root.AddComponent<RaftMotor>();
+                    if (gas) { rm.Power = 2.3f; rm.FuelItem = ItemType.Gasolina; rm.SecondsPerUnit = 180f; }
                     break;
                 }
                 case PieceKind.Ancora:

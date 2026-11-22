@@ -109,6 +109,7 @@ namespace MarAberto
                 case ItemType.Lanca: return 0.5f;
                 case ItemType.LancaCobre: return 0.5f;
                 case ItemType.Madeira: return 0.2f;
+                case ItemType.Gasolina: return 0.14f;
                 case ItemType.Graveto: return 0.2f;
                 case ItemType.Folha: return 0.2f;
                 case ItemType.FragmentoMapa: return 0.16f;
@@ -306,6 +307,34 @@ namespace MarAberto
                     mb.AddCylinder(new Vector3(0.05f, -0.02f, 0.055f), new Vector3(0.05f, -0.02f, 0.07f), 0.015f, 0.015f, 10, brass);
                     mb.AddCylinder(new Vector3(0.07f, 0.065f, 0), new Vector3(0.09f, 0.2f, 0), 0.006f, 0.004f, 6, copper);
                     mb.AddSphere(new Vector3(0.09f, 0.205f, 0), Vector3.one * 0.01f, C(1f, 0.3f, 0.2f), 1);
+                    break;
+                }
+                case ItemType.MudaCoqueiro:
+                case ItemType.MudaArvore:
+                {
+                    // Torrão de terra com broto.
+                    Color soil = C(0.35f, 0.25f, 0.16f), leaf = t == ItemType.MudaCoqueiro ? C(0.38f, 0.6f, 0.22f) : C(0.25f, 0.5f, 0.18f);
+                    mb.AddRock(new Vector3(0, -0.04f, 0), 0.08f, 12, _ => soil, 0.2f, new Vector3(1f, 0.7f, 1f));
+                    mb.AddCylinder(new Vector3(0, 0, 0), new Vector3(0, 0.12f, 0), 0.008f, 0.006f, 6, C(0.45f, 0.35f, 0.2f));
+                    for (int i = 0; i < 5; i++)
+                    {
+                        float a = i * 1.256f;
+                        Vector3 d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                        Vector3 s2 = Vector3.Cross(Vector3.up, d) * 0.02f;
+                        Vector3 b0 = Vector3.up * 0.11f, tip = b0 + d * 0.1f + Vector3.up * 0.03f;
+                        mb.AddTri(b0 - s2, tip, b0 + s2, leaf);
+                        mb.AddTri(b0 + s2, tip, b0 - s2, leaf * 0.85f);
+                    }
+                    break;
+                }
+                case ItemType.Gasolina:
+                {
+                    // Galão vermelho com tampa e alça.
+                    Color red = C(0.78f, 0.14f, 0.1f), dark = C(0.2f, 0.2f, 0.2f);
+                    mb.AddBox(Vector3.zero, new Vector3(0.18f, 0.24f, 0.09f), Quaternion.identity, red);
+                    mb.AddBox(new Vector3(0, 0.0f, 0.047f), new Vector3(0.12f, 0.16f, 0.005f), Quaternion.identity, red * 0.85f);
+                    mb.AddCylinder(new Vector3(0.06f, 0.12f, 0), new Vector3(0.07f, 0.16f, 0), 0.018f, 0.018f, 10, dark);
+                    mb.AddBox(new Vector3(-0.03f, 0.135f, 0), new Vector3(0.08f, 0.02f, 0.03f), Quaternion.identity, red);
                     break;
                 }
                 case ItemType.Madeira:

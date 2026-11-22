@@ -181,7 +181,9 @@ namespace MarAberto
                 Cost = L((ItemType.LingoteCobre, 4), (Ped, 6), (Mad, 2)), Research = L((ItemType.LingoteCobre, 3), (Car, 4)) });
             Add(new Recipe { Id = "ancora", Name = "Âncora", Category = CraftCategory.Jangada, Piece = PieceKind.Ancora, IconOverride = Cor,
                 Description = "Segura a jangada parada (até 40 m de fundo). R ou E solta/recolhe.", Cost = L((Ped, 6), (Cor, 6), (Mad, 2)), Research = L((Cor, 4), (Ped, 4)) });
-            Add(new Recipe { Id = "jangada_motor_gas", Name = "Motor a gasolina", Category = CraftCategory.Jangada, ComingIn = "Etapa 7", Description = "Bem mais rápido. Usa gasolina." });
+            Add(new Recipe { Id = "jangada_motor_gas", Name = "Motor a gasolina", Category = CraftCategory.Jangada, Piece = PieceKind.MotorGas, IconOverride = ItemType.Gasolina,
+                Description = "Mais que o dobro da força do motor a vapor. Usa gasolina (E abastece).",
+                Cost = L((ItemType.LingoteFerro, 6), (ItemType.LingoteCobre, 3), (Mad, 2)), Research = L((ItemType.LingoteFerro, 4), (ItemType.Gasolina, 2)) });
 
             // ---- Máquinas ----
             Add(new Recipe { Id = "bancada", Name = "Bancada", Category = CraftCategory.Maquinas, Piece = PieceKind.Bancada, IconOverride = Mad,
@@ -192,7 +194,10 @@ namespace MarAberto
                 Description = "Feito na fundição.", Cost = L((Cob, 2), (Car, 1)), Research = L((Cob, 3)) });
             Add(new Recipe { Id = "lingote_ferro", Name = "Lingote de ferro", Category = CraftCategory.Maquinas, Output = ItemType.LingoteFerro, Station = Station.Fundicao,
                 Description = "Feito na fundição.", Cost = L((Fer, 2), (Car, 2)), Research = L((Fer, 3)) });
-            Add(new Recipe { Id = "refinaria", Name = "Refinaria de gasolina", Category = CraftCategory.Maquinas, ComingIn = "Etapa 7", Description = "Produz gasolina." });
+            Add(new Recipe { Id = "refinaria", Name = "Refinaria de gasolina", Category = CraftCategory.Maquinas, Piece = PieceKind.Refinaria, IconOverride = ItemType.Gasolina,
+                Description = "Transforma carvão e óleo de coco em gasolina. Fique perto dela.", Cost = L((ItemType.LingoteFerro, 6), (Ped, 8), (Mad, 4)), Research = L((ItemType.LingoteFerro, 4), (Car, 4)) });
+            Add(new Recipe { Id = "gasolina", Name = "Gasolina", Category = CraftCategory.Maquinas, Output = ItemType.Gasolina, Station = Station.Refinaria,
+                Description = "Combustível do motor a gasolina (3 min por galão) e do helicóptero.", Cost = L((Car, 4), (ItemType.Coco, 1)), Research = L((Car, 4), (ItemType.Coco, 2)) });
 
             // ---- Veículos ----
             Add(new Recipe { Id = "helicoptero", Name = "Helicóptero", Category = CraftCategory.Veiculos, ComingIn = "Etapa 8", Description = "Voa! Usa gasolina e aceita arma montada." });
@@ -206,7 +211,10 @@ namespace MarAberto
                 Cost = L((ItemType.LingoteCobre, 3), (Mad, 3)), Research = L((ItemType.LingoteCobre, 2), (Cor, 2)) });
 
             // ---- Comida ----
-            Add(new Recipe { Id = "muda", Name = "Muda de coqueiro", Category = CraftCategory.Comida, ComingIn = "Etapa 7", Description = "Plante e veja crescer." });
+            Add(new Recipe { Id = "muda", Name = "Muda de coqueiro", Category = CraftCategory.Comida, Output = ItemType.MudaCoqueiro, StartUnlocked = true,
+                Description = "Plante (clique no chão com ela na mão). Em ~6 min vira um coqueiro que dá madeira, folhas e cocos.", Cost = L((ItemType.Coco, 1), (Fol, 2)) });
+            Add(new Recipe { Id = "muda_arvore", Name = "Muda de árvore", Category = CraftCategory.Comida, Output = ItemType.MudaArvore,
+                Description = "Vira uma árvore grande: bastante madeira e gravetos.", Cost = L((Gra, 2), (Fol, 2), (Mad, 1)), Research = L((Gra, 4), (Fol, 3)) });
 
             // ---- Itens / melhorias pessoais ----
             Add(new Recipe { Id = "mochila1", Name = "Mochila maior", Category = CraftCategory.Itens,

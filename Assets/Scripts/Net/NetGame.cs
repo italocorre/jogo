@@ -265,6 +265,8 @@ namespace MarAberto
                 };
                 var m = bp.GetComponent<RaftMotor>();
                 if (m != null) ps.fuel = m.Fuel;
+                var sap = bp.GetComponent<Sapling>();
+                if (sap != null) ps.fuel = sap.Age;
                 var c = bp.GetComponent<Chest>();
                 if (c != null && c.Storage != null) ps.chest = WorldSave.Slots(c.Storage);
                 save.pieces.Add(ps);
@@ -586,7 +588,8 @@ namespace MarAberto
             Vector3 pos = raft != null ? raft.transform.InverseTransformPoint(bp.transform.position) : bp.transform.position;
             Quaternion rot = raft != null ? Quaternion.Inverse(raft.transform.rotation) * bp.transform.rotation : bp.transform.rotation;
             var m = bp.GetComponent<RaftMotor>();
-            return new NetWriter(Msg.PiecePlaced).Int(id).Int((int)bp.Kind).Int(raft != null ? raft.Id : -1).Vec(pos).Rot(rot).Str(bp.Owner).Float(m != null ? m.Fuel : 0f);
+            var sap = bp.GetComponent<Sapling>();
+            return new NetWriter(Msg.PiecePlaced).Int(id).Int((int)bp.Kind).Int(raft != null ? raft.Id : -1).Vec(pos).Rot(rot).Str(bp.Owner).Float(m != null ? m.Fuel : sap != null ? sap.Age : 0f);
         }
 
         /// <summary>Construir: quem hospeda cria e avisa todos; o cliente pede para quem hospeda.</summary>
@@ -638,6 +641,8 @@ namespace MarAberto
             if (game.Build != null) bp.Recipe = game.Build.RecipeFor(k);
             var m = go.GetComponent<RaftMotor>();
             if (m != null) m.Fuel = fuel;
+            var sap = go.GetComponent<Sapling>();
+            if (sap != null) sap.Age = fuel;
             var c = go.GetComponent<Chest>();
             if (c != null && chest != null && chest.Count > 0) { if (c.Storage == null) c.Storage = new Inventory(Chest.Size); c.Storage.Load(WorldSave.Stacks(chest)); }
             Pieces[id] = bp;

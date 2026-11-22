@@ -81,7 +81,7 @@ namespace MarAberto
                     com += lp * 120f;
                 }
                 else mass += 35f;
-                if (bp.Kind == PieceKind.Motor) motors.Add(bp.GetComponent<RaftMotor>());
+                if (bp.Kind == PieceKind.Motor || bp.Kind == PieceKind.MotorGas) motors.Add(bp.GetComponent<RaftMotor>());
                 if (bp.Kind == PieceKind.Ancora) hasAnchorPiece = true;
                 if (bp.Kind == PieceKind.Leme) Seat = bp.transform.Find("Assento");
             }
@@ -121,7 +121,7 @@ namespace MarAberto
             {
                 if (motors.Count == 0) return "Sem motor: construa um motor a vapor na jangada";
                 float fuel = 0; foreach (var m in motors) if (m != null) fuel += m.Fuel;
-                return motors.Count + " motor" + (motors.Count > 1 ? "es" : "") + "  ·  carvão para " + Mathf.CeilToInt(fuel / 60f) + " min";
+                return motors.Count + " motor" + (motors.Count > 1 ? "es" : "") + "  ·  combustível para " + Mathf.CeilToInt(fuel / 60f) + " min";
             }
         }
 
@@ -162,11 +162,11 @@ namespace MarAberto
             // Motores
             float want = Driven && Anchor != AnchorState.Set ? Throttle : 0f;
             smoothThrottle = Mathf.MoveTowards(smoothThrottle, want, Time.fixedDeltaTime * 1.2f);
-            int working = 0;
+            float working = 0;
             foreach (var m in motors)
             {
                 if (m == null || m.Fuel <= 0) continue;
-                working++;
+                working += m.Power;
                 if (Mathf.Abs(smoothThrottle) > 0.05f) m.Fuel -= Time.fixedDeltaTime * Mathf.Abs(smoothThrottle);
                 m.Running = Mathf.Abs(smoothThrottle) > 0.05f;
             }
@@ -220,22 +220,26 @@ namespace MarAberto
     {
         public float Fuel;          // segundos de motor
         public bool Running;
+        public float Power = 1f;    // vapor = 1; gasolina = 2,3
+        public ItemType FuelItem = ItemType.Carvao;
+        public float SecondsPerUnit = 60f;
+        string FuelName => FuelItem == ItemType.Gasolina ? "gasolina" : "carvão";
         float smokeT;
         Transform prop;
 
         void Start() => prop = transform.Find("Helice");
 
-        public string Prompt => "Abastecer motor com carvão (" + Mathf.CeilToInt(Fuel / 60f) + " min)";
+        public string Prompt => "Abastecer motor com " + FuelName + " (" + Mathf.CeilToInt(Fuel / 60f) + " min)";
         public bool CanInteract => true;
         public void Interact(PlayerController player)
         {
             var inv = Game.Instance.Inventory;
-            int n = Mathf.Min(inv.Count(ItemType.Carvao), 5);
-            if (n <= 0) { Game.Instance.Hud.Toast("Precisa de carvão para o motor.", Hud.Bad); return; }
-            inv.Remove(ItemType.Carvao, n);
-            NetGame.RequestRefuel(this, n * 60f);
+            int n = Mathf.Min(inv.Count(FuelItem), 5);
+            if (n <= 0) { Game.Instance.Hud.Toast("Precisa de " + FuelName + " para este motor.", Hud.Bad); return; }
+            inv.Remove(FuelItem, n);
+            NetGame.RequestRefuel(this, n * SecondsPerUnit);
             Sfx.Play(Sfx.Clank, transform.position, 0.5f);
-            Game.Instance.Hud.Toast("+" + n + " carvão no motor.", Hud.Good);
+            Game.Instance.Hud.Toast("+" + n + " " + FuelName + " no motor.", Hud.Good);
         }
 
         void Update()
@@ -245,7 +249,7 @@ namespace MarAberto
             smokeT -= Time.deltaTime;
             if (smokeT <= 0)
             {
-                smokeT = 0.25f;
+                smokeT = FuelItem == ItemType.Gasolina ? 0.6f : 0.25f;
                 var rb = GetComponentInParent<Rigidbody>();
                 SmokePuff.Spawn(transform.TransformPoint(new Vector3(0, 1.25f, 0)), rb != null ? rb.GetPointVelocity(rb.worldCenterOfMass) : Vector3.zero);
             }

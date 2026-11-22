@@ -29,6 +29,9 @@ namespace MarAberto
         PicaretaCobre,
         Receptor,
         LancaCobre,
+        MudaCoqueiro,
+        MudaArvore,
+        Gasolina,
     }
 
     public enum ToolKind { Nenhuma, Picareta, Machado, Arma, Martelo }
@@ -45,6 +48,8 @@ namespace MarAberto
         public int ToolTier;
         public int Rarity; // 0 comum, 1 incomum, 2 rara
         public ToolKind Kind;
+        public float Food;     // vida que recupera ao comer (clique com o item na mão)
+        public PieceKind? Plant; // muda: clique no chão para plantar
     }
 
     public static class Items
@@ -64,7 +69,8 @@ namespace MarAberto
             Def(ItemType.Ferro, "Ferro", "Minério de ferro. Fica no fundo do mar.", new Color(0.74f, 0.70f, 0.66f), 14);
             Def(ItemType.FragmentoMapa, "Fragmento de Mapa", "Junte vários para achar uma ilha nova.", new Color(0.93f, 0.85f, 0.60f), 0, 10);
             Def(ItemType.Concha, "Concha", "Achada na praia. Bonita e vendável.", new Color(0.98f, 0.82f, 0.78f), 2);
-            Def(ItemType.Coco, "Coco", "Cai das palmeiras.", new Color(0.45f, 0.32f, 0.18f), 3, 20);
+            Def(ItemType.Coco, "Coco", "Comida: clique com ele na mão para comer (+15 de vida). Também vira muda e óleo.", new Color(0.45f, 0.32f, 0.18f), 3, 20);
+            defs[ItemType.Coco].Food = 15f;
             Def(ItemType.Perola, "Pérola", "Achada em ostras dos recifes. Vale muito!", new Color(0.96f, 0.94f, 0.98f), 25, 20);
             SetRarity(ItemType.Perola, 2);
             SetRarity(ItemType.Ferro, 1);
@@ -87,6 +93,12 @@ namespace MarAberto
             SetRarity(ItemType.Receptor, 1);
             Def(ItemType.LancaCobre, "Lança de Cobre", "Arma: acerta mais forte que a lança de pedra.", new Color(0.85f, 0.5f, 0.3f), 0, 1, true, 1);
             defs[ItemType.LancaCobre].Kind = ToolKind.Arma;
+            Def(ItemType.MudaCoqueiro, "Muda de Coqueiro", "Clique no chão (com a muda na mão) para plantar. Cresce em ~6 minutos.", new Color(0.4f, 0.6f, 0.25f), 0, 10);
+            defs[ItemType.MudaCoqueiro].Plant = PieceKind.MudaCoqueiro;
+            Def(ItemType.MudaArvore, "Muda de Árvore", "Clique no chão para plantar. Vira uma árvore que dá bastante madeira.", new Color(0.3f, 0.55f, 0.2f), 0, 10);
+            defs[ItemType.MudaArvore].Plant = PieceKind.MudaArvore;
+            Def(ItemType.Gasolina, "Gasolina", "Combustível do motor a gasolina e do helicóptero. Feita na refinaria.", new Color(0.85f, 0.2f, 0.15f), 6, 20);
+            SetRarity(ItemType.Gasolina, 1);
             Def(ItemType.Madeira, "Madeira", "Toras de árvore. Base de quase toda construção.", new Color(0.55f, 0.38f, 0.22f), 1, 30);
             Def(ItemType.Graveto, "Graveto", "Galho seco. Cabos de ferramentas e tochas.", new Color(0.6f, 0.45f, 0.28f), 1, 40);
             Def(ItemType.Folha, "Folha", "Folha de coqueiro. Vira corda e telhado.", new Color(0.35f, 0.6f, 0.2f), 1, 40);

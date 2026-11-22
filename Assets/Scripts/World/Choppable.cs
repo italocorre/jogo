@@ -14,7 +14,8 @@ namespace MarAberto
         public string DisplayName = "Coqueiro";
         public Island Island;   // para sincronizar no multiplayer
         public int Index = -1;
-        bool remote;            // derrubada por outro jogador: não solta itens aqui
+        bool remote;
+        public System.Action OnFelled;   // árvore plantada: some depois de cair            // derrubada por outro jogador: não solta itens aqui
 
         public float Health { get; private set; }
         public bool IsDown => state != State.Standing;
@@ -108,6 +109,7 @@ namespace MarAberto
                     {
                         if (!remote) Drop();
                         remote = false;
+                        OnFelled?.Invoke();
                         state = State.Gone;
                         t = 0f;
                         SetVisible(false);

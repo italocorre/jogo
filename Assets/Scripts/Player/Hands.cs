@@ -161,6 +161,11 @@ namespace MarAberto
                 if (Target == null) TargetTree = hit.collider.GetComponentInParent<Choppable>();
             }
 
+            // Comer e plantar com o item na mão (clique).
+            bool click = !driving && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButtonDown(0);
+            if (click && def != null && def.Food > 0) Eat(type, def);
+            else if (click && def != null && def.Plant.HasValue) Plant(type, def.Plant.Value, cam);
+
             bool wantSwing = ToolTier > 0 && !driving && !player.InputLocked && Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButton(0);
             if (swingT < 0 && wantSwing)
             {
@@ -212,6 +217,38 @@ namespace MarAberto
 
             root.localPosition = Vector3.Lerp(root.localPosition, pos, dt * 22f);
             root.localRotation = Quaternion.Slerp(root.localRotation, rot, dt * 22f);
+        }
+
+        void Eat(ItemType type, ItemDef def)
+        {
+            if (player.Health >= player.MaxHealth - 0.5f) { Game.Instance.Hud.Toast("Você está sem fome (vida cheia).", Hud.Info); return; }
+            Game.Instance.Inventory.Remove(type, 1);
+            player.Heal(def.Food);
+            Sfx.Play(Sfx.Pickup, player.transform.position, 0.5f);
+            Game.Instance.Hud.Toast("Comeu " + def.Name.ToLowerInvariant() + ": +" + Mathf.RoundToInt(def.Food) + " de vida", Hud.Good);
+            switchAnim = 0.6f;
+        }
+
+        void Plant(ItemType type, PieceKind kind, Transform cam)
+        {
+            var g = Game.Instance;
+            int m = ~((1 << Layers.Player) | (1 << Layers.Items) | (1 << Layers.Grass) | (1 << Layers.IgnoreRaycast) | (1 << Layers.Remote));
+            if (!Physics.Raycast(cam.position, cam.forward, out var hit, 5f, m, QueryTriggerInteraction.Ignore)) { g.Hud.Toast("Mire no chão perto para plantar.", Hud.Bad); return; }
+            if (hit.collider.GetComponentInParent<BuildPiece>() != null || hit.collider.GetComponentInParent<Raft>() != null || hit.normal.y < 0.7f)
+            { g.Hud.Toast("Plante em terra firme e plana.", Hud.Bad); return; }
+            if (hit.point.y < Ocean.SeaLevel + 0.4f) { g.Hud.Toast("Muito perto da água para plantar.", Hud.Bad); return; }
+            if (Physics.CheckSphere(hit.point + Vector3.up * 0.6f, 0.9f, 1 << Layers.Build | 1 << Layers.Props, QueryTriggerInteraction.Ignore))
+            { g.Hud.Toast("Muito perto de outra planta ou construção.", Hud.Bad); return; }
+            if (g.World != null && g.Net != null)
+            {
+                string claim = g.Net.ClaimOf(g.World.IslandAt(hit.point));
+                if (claim != null && claim != NetConfig.Team) { g.Hud.Toast("Território de " + claim + ".", Hud.Bad); return; }
+            }
+            g.Inventory.Remove(type, 1);
+            NetGame.RequestPlace(kind, null, false, hit.point - Vector3.up * 0.05f, Quaternion.Euler(0, Random.Range(0f, 360f), 0));
+            Sfx.Play(Sfx.StepGrass, hit.point, 0.7f);
+            Debris.Burst(hit.point, Vector3.up, 6, new Color(0.35f, 0.25f, 0.15f));
+            g.Hud.Toast("Plantado! Cresce em uns 6 minutos.", Hud.Good);
         }
 
         static float Smooth(float x)
