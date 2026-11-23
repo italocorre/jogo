@@ -373,6 +373,41 @@ namespace MarAberto
         }
 
         /// <summary>Move/junta/troca o conteúdo de dois espaços (arrastar e soltar).</summary>
+        /// <summary>Shift+clique: passa o monte da hotbar para a mochila (ou da mochila para a hotbar), juntando com iguais.</summary>
+        public void QuickMove(int from)
+        {
+            if (from < 0 || from >= Slots.Length || Slots[from].IsEmpty) return;
+            bool toBag = from < HotbarSize;
+            int start = toBag ? HotbarSize : 0, end = toBag ? Slots.Length : HotbarSize;
+            var st = Slots[from];
+            int max = Items.Get(st.Type).MaxStack;
+            for (int i = start; i < end && st.Count > 0; i++)
+                if (!Slots[i].IsEmpty && Slots[i].Type == st.Type && Slots[i].Count < max)
+                {
+                    int put = Mathf.Min(st.Count, max - Slots[i].Count);
+                    Slots[i].Count += put; st.Count -= put;
+                }
+            for (int i = start; i < end && st.Count > 0; i++)
+                if (Slots[i].IsEmpty) { Slots[i] = st; st.Count = 0; }
+            Slots[from] = st.Count > 0 ? st : ItemStack.Empty;
+            Changed();
+        }
+
+        /// <summary>Botão direito: divide o monte ao meio (a metade vai para um espaço vazio).</summary>
+        public void Split(int from)
+        {
+            if (from < 0 || from >= Slots.Length || Slots[from].Count < 2) return;
+            int empty = -1;
+            bool inBag = from >= HotbarSize;
+            for (int i = inBag ? HotbarSize : 0; i < Slots.Length; i++) if (Slots[i].IsEmpty) { empty = i; break; }
+            if (empty < 0) for (int i = 0; i < Slots.Length; i++) if (Slots[i].IsEmpty) { empty = i; break; }
+            if (empty < 0) return;
+            int half = Slots[from].Count / 2;
+            Slots[from].Count -= half;
+            Slots[empty] = new ItemStack(Slots[from].Type, half);
+            Changed();
+        }
+
         public void MoveSlot(int from, int to)
         {
             if (from == to) return;

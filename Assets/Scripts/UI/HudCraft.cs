@@ -13,31 +13,64 @@ namespace MarAberto
         int craftVersion = -1, craftDirty;
         readonly List<(Text label, Image bg, CraftCategory cat)> catButtons = new List<(Text, Image, CraftCategory)>();
 
+        RectTransform craftContent;
+        ScrollRect craftScroll;
+
+        /// <summary>Ícone de cada categoria (item de verdade).</summary>
+        static ItemType CatIcon(CraftCategory c)
+        {
+            switch (c)
+            {
+                case CraftCategory.Ferramentas: return ItemType.MachadoPedra;
+                case CraftCategory.Armas: return ItemType.Pistola;
+                case CraftCategory.Construcao: return ItemType.Madeira;
+                case CraftCategory.Jangada: return ItemType.Corda;
+                case CraftCategory.Maquinas: return ItemType.LingoteFerro;
+                case CraftCategory.Veiculos: return ItemType.Gasolina;
+                case CraftCategory.Navegacao: return ItemType.Receptor;
+                case CraftCategory.Comida: return ItemType.PeixeAssado;
+                default: return ItemType.Mochila;
+            }
+        }
+
+        /// <summary>Fabricar (B): coluna no lado direito, como no Stranded Deep — categorias em cima, lista no meio, detalhe embaixo.</summary>
         void BuildCraft(RectTransform body)
         {
             craftView = UIKit.Rect(body, "VistaFabricar").Fill();
-            craftCats = UIKit.Rect(craftView, "Categorias").Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(240, 560));
+            craftCats = UIKit.Rect(craftView, "Categorias").Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(600, 96));
             int i = 0;
             foreach (CraftCategory c in System.Enum.GetValues(typeof(CraftCategory)))
             {
                 var cat = c;
                 var bg = UIKit.Img(craftCats, "Cat" + c, UIKit.Slot, new Color(1, 1, 1, 0.5f), true, 0.6f);
                 bg.raycastTarget = true;
-                bg.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -i * 60), new Vector2(230, 54));
+                bg.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(i * 66, 0), new Vector2(60, 60));
                 var b = bg.gameObject.AddComponent<Button>();
                 b.transition = Selectable.Transition.None;
-                b.onClick.AddListener(() => { craftCat = cat; craftSel = null; Sfx.UI(Sfx.Page, 0.4f); craftDirty++; });
-                var t = UIKit.Txt(bg.transform, "Texto", Crafting.CategoryName(c).ToUpperInvariant(), UIKit.Title, 18, UIKit.Muted, TextAnchor.MiddleLeft);
-                t.rectTransform.Fill(18, 0, 10, 0);
+                b.onClick.AddListener(() => { craftCat = cat; craftSel = null; Sfx.UI(Sfx.Page, 0.4f); craftDirty++; if (craftScroll != null) craftScroll.verticalNormalizedPosition = 1f; });
+                var ic = UIKit.Icon(bg.transform, "Icone");
+                ic.rectTransform.Fill(7, 7, 7, 7);
+                ic.texture = Icons.Get(CatIcon(c));
+                var t = UIKit.Txt(bg.transform, "Texto", "", UIKit.BodyBold, 11, UIKit.Muted, TextAnchor.UpperCenter);
+                t.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 1), new Vector2(0, -2), new Vector2(80, 30));
                 catButtons.Add((t, bg, c));
                 i++;
             }
-            UIKit.Img(craftView, "Fio1", UIKit.White, new Color(UIKit.Brass.r, UIKit.Brass.g, UIKit.Brass.b, 0.3f)).rectTransform
-                .Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(252, 0), new Vector2(1, 540));
-            craftGrid = UIKit.Rect(craftView, "Receitas").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(270, 0), new Vector2(650, 560));
+            // Lista com rolagem (roda do mouse).
+            var view = UIKit.Rect(craftView, "Lista").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -100), new Vector2(600, 400));
+            view.gameObject.AddComponent<RectMask2D>();
+            var hit = view.gameObject.AddComponent<Image>();
+            hit.color = new Color(0, 0, 0, 0.001f);
+            craftContent = UIKit.Rect(view, "Conteudo").Place(new Vector2(0, 1), new Vector2(0, 1), Vector2.zero, new Vector2(600, 400));
+            craftScroll = view.gameObject.AddComponent<ScrollRect>();
+            craftScroll.content = craftContent;
+            craftScroll.horizontal = false;
+            craftScroll.movementType = ScrollRect.MovementType.Clamped;
+            craftScroll.scrollSensitivity = 40f;
+            craftGrid = craftContent;
             UIKit.Img(craftView, "Fio2", UIKit.White, new Color(UIKit.Brass.r, UIKit.Brass.g, UIKit.Brass.b, 0.3f)).rectTransform
-                .Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-410, 0), new Vector2(1, 540));
-            craftDetail = UIKit.Rect(craftView, "Detalhe").Place(new Vector2(1, 1), new Vector2(1, 1), Vector2.zero, new Vector2(395, 560));
+                .Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -508), new Vector2(600, 1));
+            craftDetail = UIKit.Rect(craftView, "Detalhe").Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -516), new Vector2(600, 400));
             Crafting.OnChanged += () => craftDirty++;
         }
 
@@ -67,7 +100,7 @@ namespace MarAberto
                 int ready = 0;
                 foreach (var r in Crafting.All)
                     if (r.Category == cat && (Crafting.CanCraft(inv, r, out _) || Crafting.CanResearch(inv, r))) ready++;
-                label.text = Crafting.CategoryName(cat).ToUpperInvariant() + (ready > 0 ? "  <color=#8FE08A>•</color>" : "");
+                label.text = on ? Crafting.CategoryName(cat).ToUpperInvariant() : (ready > 0 ? "<color=#8FE08A>•</color>" : "");
                 label.color = on ? UIKit.Gold : UIKit.Muted;
                 bg.color = on ? new Color(1f, 0.85f, 0.5f, 0.9f) : new Color(1, 1, 1, 0.45f);
             }
@@ -77,32 +110,46 @@ namespace MarAberto
             var list = new List<Recipe>();
             foreach (var r in Crafting.All) if (r.Category == craftCat) list.Add(r);
             if (craftSel == null || craftSel.Category != craftCat) craftSel = list.Count > 0 ? list[0] : null;
-            const int cols = 5;
-            const float w = 122, h = 150, gap = 10;
+            const float rowH = 66, gap = 6;
+            craftContent.sizeDelta = new Vector2(600, Mathf.Max(400, list.Count * (rowH + gap)));
             for (int i = 0; i < list.Count; i++)
             {
                 var r = list[i];
                 bool coming = Crafting.IsComing(r), unlocked = Crafting.IsUnlocked(r);
                 bool can = Crafting.CanCraft(inv, r, out _), canRes = Crafting.CanResearch(inv, r);
-                var card = UIKit.Img(craftGrid, "Receita", r == craftSel ? UIKit.SlotSelected : UIKit.Slot, null, true, 1f);
+                var card = UIKit.Img(craftGrid, "Receita", r == craftSel ? UIKit.SlotSelected : UIKit.Slot, null, true, 0.7f);
                 card.raycastTarget = true;
-                card.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2((i % cols) * (w + gap), -(i / cols) * (h + gap)), new Vector2(w, h));
+                card.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -i * (rowH + gap)), new Vector2(590, rowH));
                 if (coming) card.color = new Color(1, 1, 1, 0.45f);
                 var btn = card.gameObject.AddComponent<Button>();
                 btn.transition = Selectable.Transition.None;
                 var rr = r;
                 btn.onClick.AddListener(() => { craftSel = rr; Sfx.UI(Sfx.Page, 0.3f); craftDirty++; });
                 var ic = UIKit.Icon(card.transform, "Icone");
-                ic.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -10), new Vector2(84, 84));
+                ic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(8, 0), new Vector2(56, 56));
                 ic.texture = Icons.ForRecipe(r);
                 ic.enabled = ic.texture != null;
                 ic.color = coming ? new Color(0.4f, 0.4f, 0.4f, 0.6f) : unlocked ? Color.white : new Color(0.55f, 0.55f, 0.6f, 0.9f);
-                var nm = UIKit.Txt(card.transform, "Nome", r.Name, UIKit.BodyBold, 15, coming ? UIKit.Muted : UIKit.Text, TextAnchor.UpperCenter);
-                nm.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 22), new Vector2(w - 8, 38));
+                var nm = UIKit.Txt(card.transform, "Nome", r.Name, UIKit.BodyBold, 17, coming ? UIKit.Muted : UIKit.Text, TextAnchor.UpperLeft);
+                nm.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(74, -8), new Vector2(230, 26));
                 string tag = coming ? "EM BREVE" : !unlocked ? (canRes ? "PESQUISAR" : "BLOQUEADA") : can ? "FABRICAR" : "";
                 Color tc = coming ? UIKit.Muted : !unlocked ? (canRes ? UIKit.Gold : UIKit.BadC) : UIKit.GoodC;
-                var tg = UIKit.Txt(card.transform, "Estado", tag, UIKit.Title, 12, tc, TextAnchor.LowerCenter);
-                tg.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 6), new Vector2(w, 18));
+                UIKit.Txt(card.transform, "Estado", tag, UIKit.Title, 12, tc, TextAnchor.LowerLeft)
+                    .rectTransform.Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(74, 8), new Vector2(200, 18));
+                // Ingredientes em quadradinhos (como no Stranded Deep).
+                var cost = unlocked ? r.Cost : r.Research;
+                for (int k = 0; k < cost.Length && k < 5; k++)
+                {
+                    var (ct, cn) = cost[k];
+                    var cell = UIKit.Img(card.transform, "Ing", UIKit.Slot, new Color(1, 1, 1, 0.55f), true, 0.5f);
+                    cell.rectTransform.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-8 - (Mathf.Min(cost.Length, 5) - 1 - k) * 52, 0), new Vector2(48, 48));
+                    var ci = UIKit.Icon(cell.transform, "Icone");
+                    ci.rectTransform.Fill(5, 5, 5, 5);
+                    ci.texture = Icons.Get(ct);
+                    bool has = inv.Count(ct) >= cn;
+                    UIKit.Txt(cell.transform, "Qtd", cn.ToString(), UIKit.BodyBold, 13, has ? Color.white : UIKit.BadC, TextAnchor.LowerRight)
+                        .rectTransform.Fill(2, 1, 4, 1);
+                }
             }
 
             // Detalhe da receita
@@ -121,7 +168,7 @@ namespace MarAberto
             UIKit.Txt(craftDetail, "Cat", Crafting.CategoryName(sel.Category).ToUpperInvariant(), UIKit.BodyBold, 14, UIKit.Label, TextAnchor.UpperLeft)
                 .rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(156, -86), new Vector2(240, 22));
             UIKit.Txt(craftDetail, "Desc", sel.Description, UIKit.Body, 19, UIKit.Text, TextAnchor.UpperLeft)
-                .rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(20, -136), new Vector2(370, 80));
+                .rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(20, -128), new Vector2(560, 60));
 
             float y = -224;
             if (sComing)

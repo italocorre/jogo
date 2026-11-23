@@ -48,7 +48,7 @@ namespace MarAberto
 
         // Janelas
         RectTransform dim, backpackWin, shopWin, pauseWin, bpGrid, bpBagView, bpBoatView, bpMapView, sellList, buyList;
-        Text bpHint;
+        Text bpHint, bpTitle;
         Text bpInfoName, bpInfoRarity, bpInfoDesc, bpInfoValue, bpInfoCount, bpBoatText, bpMapText, shopQuote, shopCoins, bpCount;
         RawImage bpInfoIcon;
         Image bpInfoGlow;
@@ -271,10 +271,14 @@ namespace MarAberto
                 line.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), Vector2.zero, new Vector2(150, 2));
                 tabLines.Add(line);
             }
-            bpCount = UIKit.Txt(tabs, "Espacos", "", UIKit.Body, 18, UIKit.Muted, TextAnchor.MiddleRight);
-            bpCount.rectTransform.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-30, 0), new Vector2(320, 30));
+            // Sem abas: Tab = só a mochila; B = só fabricar (M = mapa, J = diário).
+            tabs.gameObject.SetActive(false);
+            bpTitle = UIKit.Txt(backpackWin, "Titulo", "MOCHILA", UIKit.Title, 26, UIKit.Gold, TextAnchor.MiddleLeft);
+            bpTitle.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -8), new Vector2(400, 40));
+            bpCount = UIKit.Txt(backpackWin, "Espacos", "", UIKit.Body, 18, UIKit.Muted, TextAnchor.MiddleRight);
+            bpCount.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -12), new Vector2(320, 30));
 
-            var body = UIKit.Rect(backpackWin, "Corpo").Fill(34, 70, 34, 96);
+            var body = UIKit.Rect(backpackWin, "Corpo").Fill(28, 60, 28, 56);
 
             // Aba Mochila
             bpBagView = UIKit.Rect(body, "VistaMochila").Fill();
@@ -316,7 +320,7 @@ namespace MarAberto
             bpMapText = UIKit.Txt(bpMapView, "Texto", "", UIKit.Body, 24, UIKit.Text, TextAnchor.UpperLeft);
             bpMapText.rectTransform.Fill(10, 10, 10, 10);
 
-            var hint = bpHint = UIKit.Txt(backpackWin, "Dica", "Arraste para organizar  ·  botão direito larga no chão  ·  os atalhos ficam embaixo",
+            var hint = bpHint = UIKit.Txt(backpackWin, "Dica", "Shift+clique: passa entre a hotbar e a mochila  ·  botão direito: divide  ·  arraste para fora: larga no chão",
                 UIKit.Body, 18, UIKit.Muted, TextAnchor.MiddleCenter);
             hint.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 24), new Vector2(1000, 28));
             RebuildBackpackSlots();
@@ -335,9 +339,11 @@ namespace MarAberto
             craftView.gameObject.SetActive(tab == Tab.Craft);
             if (tab != Tab.Craft) lastBagTab = tab;
             // Fabricar fica no canto direito (dá para ver o mundo); a mochila fica no meio.
-            if (tab == Tab.Craft) backpackWin.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-24, 20), new Vector2(1400, 760));
+            if (tab == Tab.Craft) backpackWin.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-20, 0), new Vector2(656, 1000));
             else backpackWin.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 24), new Vector2(1090, 640)); // mochila: janela menor, no meio
             if (bpHint != null) bpHint.gameObject.SetActive(tab == Tab.Bag);
+            if (bpTitle != null) bpTitle.text = tab == Tab.Craft ? "FABRICAR" : "MOCHILA";
+            if (bpCount != null) bpCount.gameObject.SetActive(tab == Tab.Bag);
             craftVersion = -1;
             bpBoatView.gameObject.SetActive(tab == Tab.Boat);
             bpMapView.gameObject.SetActive(tab == Tab.Map);
@@ -681,6 +687,33 @@ namespace MarAberto
             if (dragGhost != null) dragGhost.gameObject.SetActive(false);
         }
 
+        public void QuickMove(int slot)
+        {
+            if (panel != Panel.Backpack && panel != Panel.Chest) return;
+            game.Inventory.QuickMove(slot);
+            Sfx.UI(Sfx.Drop, 0.35f);
+        }
+
+        public void SplitSlot(int slot)
+        {
+            if (panel != Panel.Backpack && panel != Panel.Chest) return;
+            game.Inventory.Split(slot);
+            Sfx.UI(Sfx.Pickup, 0.3f);
+        }
+
+        /// <summary>Soltou o item arrastado fora da janela: larga o monte inteiro no chão.</summary>
+        public void DropDragged()
+        {
+            int from = DragFrom;
+            CancelDrag();
+            if (from < 0 || game.Player == null) return;
+            var cam = game.Player.Cam.transform;
+            var item = game.Inventory.TakeFromSlot(from, 999);
+            if (item.IsEmpty) return;
+            WorldItem.Spawn(item, cam.position + cam.forward * 0.8f, cam.forward * 3f + Vector3.up);
+            Sfx.UI(Sfx.Drop, 0.4f);
+        }
+
         public void DropToWorld(int slot)
         {
             if (game.Player == null) return;
@@ -703,8 +736,8 @@ namespace MarAberto
             else if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.I))
             {
                 // Tab: mochila no meio da tela (volta na última aba usada: mochila, barco ou mapa).
-                if (panel == Panel.None) { SetPanel(Panel.Backpack); tab = lastBagTab; RefreshTabs(); }
-                else if (panel == Panel.Backpack && tab == Tab.Craft) { tab = lastBagTab; RefreshTabs(); }
+                if (panel == Panel.None) { SetPanel(Panel.Backpack); tab = Tab.Bag; RefreshTabs(); }
+                else if (panel == Panel.Backpack && tab == Tab.Craft) { tab = Tab.Bag; RefreshTabs(); }
                 else SetPanel(Panel.None);
             }
             else if (Input.GetKeyDown(KeyCode.B))
@@ -1042,18 +1075,25 @@ namespace MarAberto
 
         public void OnPointerEnter(PointerEventData e) { hud.HoverSlot = Index; if (hud.DragFrom < 0) bg.color = new Color(1.25f, 1.15f, 0.9f); }
         public void OnPointerExit(PointerEventData e) { if (hud.HoverSlot == Index) hud.HoverSlot = -1; bg.color = Color.white; }
-        public void OnPointerDown(PointerEventData e) { if (e.button == PointerEventData.InputButton.Left) hud.BeginDrag(Index); }
+        public void OnPointerDown(PointerEventData e)
+        {
+            if (e.button != PointerEventData.InputButton.Left) return;
+            // Shift+clique: passa direto entre a hotbar e a mochila.
+            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) { hud.QuickMove(Index); return; }
+            hud.BeginDrag(Index);
+        }
         public void OnPointerUp(PointerEventData e)
         {
             if (e.button != PointerEventData.InputButton.Left || hud.DragFrom < 0) return;
             var go = e.pointerCurrentRaycast.gameObject;
             var target = go != null ? go.GetComponentInParent<SlotView>() : null;
             if (target != null) hud.DropOn(target.Index);
+            else if (go == null || go.name == "Escurecer") hud.DropDragged();   // soltou fora da janela: larga no chão
             else hud.CancelDrag();
         }
         public void OnPointerClick(PointerEventData e)
         {
-            if (e.button == PointerEventData.InputButton.Right) hud.DropToWorld(Index);
+            if (e.button == PointerEventData.InputButton.Right) hud.SplitSlot(Index);   // divide o monte
         }
     }
 }
