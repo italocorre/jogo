@@ -57,9 +57,10 @@ namespace MarAberto
                 if (t == ItemType.LingoteCobre || t == ItemType.LingoteFerro || t == ItemType.LingoteOuro || t == ItemType.LingoteTitanio)
                 {
                     BoxUV(m, 5f);
-                    var mm = new Material(ModelLibrary.Custom("ItemMetalLiso", null, null, 0.72f)) { name = "Lingote_" + t };   // metal liso (sem chapa xadrez)
-                    mm.color = t == ItemType.LingoteCobre ? new Color(0.78f, 0.42f, 0.26f) : t == ItemType.LingoteOuro ? new Color(0.92f, 0.7f, 0.26f)
-                             : t == ItemType.LingoteTitanio ? new Color(0.72f, 0.76f, 0.82f) : new Color(0.56f, 0.56f, 0.58f);
+                    BuildCastTextures();
+                    var mm = new Material(ModelLibrary.Custom("ItemMetalFundido", castDiff, castNor, 0.62f)) { name = "Lingote_" + t };   // metal liso com marcas de fundição
+                    mm.color = t == ItemType.LingoteCobre ? new Color(0.98f, 0.53f, 0.33f) : t == ItemType.LingoteOuro ? new Color(1.1f, 0.85f, 0.32f)
+                             : t == ItemType.LingoteTitanio ? new Color(0.9f, 0.95f, 1.03f) : new Color(0.7f, 0.7f, 0.72f);
                     if (mm.HasProperty("_Metallic")) mm.SetFloat("_Metallic", 0.25f);   // metálico forte fica preto sem reflexo do céu: brilho vem do "gloss"
                     mats[t] = new[] { mm };
                 }
@@ -68,6 +69,72 @@ namespace MarAberto
             }
             cache[t] = m;
             return m;
+        }
+
+        static Texture2D castDiff, castNor;
+
+        /// <summary>
+        /// Textura de metal fundido (feita uma vez): manchas suaves, poros de fundição e riscos finos,
+        /// com relevo (normal map) tirado da mesma altura. É clara (multiplica a cor de cada metal).
+        /// </summary>
+        static void BuildCastTextures()
+        {
+            if (castDiff != null) return;
+            const int N = 256;
+            var h = new float[N * N];
+            var rng = new System.Random(4242);
+            // Manchas: ruído suave em duas escalas.
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    float u = x / (float)N, v = y / (float)N;
+                    float n1 = Mathf.PerlinNoise(u * 6f + 3.1f, v * 6f + 7.7f);
+                    float n2 = Mathf.PerlinNoise(u * 22f + 11f, v * 22f + 5f);
+                    h[y * N + x] = 0.6f * n1 + 0.4f * n2;
+                }
+            // Poros de fundição (pequenas covas).
+            for (int p = 0; p < 140; p++)
+            {
+                int cx = rng.Next(N), cy = rng.Next(N);
+                float r = 1.2f + (float)rng.NextDouble() * 2.6f;
+                for (int dy = -4; dy <= 4; dy++)
+                    for (int dx = -4; dx <= 4; dx++)
+                    {
+                        float d = Mathf.Sqrt(dx * dx + dy * dy);
+                        if (d > r) continue;
+                        int i = ((cy + dy + N) % N) * N + ((cx + dx + N) % N);
+                        h[i] -= 0.35f * (1f - d / r);
+                    }
+            }
+            // Riscos finos (manuseio).
+            for (int sc = 0; sc < 18; sc++)
+            {
+                float x0 = rng.Next(N), y0 = rng.Next(N), ang = (float)rng.NextDouble() * Mathf.PI;
+                int len = 20 + rng.Next(60);
+                for (int k = 0; k < len; k++)
+                {
+                    int xi = ((int)(x0 + Mathf.Cos(ang) * k) % N + N) % N, yi = ((int)(y0 + Mathf.Sin(ang) * k) % N + N) % N;
+                    h[yi * N + xi] -= 0.12f;
+                }
+            }
+            var dc = new Color32[N * N];
+            var nc = new Color32[N * N];
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    int i = y * N + x;
+                    float b = Mathf.Clamp01(0.78f + (h[i] - 0.5f) * 0.45f);
+                    byte g = (byte)(b * 255);
+                    dc[i] = new Color32(g, g, g, 255);
+                    float hl = h[y * N + (x + N - 1) % N], hr = h[y * N + (x + 1) % N];
+                    float hd = h[((y + N - 1) % N) * N + x], hu = h[((y + 1) % N) * N + x];
+                    Vector3 n = new Vector3((hl - hr) * 2.5f, (hd - hu) * 2.5f, 1f).normalized;
+                    nc[i] = new Color32((byte)((n.x * 0.5f + 0.5f) * 255), (byte)((n.y * 0.5f + 0.5f) * 255), (byte)((n.z * 0.5f + 0.5f) * 255), 255);
+                }
+            castDiff = new Texture2D(N, N, TextureFormat.RGBA32, true, false) { name = "MetalFundido", wrapMode = TextureWrapMode.Repeat };
+            castDiff.SetPixels32(dc); castDiff.Apply(true);
+            castNor = new Texture2D(N, N, TextureFormat.RGBA32, true, true) { name = "MetalFundidoRelevo", wrapMode = TextureWrapMode.Repeat };
+            castNor.SetPixels32(nc); castNor.Apply(true);
         }
 
         static bool Wooden(ItemType t) => t == ItemType.Tocha || t == ItemType.Lanca || t == ItemType.LancaCobre || t == ItemType.LancaTitanio
