@@ -57,10 +57,10 @@ namespace MarAberto
                 if (t == ItemType.LingoteCobre || t == ItemType.LingoteFerro || t == ItemType.LingoteOuro || t == ItemType.LingoteTitanio)
                 {
                     BoxUV(m, 5f);
-                    var mm = new Material(ModelLibrary.Custom("ItemMetal", Resources.Load<Texture2D>("Textures/Chao/metal_plate_diff"), Resources.Load<Texture2D>("Textures/Chao/metal_plate_nor"), 0.6f)) { name = "Lingote_" + t };
-                    mm.color = t == ItemType.LingoteCobre ? new Color(1.6f, 0.95f, 0.62f) : t == ItemType.LingoteOuro ? new Color(1.7f, 1.35f, 0.55f)
-                             : t == ItemType.LingoteTitanio ? new Color(1.35f, 1.45f, 1.65f) : new Color(1.3f, 1.3f, 1.32f);
-                    if (mm.HasProperty("_Metallic")) mm.SetFloat("_Metallic", 0.1f);   // metálico forte fica preto sem reflexo do céu: brilho vem do "gloss"
+                    var mm = new Material(ModelLibrary.Custom("ItemMetalLiso", null, null, 0.72f)) { name = "Lingote_" + t };   // metal liso (sem chapa xadrez)
+                    mm.color = t == ItemType.LingoteCobre ? new Color(0.78f, 0.42f, 0.26f) : t == ItemType.LingoteOuro ? new Color(0.92f, 0.7f, 0.26f)
+                             : t == ItemType.LingoteTitanio ? new Color(0.72f, 0.76f, 0.82f) : new Color(0.56f, 0.56f, 0.58f);
+                    if (mm.HasProperty("_Metallic")) mm.SetFloat("_Metallic", 0.25f);   // metálico forte fica preto sem reflexo do céu: brilho vem do "gloss"
                     mats[t] = new[] { mm };
                 }
                 // Itens de madeira feitos por código: textura de madeira de verdade (UV por projeção).
