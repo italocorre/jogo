@@ -17,7 +17,7 @@ MODELS = [
     'food_avocado_01', 'planter_pot_clay', 'Barrel_01', 'vintage_suitcase', 'bronze_whale_statue', 'bronze_shark_statue', 'postcard_set_01',
 ]
 # Texturas de chão (terreno): cor + relevo
-TEXTURES = ['coast_sand_01', 'aerial_grass_rock', 'rock_06', 'forrest_ground_01', 'bark_brown_02']
+TEXTURES = ['coast_sand_01', 'aerial_grass_rock', 'rock_06', 'forrest_ground_01', 'bark_brown_02', 'metal_plate']
 
 KEEP = ('_diff_', '_nor_gl_', '_alpha_')
 

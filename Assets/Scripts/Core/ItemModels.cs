@@ -25,9 +25,44 @@ namespace MarAberto
                 m = lb.Build("Item_Madeira");
                 mats[t] = new[] { Mats.Bark };
             }
+            else if (t == ItemType.Corda)
+            {
+                // Rolo de corda de verdade: uma corda só, enrolada em espiral, com textura de corda trançada.
+                var pts = new List<Vector3>();
+                var rad = new List<float>();
+                const int turns = 4, perTurn = 28;
+                for (int i = 0; i <= turns * perTurn; i++)
+                {
+                    float a = i * Mathf.PI * 2f / perTurn;
+                    float layer = i / (float)perTurn;
+                    float r = 0.085f - (Mathf.FloorToInt(layer) % 2) * 0.004f + Mathf.Sin(a * 3f) * 0.002f;
+                    pts.Add(new Vector3(Mathf.Cos(a) * r, layer * 0.021f, Mathf.Sin(a) * r));
+                    rad.Add(0.0125f);
+                }
+                // Ponta solta caindo para fora.
+                Vector3 end = pts[pts.Count - 1];
+                pts.Add(end + new Vector3(0.03f, 0.005f, 0.035f)); rad.Add(0.012f);
+                pts.Add(end + new Vector3(0.07f, -0.03f, 0.06f)); rad.Add(0.011f);
+                pts.Add(end + new Vector3(0.1f, -0.065f, 0.07f)); rad.Add(0.01f);
+                var cb = new MeshBuilder();
+                cb.AddTube(pts.ToArray(), rad.ToArray(), 8, (i, k) => Color.white, null, true, true, null, 0.65f, 1f);   // trança na proporção certa
+                m = cb.Build("Item_Corda");
+                m.RecalculateTangents();
+                mats[t] = new[] { ModelLibrary.Custom("ItemCorda", Resources.Load<Texture2D>("Textures/Itens/corda_diff"), Resources.Load<Texture2D>("Textures/Itens/corda_nor"), 0.08f) };
+            }
             else
             {
                 m = Build(t);
+                // Lingotes: textura de metal de verdade, com brilho metálico e a cor do metal.
+                if (t == ItemType.LingoteCobre || t == ItemType.LingoteFerro || t == ItemType.LingoteOuro || t == ItemType.LingoteTitanio)
+                {
+                    BoxUV(m, 5f);
+                    var mm = new Material(ModelLibrary.Custom("ItemMetal", Resources.Load<Texture2D>("Textures/Chao/metal_plate_diff"), Resources.Load<Texture2D>("Textures/Chao/metal_plate_nor"), 0.6f)) { name = "Lingote_" + t };
+                    mm.color = t == ItemType.LingoteCobre ? new Color(1f, 0.6f, 0.42f) : t == ItemType.LingoteOuro ? new Color(1f, 0.8f, 0.38f)
+                             : t == ItemType.LingoteTitanio ? new Color(0.82f, 0.88f, 1f) : new Color(0.78f, 0.78f, 0.8f);
+                    if (mm.HasProperty("_Metallic")) mm.SetFloat("_Metallic", 0.75f);
+                    mats[t] = new[] { mm };
+                }
                 // Itens de madeira feitos por código: textura de madeira de verdade (UV por projeção).
                 if (Wooden(t)) { BoxUV(m, 7f); mats[t] = new[] { Mats.Poles }; }
             }

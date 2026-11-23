@@ -33,7 +33,7 @@ namespace MarAberto.EditorTools
         void OnPreprocessTexture()
         {
             bool model = assetPath.Contains("Resources/Models/");
-            bool ground = assetPath.Contains("Resources/Textures/Chao/");
+            bool ground = assetPath.Contains("Resources/Textures/Chao/") || assetPath.Contains("Resources/Textures/Itens/");
             if (model || ground)
             {
                 var mt = (TextureImporter)assetImporter;
