@@ -44,6 +44,7 @@ namespace MarAberto
 
         Transform platform;
         Vector3 platLocalPos;
+        float airTopY, noFallUntil;
         Quaternion platLastRot;
 
         const float EyeHeight = 1.62f;
@@ -86,6 +87,8 @@ namespace MarAberto
             transform.rotation = Quaternion.Euler(0, yaw, 0);
             if (Cam != null) Cam.transform.localRotation = Quaternion.identity;
             platform = null;
+            airTopY = pos.y;
+            noFallUntil = Time.time + 1.5f;
         }
 
         void Update()
@@ -180,9 +183,16 @@ namespace MarAberto
 
             bool groundedBefore = cc.isGrounded;
             float vyBefore = velocity.y;
+            if (groundedBefore || Swimming || platform != null) airTopY = transform.position.y;
+            else airTopY = Mathf.Max(airTopY, transform.position.y);
+            if (platform != null && velocity.y < -2f) velocity.y = -2f;   // em cima da jangada não acumula queda
             cc.Move(velocity * dt);
-            // Dano de queda: cair rápido demais em terra (na água não machuca).
-            if (!groundedBefore && cc.isGrounded && vyBefore < -11f && !InWater && !Swimming)
+            // Dano de queda: só numa queda de verdade (mais de 5,5 m), em terra, e nunca na jangada/barco.
+            bool landedOnBoat = false;
+            if (!groundedBefore && cc.isGrounded && Physics.Raycast(transform.position + Vector3.up * 0.3f, Vector3.down, out var landHit, 1.2f, interactMask, QueryTriggerInteraction.Ignore))
+                landedOnBoat = landHit.collider.GetComponentInParent<Vessel>() != null || landHit.collider.GetComponentInParent<Raft>() != null;
+            float fallHeight = airTopY - transform.position.y;
+            if (!groundedBefore && cc.isGrounded && vyBefore < -11f && fallHeight > 5.5f && !landedOnBoat && Time.time > noFallUntil && !InWater && !Swimming)
             {
                 float dmg = (-vyBefore - 11f) * 7f;
                 Sfx.UI(Sfx.FallHit, 0.8f);
@@ -341,6 +351,9 @@ namespace MarAberto
             transform.rotation = Quaternion.Euler(0, yaw, 0);
             transform.position = p;
             cc.enabled = true;
+            velocity = Vector3.zero;
+            airTopY = p.y;
+            noFallUntil = Time.time + 1.5f;
             velocity = Vector3.zero;
         }
 
