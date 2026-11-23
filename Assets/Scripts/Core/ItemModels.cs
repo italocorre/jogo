@@ -58,9 +58,9 @@ namespace MarAberto
                 {
                     BoxUV(m, 5f);
                     var mm = new Material(ModelLibrary.Custom("ItemMetal", Resources.Load<Texture2D>("Textures/Chao/metal_plate_diff"), Resources.Load<Texture2D>("Textures/Chao/metal_plate_nor"), 0.6f)) { name = "Lingote_" + t };
-                    mm.color = t == ItemType.LingoteCobre ? new Color(1f, 0.6f, 0.42f) : t == ItemType.LingoteOuro ? new Color(1f, 0.8f, 0.38f)
-                             : t == ItemType.LingoteTitanio ? new Color(0.82f, 0.88f, 1f) : new Color(0.78f, 0.78f, 0.8f);
-                    if (mm.HasProperty("_Metallic")) mm.SetFloat("_Metallic", 0.75f);
+                    mm.color = t == ItemType.LingoteCobre ? new Color(1.6f, 0.95f, 0.62f) : t == ItemType.LingoteOuro ? new Color(1.7f, 1.35f, 0.55f)
+                             : t == ItemType.LingoteTitanio ? new Color(1.35f, 1.45f, 1.65f) : new Color(1.3f, 1.3f, 1.32f);
+                    if (mm.HasProperty("_Metallic")) mm.SetFloat("_Metallic", 0.1f);   // metálico forte fica preto sem reflexo do céu: brilho vem do "gloss"
                     mats[t] = new[] { mm };
                 }
                 // Itens de madeira feitos por código: textura de madeira de verdade (UV por projeção).
