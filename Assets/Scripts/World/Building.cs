@@ -201,6 +201,46 @@ namespace MarAberto
             mr.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
         }
 
+        /// <summary>
+        /// Coloca um modelo real (Poly Haven) na peça: tamanho pelo maior lado, maior lado alinhado ao eixo pedido,
+        /// pé em y = base. Devolve o topo (y) ou -1 se o modelo não existir.
+        /// </summary>
+        static float Real(GameObject root, string id, Vector3 at, float size, bool alongX = false, float yaw = 0f, Color? tint = null)
+        {
+            var m = ModelLibrary.Spawn(id, Vector3.zero, Quaternion.identity, size, ModelLibrary.Fit.Max, -1, ModelLibrary.Col.None, root.transform, tint);
+            if (m == null) return -1f;
+            m.transform.localRotation = Quaternion.identity;
+            m.transform.localPosition = Vector3.zero;
+            Bounds b = Measure(m);
+            // Gira 90° se o maior lado não estiver no eixo pedido.
+            bool longX = b.size.x >= b.size.z;
+            float turn = (alongX != longX ? 90f : 0f) + yaw;
+            m.transform.localRotation = Quaternion.Euler(0, turn, 0);
+            b = Measure(m);
+            m.transform.localPosition = new Vector3(at.x - (b.center.x - root.transform.position.x), at.y - (b.min.y - root.transform.position.y), at.z - (b.center.z - root.transform.position.z));
+            return at.y + b.size.y;
+        }
+
+        static Bounds Measure(GameObject m)
+        {
+            var rs = m.GetComponentsInChildren<Renderer>(true);
+            Bounds b = new Bounds(m.transform.position, Vector3.zero);
+            bool first = true;
+            foreach (var r in rs)
+            {
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
+                var mb = mf.sharedMesh.bounds;
+                for (int i = 0; i < 8; i++)
+                {
+                    Vector3 c = mb.center + Vector3.Scale(mb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    Vector3 w = r.transform.TransformPoint(c);
+                    if (first) { b = new Bounds(w, Vector3.zero); first = false; } else b.Encapsulate(w);
+                }
+            }
+            return b;
+        }
+
         static void Box(GameObject root, Vector3 center, Vector3 size)
         {
             var b = root.AddComponent<BoxCollider>();
@@ -291,6 +331,7 @@ namespace MarAberto
                 case PieceKind.Cama:
                 {
                     float L = 2.0f, Wd = 1.0f;
+                    if (Real(root, "vintage_day_bed", Vector3.zero, 2.0f) > 0f) { Box(root, new Vector3(0, 0.3f, 0), new Vector3(1.1f, 0.6f, 2.1f)); root.AddComponent<Bed>(); break; }
                     planks.AddBoxUV(new Vector3(0, 0.25f, 0), new Vector3(Wd, 0.1f, L), Quaternion.identity, W(0.8f), 0.5f);
                     foreach (var p in new[] { new Vector3(-0.45f, 0, -0.95f), new Vector3(0.45f, 0, -0.95f), new Vector3(-0.45f, 0, 0.95f), new Vector3(0.45f, 0, 0.95f) })
                         poles.AddTube(new[] { p, p + Vector3.up * (p.z > 0 ? 0.7f : 0.45f) }, new[] { 0.05f, 0.05f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
@@ -304,17 +345,21 @@ namespace MarAberto
                 }
                 case PieceKind.Fundicao:
                 {
-                    // Forno de pedra com boca acesa e chaminé.
+                    // Forno de pedra com boca acesa e chaminé (ou o fogão de barril real).
+                    bool realF = Real(root, "barrel_stove", Vector3.zero, 1.4f) > 0f;
                     var rng = new System.Random(5);
-                    for (int i = 0; i < 26; i++)
+                    for (int i = 0; i < (realF ? 0 : 26); i++)
                     {
                         float a = i * 0.9f, y = 0.15f + (i / 9) * 0.42f, r = 0.62f - (i / 9) * 0.12f;
                         Vector3 p = new Vector3(Mathf.Cos(a) * r, y, Mathf.Sin(a) * r);
                         if (p.z > 0.35f && y < 0.7f && Mathf.Abs(p.x) < 0.3f) continue; // boca do forno
                         other.AddRock(p, 0.22f, rng.Next(), n => Color.Lerp(C(0.40f, 0.39f, 0.37f), C(0.58f, 0.56f, 0.52f), n.y * 0.5f + 0.5f), 0.25f);
                     }
-                    other.AddCylinder(new Vector3(0, 1.1f, 0), new Vector3(0, 1.9f, 0), 0.22f, 0.17f, 10, C(0.42f, 0.41f, 0.39f));
-                    other.AddSphere(new Vector3(0, 0.3f, 0.3f), new Vector3(0.22f, 0.18f, 0.12f), C(1f, 0.45f, 0.1f), 2); // brasa
+                    if (!realF)
+                    {
+                        other.AddCylinder(new Vector3(0, 1.1f, 0), new Vector3(0, 1.9f, 0), 0.22f, 0.17f, 10, C(0.42f, 0.41f, 0.39f));
+                        other.AddSphere(new Vector3(0, 0.3f, 0.3f), new Vector3(0.22f, 0.18f, 0.12f), C(1f, 0.45f, 0.1f), 2); // brasa
+                    }
                     var lg = new GameObject("Brasa");
                     lg.transform.SetParent(root.transform, false);
                     lg.transform.localPosition = new Vector3(0, 0.35f, 0.55f);
@@ -381,6 +426,13 @@ namespace MarAberto
                 {
                     // Panela de metal sobre fogo, tubo de cobre e jarro coletando a água limpa.
                     Color metal = C(0.55f, 0.56f, 0.58f), copper = C(0.85f, 0.5f, 0.28f), glass = C(0.65f, 0.85f, 0.95f);
+                    float pitTop = Real(root, "stone_fire_pit", Vector3.zero, 0.8f);
+                    if (pitTop > 0f && Real(root, "pot_enamel_01", new Vector3(0, Mathf.Min(pitTop, 0.22f), 0), 0.45f) > 0f)
+                    {
+                        Box(root, new Vector3(0, 0.4f, 0), new Vector3(0.85f, 0.8f, 0.85f));
+                        root.AddComponent<WaterPurifier>();
+                        break;
+                    }
                     for (int i = 0; i < 6; i++)
                     {
                         float a = i * Mathf.PI / 3f;
@@ -478,6 +530,12 @@ namespace MarAberto
                     poles.AddTube(new[] { Vector3.zero, Vector3.up * 1.45f }, new[] { 0.06f, 0.05f }, 8, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
                     planks.AddBoxUV(new Vector3(0, 0.05f, 0), new Vector3(0.36f, 0.1f, 0.36f), Quaternion.identity, W(0.7f), 0.5f);
                     Color iron = C(0.18f, 0.18f, 0.19f), glass = C(1f, 0.85f, 0.55f);
+                    if (Real(root, "Lantern_01", new Vector3(0, 1.43f, 0), 0.42f) > 0f)
+                    {
+                        Box(root, new Vector3(0, 0.85f, 0), new Vector3(0.3f, 1.7f, 0.3f));
+                        root.AddComponent<LanternFx>();
+                        break;
+                    }
                     other.AddCylinder(new Vector3(0, 1.45f, 0), new Vector3(0, 1.48f, 0), 0.12f, 0.12f, 8, iron);
                     other.AddCylinder(new Vector3(0, 1.48f, 0), new Vector3(0, 1.7f, 0), 0.09f, 0.1f, 8, glass);
                     other.AddCylinder(new Vector3(0, 1.7f, 0), new Vector3(0, 1.8f, 0), 0.12f, 0.03f, 8, iron);
@@ -523,8 +581,11 @@ namespace MarAberto
                     Vector3 c0 = new Vector3(0, 0.75f, 0);
                     Vector3[] cs = { new Vector3(-0.62f, 1.3f, -0.62f), new Vector3(0.62f, 1.3f, -0.62f), new Vector3(0.62f, 1.3f, 0.62f), new Vector3(-0.62f, 1.3f, 0.62f) };
                     for (int i = 0; i < 4; i++) { other.AddTri(c0, cs[i], cs[(i + 1) % 4], cloth); other.AddTri(c0, cs[(i + 1) % 4], cs[i], cloth * 0.85f); }
-                    other.AddCylinder(new Vector3(0, 0, 0), new Vector3(0, 0.35f, 0), 0.22f, 0.25f, 14, C(0.45f, 0.32f, 0.2f));
-                    other.AddCylinder(new Vector3(0, 0.3f, 0), new Vector3(0, 0.31f, 0), 0.23f, 0.23f, 14, C(0.4f, 0.6f, 0.75f));
+                    if (Real(root, "wooden_bucket_02", Vector3.zero, 0.5f) < 0f)
+                    {
+                        other.AddCylinder(new Vector3(0, 0, 0), new Vector3(0, 0.35f, 0), 0.22f, 0.25f, 14, C(0.45f, 0.32f, 0.2f));
+                        other.AddCylinder(new Vector3(0, 0.3f, 0), new Vector3(0, 0.31f, 0), 0.23f, 0.23f, 14, C(0.4f, 0.6f, 0.75f));
+                    }
                     Box(root, new Vector3(0, 0.7f, 0), new Vector3(1.3f, 1.4f, 1.3f));
                     var wp = root.AddComponent<WaterPurifier>();
                     wp.RainCollector = true;
@@ -607,6 +668,16 @@ namespace MarAberto
                 {
                     // Mesa com rádio grande, fones, e uma antena alta com luz vermelha piscando.
                     Color metal = C(0.32f, 0.34f, 0.3f), dark = C(0.12f, 0.12f, 0.13f), dial = C(0.95f, 0.8f, 0.35f), red = C(1f, 0.15f, 0.1f);
+                    float rtop = Real(root, "WoodenTable_01", Vector3.zero, 1.2f, true);
+                    if (rtop > 0f && Real(root, "vintage_radio_transceiver", new Vector3(-0.1f, rtop, 0), 0.6f, true) > 0f)
+                    {
+                        // Antena alta com luz vermelha, atrás da mesa.
+                        poles.AddTube(new[] { new Vector3(0.5f, 0f, 0.3f), new Vector3(0.5f, 3.1f, 0.3f) }, new[] { 0.045f, 0.025f }, 6, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
+                        other.AddSphere(new Vector3(0.5f, 3.15f, 0.3f), Vector3.one * 0.06f, red, 2);
+                        Box(root, new Vector3(0, 0.6f, 0), new Vector3(1.2f, 1.2f, 0.75f));
+                        root.AddComponent<RescueRadio>();
+                        break;
+                    }
                     planks.AddBoxUV(new Vector3(0, 0.8f, 0), new Vector3(1.2f, 0.08f, 0.7f), Quaternion.identity, W(0.8f), 0.5f);
                     foreach (var q in new[] { new Vector3(-0.55f, 0, -0.3f), new Vector3(0.55f, 0, -0.3f), new Vector3(-0.55f, 0, 0.3f), new Vector3(0.55f, 0, 0.3f) })
                         poles.AddTube(new[] { q, q + Vector3.up * 0.8f }, new[] { 0.04f, 0.04f }, 6, (i, t) => Color.white, null, true, true, null, 0.6f, 1f);
@@ -744,6 +815,15 @@ namespace MarAberto
                     // Tanque de ferro, serpentina de cobre, fornalha e galões.
                     Color iron = C(0.25f, 0.26f, 0.28f), copper = C(0.85f, 0.5f, 0.28f), red = C(0.75f, 0.15f, 0.12f);
                     planks.AddBoxUV(new Vector3(0, 0.08f, 0), new Vector3(1.6f, 0.16f, 1.2f), Quaternion.identity, W(0.7f), 0.5f);
+                    if (Real(root, "propane_tank", new Vector3(-0.35f, 0.16f, 0), 1.7f) > 0f)
+                    {
+                        Real(root, "propane_tank", new Vector3(0.35f, 0.16f, 0.25f), 1.2f);
+                        Real(root, "metal_jerrycan", new Vector3(0.5f, 0.16f, -0.35f), 0.45f);
+                        other.AddCylinder(new Vector3(-0.35f, 1.6f, 0), new Vector3(0.35f, 1.2f, 0.25f), 0.035f, 0.035f, 8, copper);   // cano de cobre entre os tanques
+                        Box(root, new Vector3(0, 1.0f, 0), new Vector3(1.6f, 2.0f, 1.2f));
+                        root.AddComponent<CraftStation>().Kind = Station.Refinaria;
+                        break;
+                    }
                     other.AddCylinder(new Vector3(-0.35f, 0.16f, 0), new Vector3(-0.35f, 1.5f, 0), 0.42f, 0.42f, 18, iron);
                     other.AddSphere(new Vector3(-0.35f, 1.5f, 0), new Vector3(0.42f, 0.2f, 0.42f), iron);
                     other.AddCylinder(new Vector3(-0.35f, 1.65f, 0), new Vector3(-0.35f, 2.4f, 0), 0.07f, 0.06f, 10, iron);
@@ -767,10 +847,14 @@ namespace MarAberto
                     bool gas = k == PieceKind.MotorGas;
                     Color iron = gas ? C(0.7f, 0.12f, 0.1f) : C(0.2f, 0.2f, 0.22f), brass = gas ? C(0.6f, 0.6f, 0.62f) : C(0.85f, 0.65f, 0.3f);
                     planks.AddBoxUV(new Vector3(0, 0.05f, 0), new Vector3(0.9f, 0.1f, 0.9f), Quaternion.identity, W(0.7f), 0.5f);
-                    other.AddCylinder(new Vector3(0, 0.1f, 0), new Vector3(0, 0.75f, 0), 0.32f, 0.32f, 18, iron);
-                    other.AddSphere(new Vector3(0, 0.75f, 0), new Vector3(0.32f, 0.14f, 0.32f), iron);
-                    other.AddCylinder(new Vector3(0, 0.4f, 0), new Vector3(0, 0.46f, 0), 0.335f, 0.335f, 18, brass, false);
-                    other.AddCylinder(new Vector3(0, 0.8f, 0), new Vector3(0, 1.25f, 0), 0.07f, 0.06f, 12, brass);
+                    bool realM = Real(root, gas ? "portable_generator" : "old_military_compressor", new Vector3(0, 0.1f, 0), 0.95f) > 0f;
+                    if (!realM)
+                    {
+                        other.AddCylinder(new Vector3(0, 0.1f, 0), new Vector3(0, 0.75f, 0), 0.32f, 0.32f, 18, iron);
+                        other.AddSphere(new Vector3(0, 0.75f, 0), new Vector3(0.32f, 0.14f, 0.32f), iron);
+                        other.AddCylinder(new Vector3(0, 0.4f, 0), new Vector3(0, 0.46f, 0), 0.335f, 0.335f, 18, brass, false);
+                        other.AddCylinder(new Vector3(0, 0.8f, 0), new Vector3(0, 1.25f, 0), 0.07f, 0.06f, 12, brass);
+                    }
                     other.AddCylinder(new Vector3(0, 0.25f, -0.3f), new Vector3(0, 0.0f, -0.75f), 0.03f, 0.03f, 8, iron); // eixo
                     var helice = new GameObject("Helice");
                     helice.transform.SetParent(root.transform, false);
@@ -851,14 +935,26 @@ namespace MarAberto
                         }
                     }
                     other.AddSphere(new Vector3(0, 2.75f, 0), Vector3.one * 0.07f, C(1f, 0.3f, 0.2f), 2);
-                    planks.AddBoxUV(new Vector3(0, 0.22f, 0.15f), new Vector3(0.45f, 0.44f, 0.3f), Quaternion.identity, W(0.75f), 0.5f);
-                    other.AddBox(new Vector3(0, 0.3f, 0.31f), new Vector3(0.3f, 0.14f, 0.02f), Quaternion.identity, dark);
+                    if (Real(root, "vintage_radio_transceiver", new Vector3(0, 0, 0.22f), 0.5f, true) < 0f)
+                    {
+                        planks.AddBoxUV(new Vector3(0, 0.22f, 0.15f), new Vector3(0.45f, 0.44f, 0.3f), Quaternion.identity, W(0.75f), 0.5f);
+                        other.AddBox(new Vector3(0, 0.3f, 0.31f), new Vector3(0.3f, 0.14f, 0.02f), Quaternion.identity, dark);
+                    }
                     Box(root, new Vector3(0, 1.4f, 0), new Vector3(0.5f, 2.8f, 0.5f));
                     root.AddComponent<ReceptorPiece>();
                     break;
                 }
                 case PieceKind.Bancada:
                 {
+                    float top = Real(root, "WoodenTable_02", Vector3.zero, 1.7f, true);
+                    if (top > 0f)
+                    {
+                        Real(root, "bench_vice_01", new Vector3(0.6f, top, 0.15f), 0.35f, true);
+                        Real(root, "metal_toolbox", new Vector3(-0.45f, top, -0.05f), 0.5f, true);
+                        Box(root, new Vector3(0, top * 0.5f, 0), new Vector3(1.7f, top, 0.85f));
+                        root.AddComponent<CraftStation>().Kind = Station.Bancada;
+                        break;
+                    }
                     planks.AddBoxUV(new Vector3(0, 0.92f, 0), new Vector3(1.7f, 0.08f, 0.8f), Quaternion.identity, W(0.85f), 0.5f);
                     planks.AddBoxUV(new Vector3(0, 0.35f, 0), new Vector3(1.5f, 0.05f, 0.65f), Quaternion.identity, W(0.7f), 0.5f);
                     foreach (var p in new[] { new Vector3(-0.75f, 0, -0.33f), new Vector3(0.75f, 0, -0.33f), new Vector3(-0.75f, 0, 0.33f), new Vector3(0.75f, 0, 0.33f) })

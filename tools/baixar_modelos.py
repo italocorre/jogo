@@ -15,6 +15,9 @@ MODELS = [
     'service_pistol', 'bolt_action_rifle_7_62', 'ammo_box', 'compost_bag_02', 'life_jacket', 'rubber_boots', 'small_lpg_tank',
     'old_gas_mask', 'vintage_flashlight', 'seeding_tray_01', 'sweet_potato', 'lemon', 'wooden_bowl_01', 'vintage_radio_transceiver',
     'food_avocado_01', 'planter_pot_clay', 'Barrel_01', 'vintage_suitcase', 'bronze_whale_statue', 'bronze_shark_statue', 'postcard_set_01',
+    # Construções reais
+    'vintage_day_bed', 'barrel_stove', 'WoodenTable_01', 'WoodenTable_02', 'bench_vice_01', 'metal_toolbox', 'old_military_compressor',
+    'portable_generator', 'propane_tank', 'pot_enamel_01', 'Lantern_01', 'wooden_bucket_02',
 ]
 # Texturas de chão (terreno): cor + relevo
 TEXTURES = ['coast_sand_01', 'aerial_grass_rock', 'rock_06', 'forrest_ground_01', 'bark_brown_02', 'metal_plate']
